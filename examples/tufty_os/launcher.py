@@ -43,7 +43,10 @@ display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
 display.led(0)
 
-BG = display.create_pen(195, 195, 195)
+# Colours
+BACKGROUND = display.create_pen(24, 59, 78)
+FOREGROUND = display.create_pen(245, 238, 220)
+HIGHLIGHT = display.create_pen(221, 168, 83)
 
 # Pico Vector
 vector = PicoVector(display.display)
@@ -54,14 +57,14 @@ vector.set_font_align(HALIGN_CENTER)
 vector.set_transform(t)
 
 TITLE_BAR = Polygon()
-TITLE_BAR.rectangle(2, 2, 260, 16, (8, 8, 8, 8))
-TITLE_BAR.circle(253, 10, 4)
+TITLE_BAR.rectangle(2, 2, 316, 16, (8, 8, 8, 8))
+TITLE_BAR.circle(308, 10, 4)
 
 SELECTED_BORDER = Polygon()
 SELECTED_BORDER.rectangle(0, 0, 90, 90, (10, 10, 10, 10), 5)
 
 state = {
-    "page": 0,
+    "selected_icon": "ebook",
     "running": "launcher"
 }
 
@@ -69,17 +72,18 @@ tufty_os.state_load("launcher", state)
 
 examples = [x[:-3] for x in os.listdir(APP_DIR) if x.endswith(".py")]
 
-# Page layout
-centers = [[45, 52], [126, 52], [209, 52], [45, 130], [126, 130], [209, 130]]
-
-MAX_PAGE = math.ceil(len(examples) / 6)
 MAX_PER_ROW = 3
 MAX_PER_PAGE = MAX_PER_ROW * 2
+ICONS_TOTAL = len(examples)
+MAX_PAGE = math.ceil(ICONS_TOTAL / MAX_PER_PAGE)
 
-WIDTH = 264
+WIDTH = 320
+
+# Page layout
+centers = [[50, 65], [162, 65], [WIDTH - 50, 65], [50, 170], [162, 170], [WIDTH - 50, 170]]
 
 # index for the currently selected file on the page
-selected_file = 1
+selected_file = 0
 
 # Number of icons on the current page
 icons_total = 0
@@ -93,6 +97,9 @@ def draw_disk_usage(x):
     _, f_used, _ = tufty_os.get_disk_usage()
 
     display.set_pen(15)
+
+    # Replace with suitable vector icon
+    """
     display.image(
         bytearray(
             (
@@ -111,6 +118,7 @@ def draw_disk_usage(x):
         x,
         6,
     )
+    """
     display.rectangle(x + 10, 5, 45, 10)
     display.set_pen(0)
     display.rectangle(x + 11, 6, 43, 8)
@@ -118,72 +126,76 @@ def draw_disk_usage(x):
     display.rectangle(x + 12, 7, int(41 / 100.0 * f_used), 6)
 
 
-def render():
+def read_header(label):
+    file = f"{APP_DIR}/{label}.py"
+
+    name = label
+    icon = ICONS["description"]
+
+    with open(file) as f:
+        header = [f.readline().strip() for _ in range(3)]
+
+    for line in header:
+        if line.startswith("# ICON "):
+            icon = line[7:].strip()
+            icon = ICONS[icon]
+
+        if line.startswith("# NAME "):
+            name = line[7:]
+
+    return name, icon
+
+
+def render(selected_index):
     global icons_total
     global selected_file
 
-    display.set_pen(BG)
+    display.set_pen(BACKGROUND)
     display.clear()
-    display.set_pen(0)
 
-    icons_total = min(6, len(examples[(state["page"] * 6):]))
+    selected_page = selected_index // MAX_PER_PAGE
 
-    for i in range(icons_total):
-        x = centers[i][0]
-        y = centers[i][1]
+    icons = examples[selected_page * 6:selected_page * 6 + MAX_PER_PAGE]
 
-        label = examples[i + (state["page"] * 6)]
-        file = f"{APP_DIR}/{label}.py"
+    for index, label in enumerate(icons):
+        x, y = centers[index]
 
-        name = label
-        icon = Polygon()
+        name, icon = read_header(label)
 
-        with open(file) as f:
-            header = [f.readline().strip() for _ in range(3)]
-
-        for line in header:
-            if line.startswith("# ICON "):
-                icon = line[7:].strip()
-                icon = ICONS[icon]
-
-            if line.startswith("# NAME "):
-                name = line[7:]
-
-        vector.set_font_size(20)
+        display.set_pen(FOREGROUND)
+        vector.set_font_size(28)
         vector.set_transform(t)
         vector.text(icon, x, y)
         t.translate(x, y)
-        t.scale(0.8, 0.8)
-        # Snap to the last icon if the position isn't available.
-        selected_file = min(selected_file, icons_total - 1)
+        t.scale(1.0, 1.0)
 
-        if selected_file == i:
-            display.set_pen(1)
+        if selected_index % MAX_PER_PAGE == index:
+            display.set_pen(HIGHLIGHT)
             t.translate(-45, -36)
             t.scale(1.0, 1.0)
             vector.draw(SELECTED_BORDER)
         t.reset()
 
-        display.set_pen(0)
-        vector.set_font_size(16)
+        display.set_pen(FOREGROUND)
+        vector.set_font_size(18)
         w = vector.measure_text(name)[2]
-        vector.text(name, int(x - (w / 2)), y + 35)
+        vector.text(name, int(x - (w / 2)), y + 45)
 
     for i in range(MAX_PAGE):
-        x = 253
-        y = int((176 / 2) - (MAX_PAGE * 10 / 2) + (i * 10))
-        display.set_pen(0)
+        x = 310
+        y = int((240 / 2) - (MAX_PAGE * 10 / 2) + (i * 10))
+        display.set_pen(HIGHLIGHT)
         display.rectangle(x, y, 8, 8)
         if state["page"] != i:
-            display.set_pen(3)
+            display.set_pen(FOREGROUND)
             display.rectangle(x + 1, y + 1, 6, 6)
 
-    display.set_pen(0)
+    display.set_pen(HIGHLIGHT)
     vector.draw(TITLE_BAR)
 
-    draw_disk_usage(100)
+    # draw_disk_usage(100)
 
-    display.set_pen(3)
+    display.set_pen(FOREGROUND)
     vector.set_font_size(14)
     vector.text("TuftyOS", 7, 14)
 
@@ -244,33 +256,42 @@ def button(pin):
 
 if exited_to_launcher or not woken_by_button:
     wait_for_user_to_release_buttons()
-    display.set_update_speed(tufty2350.UPDATE_MEDIUM)
-    render()
+    changed = True
 
-display.set_update_speed(tufty2350.UPDATE_TURBO)
-
-render()
+try:
+    selected_index = examples.index(state["selected_file"])
+except (ValueError, KeyError):
+    selected_index = 0
 
 while True:
-    # Sometimes a button press or hold will keep the system
-    # powered *through* HALT, so latch the power back on.
-    # display.keepalive()
 
     if display.pressed(tufty2350.BUTTON_A):
-        button(tufty2350.BUTTON_A)
+        if (selected_index % MAX_PER_ROW) > 0:
+            selected_index -= 1
+            changed = True
+
     if display.pressed(tufty2350.BUTTON_B):
-        button(tufty2350.BUTTON_B)
+        launch_example(state["selected_file"])
+
     if display.pressed(tufty2350.BUTTON_C):
-        button(tufty2350.BUTTON_C)
+        if (selected_index % MAX_PER_ROW) < MAX_PER_ROW - 1:
+            selected_index += 1
+            changed = True
 
     if display.pressed(tufty2350.BUTTON_UP):
-        button(tufty2350.BUTTON_UP)
+        if selected_index >= MAX_PER_ROW:
+            selected_index -= MAX_PER_ROW
+            changed = True
+
     if display.pressed(tufty2350.BUTTON_DOWN):
-        button(tufty2350.BUTTON_DOWN)
+        if selected_index < ICONS_TOTAL - 1:
+            selected_index += MAX_PER_ROW
+            selected_index = min(selected_index, ICONS_TOTAL - 1)
+            changed = True
 
     if changed:
+        state["selected_file"] = examples[selected_index]
         tufty_os.state_save("launcher", state)
         changed = False
-        render()
-
-    display.halt()
+        render(selected_index)
+        wait_for_user_to_release_buttons()
