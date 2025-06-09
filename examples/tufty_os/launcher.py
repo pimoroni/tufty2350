@@ -27,17 +27,19 @@ FONT_SIZE = 1
 
 changed = False
 exited_to_launcher = False
-woken_by_button = tufty2350.woken_by_button()  # Must be done before we clear_pressed_to_wake
 
+state = {
+    "selected_icon": "ebook",
+    "running": "launcher"
+}
 
-if tufty2350.pressed_to_wake(tufty2350.BUTTON_A) and tufty2350.pressed_to_wake(tufty2350.BUTTON_C):
-    # Pressing A and C together at start quits app
-    exited_to_launcher = tufty_os.state_clear_running()
-    tufty2350.reset_pressed_to_wake()
-else:
-    # Otherwise restore previously running app
-    tufty_os.state_launch()
+tufty_os.state_load("launcher", state)
 
+if state["running"] != "launcher" and not tufty2350.woken_by_reset():
+    tufty_os.launch(state["running"])
+
+# If we don't launch an example, reset the state.
+tufty_os.state_clear_running()
 
 display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
@@ -63,13 +65,6 @@ TITLE_BAR.circle(308, 10, 4)
 SELECTED_BORDER = Polygon()
 SELECTED_BORDER.rectangle(0, 0, 90, 90, (10, 10, 10, 10), 5)
 
-state = {
-    "selected_icon": "ebook",
-    "running": "launcher"
-}
-
-tufty_os.state_load("launcher", state)
-
 examples = [x[:-3] for x in os.listdir(APP_DIR) if x.endswith(".py")]
 
 MAX_PER_ROW = 3
@@ -81,16 +76,6 @@ WIDTH = 320
 
 # Page layout
 centers = [[50, 65], [162, 65], [WIDTH - 50, 65], [50, 170], [162, 170], [WIDTH - 50, 170]]
-
-# index for the currently selected file on the page
-selected_file = 0
-
-# Number of icons on the current page
-icons_total = 0
-
-
-def map_value(input, in_min, in_max, out_min, out_max):
-    return (((input - in_min) * (out_max - out_min)) / (in_max - in_min)) + out_min
 
 
 def draw_disk_usage(x):
@@ -207,10 +192,9 @@ def wait_for_user_to_release_buttons():
         time.sleep(0.01)
 
 
-def launch_example(index):
+def launch_example(file):
     wait_for_user_to_release_buttons()
 
-    file = examples[index]
     file = f"{APP_DIR}/{file}"
 
     for k in locals().keys():
@@ -254,14 +238,12 @@ def button(pin):
             selected_file %= MAX_PER_ROW
 
 
-if exited_to_launcher or not woken_by_button:
-    wait_for_user_to_release_buttons()
-    changed = True
-
 try:
     selected_index = examples.index(state["selected_file"])
 except (ValueError, KeyError):
     selected_index = 0
+
+    print(state["selected_file"])
 
 while True:
 
@@ -293,5 +275,6 @@ while True:
         state["selected_file"] = examples[selected_index]
         tufty_os.state_save("launcher", state)
         changed = False
-        render(selected_index)
         wait_for_user_to_release_buttons()
+
+    render(selected_index)
