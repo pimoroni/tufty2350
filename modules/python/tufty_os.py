@@ -114,15 +114,15 @@ def launch(file):
 
     gc.collect()
 
-    button_a = machine.Pin(tufty2350.BUTTON_A, machine.Pin.IN, machine.Pin.PULL_DOWN)
-    button_c = machine.Pin(tufty2350.BUTTON_C, machine.Pin.IN, machine.Pin.PULL_DOWN)
+    button_a = machine.Pin(tufty2350.BUTTON_A, machine.Pin.IN, machine.Pin.PULL_UP)
+    button_c = machine.Pin(tufty2350.BUTTON_C, machine.Pin.IN, machine.Pin.PULL_UP)
 
     def quit_to_launcher(_pin):
         if button_a.value() and button_c.value():
             machine.reset()
 
-    button_a.irq(trigger=machine.Pin.IRQ_RISING, handler=quit_to_launcher)
-    button_c.irq(trigger=machine.Pin.IRQ_RISING, handler=quit_to_launcher)
+    button_a.irq(trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher)
+    button_c.irq(trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher)
 
     try:
         __import__(file)
