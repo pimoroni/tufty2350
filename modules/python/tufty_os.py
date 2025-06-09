@@ -118,7 +118,7 @@ def launch(file):
     button_c = machine.Pin(tufty2350.BUTTON_C, machine.Pin.IN, machine.Pin.PULL_UP)
 
     def quit_to_launcher(_pin):
-        if button_a.value() and button_c.value():
+        if button_a.value() == 0 and button_c.value() == 0:
             machine.reset()
 
     button_a.irq(trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher)
