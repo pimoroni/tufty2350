@@ -119,6 +119,8 @@ def launch(file):
 
     def quit_to_launcher(_pin):
         if button_a.value() == 0 and button_c.value() == 0:
+            state_clear_running()
+            os.sync()
             machine.reset()
 
     button_a.irq(trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher)
