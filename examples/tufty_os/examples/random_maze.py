@@ -20,33 +20,24 @@ import time
 from collections import namedtuple
 
 import tufty2350
-from machine import Pin
-from picographics import DISPLAY_EXPLORER, PicoGraphics
-
-# Button Setup
-btn_a = Pin(12, Pin.IN)
-btn_c = Pin(14, Pin.IN)
-btn_up = Pin(15, Pin.IN)
-btn_down = Pin(11, Pin.IN)
-btn_b = Pin(13, Pin.IN)
 
 # Setup for the display
-display = PicoGraphics(DISPLAY_EXPLORER, rotate=180)
+display = tufty2350.Tufty2350()
+display.set_font("bitmap8")
+display.led(0)
 
 # Get the width and height from the display
 WIDTH, HEIGHT = display.get_bounds()
 
 # Colour Constants
-WHITE = 3
-BLACK = 0
-RED = 1
-GREEN = 2
-PLAYER = 0
-WALL = 1
-BACKGROUND = display.create_pen(190, 190, 190)
-PATH = 2
-
-display.set_update_speed(tufty2350.UPDATE_TURBO)
+WHITE = display.create_pen(255, 255, 255)
+BLACK = display.create_pen(0, 0, 0)
+RED = display.create_pen(255, 0, 0)
+GREEN = display.create_pen(0, 255, 0)
+PLAYER = display.create_pen(227, 231, 110)
+WALL = display.create_pen(127, 125, 244)
+BACKGROUND = display.create_pen(60, 57, 169)
+PATH = display.create_pen((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
 
 
 def show_message(text):
@@ -237,22 +228,22 @@ class Player(object):
 
         self.recent_input = False
 
-        if btn_a.value() and maze[self.y][self.x - 1] != 1:
+        if display.pressed(tufty2350.BUTTON_A) and maze[self.y][self.x - 1] != 1:
             self.x -= 1
             time.sleep(MOVEMENT_SLEEP)
             self.recent_input = True
 
-        elif btn_c.value() and maze[self.y][self.x + 1] != 1:
+        elif display.pressed(tufty2350.BUTTON_C) and maze[self.y][self.x + 1] != 1:
             self.x += 1
             time.sleep(MOVEMENT_SLEEP)
             self.recent_input = True
 
-        elif btn_up.value() and maze[self.y - 1][self.x] != 1:
+        elif display.pressed(tufty2350.BUTTON_UP) and maze[self.y - 1][self.x] != 1:
             self.y -= 1
             time.sleep(MOVEMENT_SLEEP)
             self.recent_input = True
 
-        elif btn_down.value() and maze[self.y + 1][self.x] != 1:
+        elif display.pressed(tufty2350.BUTTON_DOWN) and maze[self.y + 1][self.x] != 1:
             self.y += 1
             time.sleep(MOVEMENT_SLEEP)
             self.recent_input = True
@@ -305,8 +296,8 @@ text_1_size = display.measure_text(text_1_string, 3)
 text_2_string = "Press B to continue"
 text_2_size = display.measure_text(text_2_string, 2)
 
-text_1_location = ((WIDTH // 2) - (text_1_size // 2), 66)
-text_2_location = ((WIDTH // 2) - (text_2_size // 2), 90)
+text_1_location = ((WIDTH // 2) - (text_1_size // 2), 96)
+text_2_location = ((WIDTH // 2) - (text_2_size // 2), 120)
 
 
 def draw_maze():
@@ -351,9 +342,12 @@ while True:
             complete = True
 
     if complete:
+        # Draw banner shadow
+        display.set_pen(BLACK)
+        display.rectangle(4, 94, WIDTH, 50)
         # Draw banner
-        display.set_pen(2)
-        display.rectangle(0, 60, WIDTH, 50)
+        display.set_pen(PLAYER)
+        display.rectangle(0, 90, WIDTH, 50)
 
         # Draw text
         display.set_pen(BLACK)
@@ -363,7 +357,7 @@ while True:
         display.update()
 
         # Check for the player wanting to continue
-        while not btn_b.value():
+        while not display.pressed(tufty2350.BUTTON_B):
             pass
 
         complete = False
@@ -373,7 +367,4 @@ while True:
         player.recent_input = True
 
     draw_maze()
-
-    # Finally we update the screen with our changes :)
-    if player.recent_input and not complete:
-        display.update()
+    display.update()
