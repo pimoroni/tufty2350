@@ -40,9 +40,6 @@ tufty_os.state_load("launcher", state)
 if state["running"] != "launcher" and not tufty2350.woken_by_reset():
     tufty_os.launch(state["running"])
 
-# If we don't launch an example, reset the state.
-tufty_os.state_clear_running()
-
 display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
 display.led(0)
