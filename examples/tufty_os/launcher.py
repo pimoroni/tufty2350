@@ -25,7 +25,7 @@ ICONS = {
 APP_DIR = "/examples"
 FONT_SIZE = 1
 
-changed = False
+changed = True
 exited_to_launcher = False
 
 state = {
@@ -184,6 +184,7 @@ def render(selected_index):
     vector.text("TuftyOS", 7, 14)
 
     display.update()
+    gc.collect()
 
 
 def wait_for_user_to_release_buttons():
@@ -277,4 +278,4 @@ while True:
         changed = False
         wait_for_user_to_release_buttons()
 
-    render(selected_index)
+        render(selected_index)
