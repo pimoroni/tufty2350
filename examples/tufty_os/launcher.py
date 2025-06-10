@@ -257,6 +257,7 @@ while True:
     if display.pressed(tufty2350.BUTTON_C):
         if (selected_index % MAX_PER_ROW) < MAX_PER_ROW - 1:
             selected_index += 1
+            selected_index = min(selected_index, ICONS_TOTAL - 1)
             changed = True
 
     if display.pressed(tufty2350.BUTTON_UP):
