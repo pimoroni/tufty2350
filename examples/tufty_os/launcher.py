@@ -30,7 +30,9 @@ exited_to_launcher = False
 
 state = {
     "selected_icon": "ebook",
-    "running": "launcher"
+    "running": "launcher",
+    "selected_file": 0,
+    "page": 0
 }
 
 tufty_os.state_load("launcher", state)
