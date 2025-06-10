@@ -47,7 +47,7 @@ display.led(0)
 # Colours
 BACKGROUND = display.create_pen(24, 59, 78)
 FOREGROUND = display.create_pen(245, 238, 220)
-HIGHLIGHT = display.create_pen(221, 168, 83)
+HIGHLIGHT = display.create_pen(255, 145, 0)
 
 # Pico Vector
 vector = PicoVector(display.display)
