@@ -37,7 +37,7 @@ state = {
 
 tufty_os.state_load("launcher", state)
 
-if state["running"] != "launcher" and not tufty2350.woken_by_reset():
+if state["running"] != "launcher":
     tufty_os.launch(state["running"])
 
 display = tufty2350.Tufty2350()
