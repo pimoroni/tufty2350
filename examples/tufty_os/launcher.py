@@ -13,6 +13,7 @@ ICONS = {
     "badge": "\uea67",
     "book_2": "\uf53e",
     "cloud": "\ue2bd",
+    "deployed-code": "\uf720",
     "description": "\ue873",
     "help": "\ue887",
     "wifi": "\ue63e",
