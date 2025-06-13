@@ -2,10 +2,11 @@
 # NAME Net Info
 # DESC View your local IP Address
 
-import tufty2350
 import ezwifi
-from tufty2350 import HEIGHT, WIDTH
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+
+import tufty2350
+from tufty2350 import HEIGHT, WIDTH
 
 # Display Setup
 display = tufty2350.Tufty2350()
@@ -18,26 +19,29 @@ t = Transform()
 vector.set_transform(t)
 
 TITLE_BAR = Polygon()
-TITLE_BAR.rectangle(2, 2, 260, 16, (8, 8, 8, 8))
-TITLE_BAR.circle(253, 10, 4)
+TITLE_BAR.rectangle(2, 2, WIDTH - 4, 16, (8, 8, 8, 8))
+TITLE_BAR.circle(WIDTH - 10, 10, 4)
 IP_BAR = Polygon()
-IP_BAR.rectangle(2, 82, 260, 40, (8, 8, 8, 8))
+IP_BAR.rectangle(2, 113, WIDTH - 4, 40, (8, 8, 8, 8))
+
+# Colours
+BACKGROUND = display.create_pen(63, 79, 68)
+FOREGROUND = display.create_pen(37, 95, 56)
+HIGHLIGHT = display.create_pen(31, 125, 83)
 
 
 def draw_header():
 
     # Page Header
-    display.set_pen(15)
+    display.set_pen(BACKGROUND)
     display.clear()
-    display.set_pen(0)
 
-    display.set_pen(0)
+    display.set_pen(FOREGROUND)
     vector.draw(TITLE_BAR)
-    display.set_pen(3)
 
+    display.set_pen(HIGHLIGHT)
     display.text("tuftyOS", 7, 6, WIDTH, 1)
     display.text("Network Details", WIDTH - 100, 6, WIDTH, 1)
-    display.set_pen(0)
 
 
 def connect_handler(wifi):
@@ -47,18 +51,17 @@ def connect_handler(wifi):
     # Draw the title header
     draw_header()
 
-    display.set_pen(0)
+    display.set_pen(FOREGROUND)
     vector.draw(IP_BAR)
 
     ip = wifi.ipv4()
 
     text_w = display.measure_text(ip, 4)
     text_x = WIDTH // 2 - text_w // 2
-    display.set_pen(3)
+    display.set_pen(HIGHLIGHT)
     display.text(ip, text_x, HEIGHT // 2, WIDTH, 4)
 
-    display.set_pen(0)
-    display.text("Your local IP:", text_x, 65, WIDTH, 2)
+    display.text("Your local IP:", text_x, 95, WIDTH, 2)
 
     display.update()
 
@@ -70,29 +73,30 @@ def failed_handler(_wifi):
     # Draw the title header
     draw_header()
 
-    display.set_pen(0)
+    display.set_pen(FOREGROUND)
     vector.draw(IP_BAR)
 
     ip = "Unavailable"
 
     text_w = display.measure_text(ip, 4)
     text_x = WIDTH // 2 - text_w // 2
-    display.set_pen(3)
+    display.set_pen(HIGHLIGHT)
     display.text(ip, text_x, HEIGHT // 2, WIDTH, 4)
 
-    display.set_pen(0)
-    display.text("Your local IP:", text_x, 65, WIDTH, 2)
+    display.text("Your local IP:", text_x, 95, WIDTH, 2)
 
-    display.text("Check Your 'secrets.py' and try again.", text_x, 127, WIDTH - 10, 2)
+    display.text("Check Your 'secrets.py' and try again.", 5, 160, WIDTH - 15, 2)
 
     display.update()
 
 
+display.led(128)
+draw_header()
+display.set_pen(HIGHLIGHT)
+display.text("Connecting...", 5, 120, WIDTH - 15, 2)
+display.update()
+
 ezwifi.connect(verbose=True, retries=3, connected=connect_handler, failed=failed_handler)
 
-
-# Call halt in a loop, on battery this switches off power.
-# On USB, the app will exit when A+C is pressed because the launcher picks that up.
 while True:
-    display.keepalive()
-    display.halt()
+    pass
