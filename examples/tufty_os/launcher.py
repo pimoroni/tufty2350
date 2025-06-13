@@ -82,10 +82,8 @@ centers = [[50, 65], [162, 65], [WIDTH - 50, 65], [50, 170], [162, 170], [WIDTH 
 def draw_disk_usage(x):
     _, f_used, _ = tufty_os.get_disk_usage()
 
-    display.set_pen(15)
+    display.set_pen(FOREGROUND)
 
-    # Replace with suitable vector icon
-    """
     display.image(
         bytearray(
             (
@@ -104,11 +102,11 @@ def draw_disk_usage(x):
         x,
         6,
     )
-    """
+
     display.rectangle(x + 10, 5, 45, 10)
-    display.set_pen(0)
+    display.set_pen(BACKGROUND)
     display.rectangle(x + 11, 6, 43, 8)
-    display.set_pen(15)
+    display.set_pen(HIGHLIGHT)
     display.rectangle(x + 12, 7, int(41 / 100.0 * f_used), 6)
 
 
@@ -179,7 +177,7 @@ def render(selected_index):
     display.set_pen(HIGHLIGHT)
     vector.draw(TITLE_BAR)
 
-    # draw_disk_usage(100)
+    draw_disk_usage(130)
 
     display.set_pen(FOREGROUND)
     vector.set_font_size(14)
