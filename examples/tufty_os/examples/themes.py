@@ -42,7 +42,7 @@ FOREGROUND = display.create_pen(*state["colours"][1])
 HIGHLIGHT = display.create_pen(*state["colours"][2])
 
 PALETTES = {
-    "Blue/White/Orange": [(24, 59, 78), (245, 238, 220), (241, 90, 83)],
+    "Default": [(24, 59, 78), (245, 238, 220), (255, 135, 0)],
     "Plum": [(119, 67, 96), (231, 171, 121), (178, 80, 104)],
     "Blue/Gray": [(55, 55, 55), (201, 216, 232), (57, 91, 100)],
     "Sea": [(154, 203, 208), (242, 239, 231), (72, 166, 167)],
