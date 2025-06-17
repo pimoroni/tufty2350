@@ -12,6 +12,7 @@ import tufty_os
 ICONS = {
     "badge": "\uea67",
     "book_2": "\uf53e",
+    "check_box": "\ue834",
     "cloud": "\ue2bd",
     "deployed-code": "\uf720",
     "description": "\ue873",
@@ -34,7 +35,8 @@ state = {
     "selected_icon": "ebook",
     "running": "launcher",
     "selected_file": 0,
-    "page": 0
+    "page": 0,
+    "colours": [(24, 59, 78), (245, 238, 220), (255, 135, 0)]
 }
 
 tufty_os.state_load("launcher", state)
@@ -47,9 +49,9 @@ display.set_font("bitmap8")
 display.led(0)
 
 # Colours
-BACKGROUND = display.create_pen(24, 59, 78)
-FOREGROUND = display.create_pen(245, 238, 220)
-HIGHLIGHT = display.create_pen(255, 135, 0)
+BACKGROUND = display.create_pen(*state["colours"][0])
+FOREGROUND = display.create_pen(*state["colours"][1])
+HIGHLIGHT = display.create_pen(*state["colours"][2])
 
 # Pico Vector
 vector = PicoVector(display.display)
