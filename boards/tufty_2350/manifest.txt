@@ -2,4 +2,4 @@
 *.af
 books/*.txt
 examples/*.py
-examples/images/*.*
+images/*.*
