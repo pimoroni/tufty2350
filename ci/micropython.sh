@@ -113,14 +113,17 @@ function ci_cmake_build {
         log_warning "Invalid board: \"$BOARD\". Run with ci_cmake_build <board_name>."
         return 1
     fi
-    BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
-    ccache --zero-stats || true
-    cmake --build $BUILD_DIR -j 2
-    ccache --show-stats || true
 
     if [ -z ${CI_RELEASE_FILENAME+x} ]; then
         CI_RELEASE_FILENAME=$BOARD
     fi
+
+    ci_genversion
+
+    BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
+    ccache --zero-stats || true
+    cmake --build $BUILD_DIR -j 2
+    ccache --show-stats || true
 
     log_inform "Copying .uf2 to $(pwd)/$CI_RELEASE_FILENAME.uf2"
     cp "$BUILD_DIR/firmware.uf2" $CI_RELEASE_FILENAME.uf2
@@ -129,6 +132,19 @@ function ci_cmake_build {
         log_inform "Copying -with-filesystem .uf2 to $(pwd)/$CI_RELEASE_FILENAME-with-filesystem.uf2"
         cp "$BUILD_DIR/firmware-with-filesystem.uf2" $CI_RELEASE_FILENAME-with-filesystem.uf2
     fi
+}
+
+function ci_genversion {
+    MICROPYTHON_SHA=`cd $CI_BUILD_ROOT/micropython && git describe --always --long --abbrev=40 HEAD`
+    PIMORONI_PICO_SHA=`cd $CI_BUILD_ROOT/pimoroni-pico && git describe --always --long --abbrev=40 HEAD`
+    RELEASE_FILE="$CI_RELEASE_FILENAME"
+
+    cat << EOF > "$CI_BUILD_ROOT/micropython/ports/rp2/modules/version.py"
+DATE="`date`"
+BUILD="$RELEASE_FILE"
+MICROPYTHON_SHA="$MICROPYTHON_SHA"
+PIMORONI_PICO_SHA="$PIMORONI_PICO_SHA"
+EOF
 }
 
 if [ -z ${CI_USE_ENV+x} ] || [ -z ${CI_PROJECT_ROOT+x} ] || [ -z ${CI_BUILD_ROOT+x} ]; then

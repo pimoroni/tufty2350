@@ -49,9 +49,6 @@ include(motor/micropython)
 # Sleep / Wake Reason
 include(modules/c/powman/micropython)
 
-# Still required for version.py
-include(modules_py/modules_py)
-
 # C++ Magic Memory
 include(cppmem/micropython)
 
