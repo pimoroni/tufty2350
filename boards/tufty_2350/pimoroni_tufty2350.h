@@ -17,6 +17,42 @@
 #ifndef _BOARDS_PICO2_W_H
 #define _BOARDS_PICO2_W_H
 
+// Board config
+// RTC = PCF85063e
+#define BW_RTC_I2C       i2c0
+#define BW_RTC_ADDR      (0x51)
+#define BW_RTC_I2C_SDA   (4)
+#define BW_RTC_I2C_SCL   (5)
+
+// Rear white LEDs
+#define BW_LED_0         (0)
+#define BW_LED_1         (1)
+#define BW_LED_2         (3)
+#define BW_LED_3         (4)
+
+// User inputs
+#define BW_SWITCH_A      (7)
+#define BW_SWITCH_B      (8)
+#define BW_SWITCH_C      (9)
+#define BW_SWITCH_UP     (10)
+#define BW_SWITCH_DOWN   (6)
+
+// This is wired to the RESET (Disk / Sleep / Reset / Power On)
+// button and used to determine long press status
+#define BW_RESET_SW      (14) // No pull, active high?
+
+#define BW_CHARGE_STAT   (12)
+
+// I2C power for talking to RTC
+#define BW_SW_POWER_EN   (27)
+
+// Interrupt channels for GPIO wakeup
+#define BW_VBUS_DETECT   (11) // No pull, active high?
+#define BW_RTC_ALARM     (13) // Pull up, active low
+#define BW_SWITCH_USER   (22) // AKA boot
+#define BW_SWITCH_INT    (15) // Pull up, active low
+#define BW_SWITCH_MASK   ((1 << BW_SWITCH_A) | (1 << BW_SWITCH_B) | (1 << BW_SWITCH_C) | (1 << BW_SWITCH_UP) | (1 << BW_SWITCH_DOWN))
+
 // For board detection
 #define RASPBERRYPI_PICO2_W
 

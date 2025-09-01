@@ -3,6 +3,8 @@
 
 static powman_power_state off_state;
 static powman_power_state on_state;
+bool powman_wake_with_doubletap;
+uint32_t user_button_state = 0;
 
 //#define DEBUG
 
@@ -14,7 +16,82 @@ uint8_t powman_get_wake_reason(void) {
     // 4 = pwrup3 (GPIO interrupt 3)
     // 5 = coresight_pwrup
     // 6 = alarm_pwrup (timeout or alarm wakeup)
-    return powman_hw->last_swcore_pwrup & 0x7f;
+    // 7 = powman_wake_with_doubletap
+    return (powman_hw->last_swcore_pwrup & 0x7f) | (powman_wake_with_doubletap ? POWMAN_DOUBLETAP : 0);
+}
+
+uint32_t powman_get_user_switches(void) {
+    return user_button_state;
+}
+
+void i2c_enable(void) {
+    gpio_init(BW_SW_POWER_EN);
+    gpio_set_dir(BW_SW_POWER_EN, GPIO_OUT);
+    gpio_put(BW_SW_POWER_EN, 1);
+
+    sleep_ms(500);
+
+    i2c_init(BW_RTC_I2C, 400 * 1000);
+    gpio_set_function(BW_RTC_I2C_SDA, GPIO_FUNC_I2C);
+    gpio_set_function(BW_RTC_I2C_SCL, GPIO_FUNC_I2C);
+}
+
+void i2c_disable(void) {
+    gpio_put(BW_RTC_I2C_SDA, 0);
+    gpio_init(BW_RTC_I2C_SCL);
+}
+
+static inline uint8_t pcf85063_get_timer_flag() {
+    uint8_t buf = 0x01;
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, &buf, 1, false);
+    i2c_read_blocking(BW_RTC_I2C, BW_RTC_ADDR, (uint8_t *)&buf, 1, false);
+    return (buf & 0x08) == 0x08;
+}
+
+static inline void pcf85063_clear_timer_flag() {
+    uint8_t buf[2] = {0x01, 0b00000000}; // Control_2
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+}
+
+static inline void pcf85063_disable_interrupt() {
+    // Disable RTC timer interrupt
+    uint8_t data3[2] = {0x11, 0b00000000};
+    i2c_write_blocking(BW_RTC_I2C, 0x51, data3, 2, false);
+}
+
+void pcf85063_wakeup_init(uint8_t period) {
+    // Set up the RTC to countdown before triggering wake
+
+    // Set default timer frequency to minutes (1/60Hz)
+    uint8_t timer_mode = 0b00010000; // 0b11 == minutes, 0b10 == seconds
+
+    uint8_t buf[2] = {0};
+
+    buf[0] = 0x00; // Control_1
+    buf[1] = 0b00000000; // Ensure default values
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+
+    buf[0] = 0x11; // Timer_mode
+    buf[1] = timer_mode; // interrupt disable + timer disable
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+
+    // Clear any prior interrupt flags
+    // And ensure a 32738 Hz clockout
+    pcf85063_clear_timer_flag();
+
+    // Switch into seconds to time anything 4 minutes and under
+    //if (period <= 4) {
+    //    period *= 60;
+    //    timer_mode = 0b00010000; // 0b10 == seconds
+    //}
+
+    buf[0] = 0x10; // Timer_value
+    buf[1] = period; // Set the timer period (in seconds)
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+
+    buf[0] = 0x11; // Timer_mode
+    buf[1] = timer_mode | 0b00000111; // interrupt enable + timer enable
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
 }
 
 void powman_init() {
@@ -147,4 +224,114 @@ int powman_off_for_ms(uint64_t duration_ms) {
 
     uint64_t ms = powman_timer_get_ms();
     return powman_off_until_time(ms + duration_ms);
+}
+
+static inline bool double_tap_flag_is_set(void) {
+    return powman_hw->chip_reset & POWMAN_CHIP_RESET_DOUBLE_TAP_BITS;
+}
+
+static inline void set_double_tap_flag(void) {
+    powman_set_bits(&powman_hw->chip_reset, POWMAN_CHIP_RESET_DOUBLE_TAP_BITS);
+}
+
+static inline void clear_double_tap_flag(void) {
+    powman_clear_bits(&powman_hw->chip_reset, POWMAN_CHIP_RESET_DOUBLE_TAP_BITS);
+}
+
+static inline void setup_gpio(bool buttons_only) {
+    // Init all button GPIOs
+    gpio_init_mask(BW_SWITCH_MASK);
+    gpio_set_dir_in_masked(BW_SWITCH_MASK);
+    gpio_set_pulls(BW_SWITCH_A, true, false);
+    gpio_set_pulls(BW_SWITCH_B, true, false);
+    gpio_set_pulls(BW_SWITCH_C, true, false);
+    gpio_set_pulls(BW_SWITCH_UP, true, false);
+    gpio_set_pulls(BW_SWITCH_DOWN, true, false);
+
+    if(buttons_only) {
+        return;
+    }
+
+    // Init the button interrupt
+    gpio_init(BW_SWITCH_INT);
+    gpio_set_dir(BW_SWITCH_INT, GPIO_IN);
+    gpio_set_pulls(BW_SWITCH_INT, true, false);
+
+    // Init the RTC interrupt
+    gpio_init(BW_RTC_ALARM);
+    gpio_set_dir(BW_RTC_ALARM, GPIO_IN);
+    gpio_set_pulls(BW_RTC_ALARM, true, false);
+
+    // Init the VBUS detect
+    gpio_init(BW_VBUS_DETECT);
+    gpio_set_dir(BW_VBUS_DETECT, GPIO_IN);
+
+    // Set up LEDs
+    gpio_init_mask(0b1111);
+    gpio_set_dir_out_masked(0b1111);
+
+    // Set up long press detect
+    gpio_init(BW_RESET_SW);
+    gpio_set_dir(BW_RESET_SW, GPIO_IN);
+    gpio_pull_up(BW_RESET_SW);
+
+    // Enable I2C power
+    gpio_init(BW_SW_POWER_EN);
+    gpio_set_dir(BW_SW_POWER_EN, GPIO_OUT);
+    gpio_put(BW_SW_POWER_EN, 1);
+}
+
+// Latch inputs, disable RTC interrupt
+static inline void setup_system(void) {
+    user_button_state = ~gpio_get_all();
+    sleep_ms(5);
+    user_button_state |= ~gpio_get_all();
+
+    i2c_enable();
+    pcf85063_disable_interrupt();
+}
+
+static void __attribute__((constructor)) powman_startup(void) {
+    setup_gpio(false);
+
+    // If we haven't reset via a button press we ought not to delay startup
+    if (!(powman_hw->chip_reset & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS)) return;
+
+    if (!double_tap_flag_is_set()) {
+        // Arm, wait, then disarm and continue booting
+        set_double_tap_flag();
+
+        for(int i = 0; i < POWMAN_DOUBLE_RESET_TIMEOUT_MS / 50; i++) {
+            // DEBUG: Crudely flicker leds
+            gpio_put_masked(0b1111, i & 1);
+            busy_wait_us(50 * 1000);
+        }
+        gpio_put_masked(0b1111, 0);
+        clear_double_tap_flag();
+        if(gpio_get(BW_RESET_SW) == 0) {
+            // If the reset sw is pressed at this point, assume it's held
+            powman_init();
+
+            // We must set the pulls on the user buttons or they will not be sufficient
+            // to trigger the interrupt pin
+            setup_gpio(true);
+
+            int err;
+            //(void)powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP0_CH, BW_VBUS_DETECT, true, true, 1000);
+            err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP1_CH, BW_RTC_ALARM, true, false, 1000);
+            //err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP2_CH, BW_RESET_SW, true, true, 1000);
+            err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP3_CH, BW_SWITCH_INT, true, false, 1000);
+            (void)err;
+
+            i2c_disable();
+            int rc = powman_off();
+            hard_assert(rc == PICO_OK);
+            hard_assert(false); // should never get here!
+        }
+        setup_system();
+        return;
+    }
+    clear_double_tap_flag();
+    powman_wake_with_doubletap = true;
+    setup_system();
 }

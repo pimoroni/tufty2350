@@ -21,3 +21,8 @@ int mp_hal_is_pin_reserved(int n);
 #define MICROPY_HW_PIN_RESERVED(i) mp_hal_is_pin_reserved(i)
 
 #define MICROPY_PY_THREAD                       (0)
+
+#define MICROPY_HW_USB_MSC                      (1)
+#define MICROPY_HW_USB_DESC_STR_MAX             (40)
+#define MICROPY_HW_USB_MANUFACTURER_STRING      "Pimoroni"
+#define MICROPY_HW_USB_PRODUCT_FS_STRING        MICROPY_HW_BOARD_NAME " MicroPython"

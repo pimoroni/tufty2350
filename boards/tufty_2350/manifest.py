@@ -5,4 +5,6 @@ require("umqtt.simple")
 # Bluetooth
 require("aioble")
 
+freeze("$(BOARD_DIR)", "version.py")
+
 include("../manifest-common.py")
