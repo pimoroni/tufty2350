@@ -38,8 +38,7 @@ BUTTONS = {
     BUTTON_HOME
 }
 
-LIGHT_POWER = machine.Pin("SENSOR_POWER", machine.Pin.OUT)
-LIGHT_SENSOR = machine.ADC(machine.Pin("LIGHT_SENSE_ADC"))
+LIGHT_SENSOR = machine.ADC(machine.Pin("LIGHT_SENSE"))
 
 cppmem.set_mode(cppmem.MICROPYTHON)
 
@@ -96,8 +95,5 @@ class Tufty2350():
         powman.sleep()
 
     def get_light(self):
-        LIGHT_POWER.value(1)
-        reading = LIGHT_SENSOR.read_u16()
-        LIGHT_POWER.value(0)
-
-        return reading
+        # TODO: Returning the raw u16 is a little meh here, can we do an approx lux conversion?
+        return LIGHT_SENSOR.read_u16()
