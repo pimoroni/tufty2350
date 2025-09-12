@@ -113,10 +113,9 @@ void powman_init() {
     // Does this accomplish *anything*?
     //pll_deinit(pll_sys);
 
-    // Set all pins to input (as far as SIO is concerned)
-    gpio_set_dir_all_bits(0);
     for (int i = 0; i < NUM_BANK0_GPIOS; ++i) {
         gpio_set_function(i, GPIO_FUNC_SIO);
+        gpio_set_dir(i, GPIO_IN);
         gpio_set_input_enabled(i, false);
         switch (i) {
             case 14:

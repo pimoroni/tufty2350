@@ -44,7 +44,7 @@
 #define BW_CHARGE_STAT   (12)
 
 // I2C power for talking to RTC
-#define BW_SW_POWER_EN   (27)
+#define BW_SW_POWER_EN   (41)
 
 // Interrupt channels for GPIO wakeup
 #define BW_VBUS_DETECT   (11) // No pull, active high?
