@@ -9,7 +9,7 @@ from picovector import (ANTIALIAS_BEST, HALIGN_CENTER, PicoVector, Polygon,
 
 # Display Setup
 display = tufty2350.Tufty2350()
-display.led(128)
+# display.led(128)
 display.set_backlight(1.0)
 
 # Pico Vector

@@ -9,7 +9,7 @@ import tufty_os
 import time
 
 display = tufty2350.Tufty2350()
-display.led(0)
+# display.led(0)
 display.set_thickness(2)
 
 # Pico Vector
@@ -68,7 +68,7 @@ def wait_for_user_to_release_buttons():
 
 def render():
 
-    display.led(128)
+    # display.led(128)
 
     # Clear to white
     display.set_pen(BACKGROUND)
@@ -114,7 +114,7 @@ def render():
 
     # Update the screen!
     display.update()
-    display.led(0)
+    #  display.led(0)
 
 
 def button(pin):

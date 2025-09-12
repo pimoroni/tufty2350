@@ -24,7 +24,7 @@ import tufty2350
 # Setup for the display
 display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
-display.led(0)
+# display.led(0)
 
 # Get the width and height from the display
 WIDTH, HEIGHT = display.get_bounds()

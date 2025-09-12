@@ -84,7 +84,7 @@ ezwifi.connect(verbose=True, retries=3)
 
 def get_data():
 
-    display.led(128)
+    # display.led(128)
 
     try:
         global weathercode, temperature, windspeed, winddirection, date, weather_time
@@ -104,10 +104,10 @@ def get_data():
         date, weather_time = current["time"].split("T")
 
         r.close()
-        display.led(0)
+        # display.led(0)
     except OSError:
         temperature = None
-        display.led(0)
+        # display.led(0)
 
 
 def calculate_bearing(d):

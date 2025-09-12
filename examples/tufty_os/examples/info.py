@@ -13,7 +13,7 @@ LINE_HEIGHT = 15
 version = version.BUILD
 
 display = tufty2350.Tufty2350()
-display.led(128)
+# display.led(128)
 
 # Colours
 BACKGROUND = display.create_pen(154, 203, 208)

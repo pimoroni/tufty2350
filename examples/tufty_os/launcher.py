@@ -46,7 +46,7 @@ if state["running"] != "launcher":
 
 display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
-display.led(0)
+# display.led(0)
 
 # Colours
 BACKGROUND = display.create_pen(*state["colours"][0])

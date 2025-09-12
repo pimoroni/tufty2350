@@ -10,7 +10,7 @@ from tufty2350 import WIDTH
 LINE_HEIGHT = 20
 
 display = tufty2350.Tufty2350()
-display.led(128)
+# display.led(128)
 
 # Pico Vector
 vector = PicoVector(display.display)

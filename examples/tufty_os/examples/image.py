@@ -17,7 +17,7 @@ TOTAL_IMAGES = 0
 
 # Turn the act LED on as soon as possible
 display = tufty2350.Tufty2350()
-display.led(128)
+# display.led(128)
 display.set_update_speed(tufty2350.UPDATE_NORMAL)
 
 jpeg = jpegdec.JPEG(display.display)

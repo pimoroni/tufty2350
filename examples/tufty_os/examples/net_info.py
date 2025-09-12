@@ -10,7 +10,7 @@ from tufty2350 import HEIGHT, WIDTH
 
 # Display Setup
 display = tufty2350.Tufty2350()
-display.led(0)
+# display.led(0)
 
 # Pico Vector
 vector = PicoVector(display.display)
@@ -46,7 +46,7 @@ def draw_header():
 
 def connect_handler(wifi):
     # Make sure the LED is on to signal the WiFi has connected
-    display.led(128)
+    # display.led(128)
 
     # Draw the title header
     draw_header()
@@ -68,7 +68,7 @@ def connect_handler(wifi):
 
 def failed_handler(_wifi):
     # Make sure the LED is OFF to signal the WiFi has not connected
-    display.led(0)
+    # display.led(0)
 
     # Draw the title header
     draw_header()
@@ -90,7 +90,7 @@ def failed_handler(_wifi):
     display.update()
 
 
-display.led(128)
+# display.led(128)
 draw_header()
 display.set_pen(HIGHLIGHT)
 display.text("Connecting...", 5, 120, WIDTH - 15, 2)
