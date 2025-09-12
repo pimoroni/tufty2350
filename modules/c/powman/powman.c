@@ -120,9 +120,9 @@ void powman_init() {
         switch (i) {
             case 14:
             case 22:
-            case 26:
-            case 27:
-            case 28: // Floating
+            case 40:
+            case 41:
+            case 42: // Floating
                 gpio_disable_pulls(i);
                 break;
             case BW_SWITCH_A:
