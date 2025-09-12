@@ -3,6 +3,8 @@
 
 static powman_power_state off_state;
 static powman_power_state on_state;
+bool powman_wake_with_doubletap;
+uint32_t user_button_state = 0;
 
 //#define DEBUG
 
@@ -14,7 +16,83 @@ uint8_t powman_get_wake_reason(void) {
     // 4 = pwrup3 (GPIO interrupt 3)
     // 5 = coresight_pwrup
     // 6 = alarm_pwrup (timeout or alarm wakeup)
-    return powman_hw->last_swcore_pwrup & 0x7f;
+    // 7 = powman_wake_with_doubletap
+    return (powman_hw->last_swcore_pwrup & 0x7f) | (powman_wake_with_doubletap ? POWMAN_DOUBLETAP : 0);
+}
+
+uint32_t powman_get_user_switches(void) {
+    return user_button_state;
+}
+
+void i2c_enable(void) {
+    gpio_init(BW_SW_POWER_EN);
+    gpio_set_dir(BW_SW_POWER_EN, GPIO_OUT);
+    gpio_put(BW_SW_POWER_EN, 1);
+
+    sleep_ms(500);
+
+    i2c_init(BW_RTC_I2C, 400 * 1000);
+    gpio_set_function(BW_RTC_I2C_SDA, GPIO_FUNC_I2C);
+    gpio_set_function(BW_RTC_I2C_SCL, GPIO_FUNC_I2C);
+}
+
+void i2c_disable(void) {
+    gpio_init(BW_SW_POWER_EN);
+    gpio_init(BW_RTC_I2C_SDA);
+    gpio_init(BW_RTC_I2C_SCL);
+}
+
+static inline uint8_t pcf85063_get_timer_flag() {
+    uint8_t buf = 0x01;
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, &buf, 1, false);
+    i2c_read_blocking(BW_RTC_I2C, BW_RTC_ADDR, (uint8_t *)&buf, 1, false);
+    return (buf & 0x08) == 0x08;
+}
+
+static inline void pcf85063_clear_timer_flag() {
+    uint8_t buf[2] = {0x01, 0b00000000}; // Control_2
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+}
+
+static inline void pcf85063_disable_interrupt() {
+    // Disable RTC timer interrupt
+    uint8_t data3[2] = {0x11, 0b00000000};
+    i2c_write_blocking(BW_RTC_I2C, 0x51, data3, 2, false);
+}
+
+void pcf85063_wakeup_init(uint8_t period) {
+    // Set up the RTC to countdown before triggering wake
+
+    // Set default timer frequency to minutes (1/60Hz)
+    uint8_t timer_mode = 0b00010000; // 0b11 == minutes, 0b10 == seconds
+
+    uint8_t buf[2] = {0};
+
+    buf[0] = 0x00; // Control_1
+    buf[1] = 0b00000000; // Ensure default values
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+
+    buf[0] = 0x11; // Timer_mode
+    buf[1] = timer_mode; // interrupt disable + timer disable
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+
+    // Clear any prior interrupt flags
+    // And ensure a 32738 Hz clockout
+    pcf85063_clear_timer_flag();
+
+    // Switch into seconds to time anything 4 minutes and under
+    //if (period <= 4) {
+    //    period *= 60;
+    //    timer_mode = 0b00010000; // 0b10 == seconds
+    //}
+
+    buf[0] = 0x10; // Timer_value
+    buf[1] = period; // Set the timer period (in seconds)
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
+
+    buf[0] = 0x11; // Timer_mode
+    buf[1] = timer_mode | 0b00000111; // interrupt enable + timer enable
+    i2c_write_blocking(BW_RTC_I2C, BW_RTC_ADDR, buf, 2, false);
 }
 
 void powman_init() {
@@ -29,21 +107,57 @@ void powman_init() {
     //clock_configure_undivided(clk_peri, 0, CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLK_SYS, 32.768f * KHZ);
     //powman_timer_set_1khz_tick_source_lposc_with_hz(32768);
 
-    powman_timer_set_1khz_tick_source_lposc();
-    pll_deinit(pll_sys);
+    // Redundant? - we're using the RTC clock
+    //powman_timer_set_1khz_tick_source_lposc();
+
+    // Does this accomplish *anything*?
+    //pll_deinit(pll_sys);
 
     // Set all pins to input (as far as SIO is concerned)
     gpio_set_dir_all_bits(0);
     for (int i = 0; i < NUM_BANK0_GPIOS; ++i) {
         gpio_set_function(i, GPIO_FUNC_SIO);
-        if (i > NUM_BANK0_GPIOS - NUM_ADC_CHANNELS) {
-            gpio_disable_pulls(i);
-            gpio_set_input_enabled(i, false);
+        gpio_set_input_enabled(i, false);
+        switch (i) {
+            case 14:
+            case 22:
+            case 26:
+            case 27:
+            case 28: // Floating
+                gpio_disable_pulls(i);
+                break;
+            case BW_SWITCH_A:
+            case BW_SWITCH_B:
+            case BW_SWITCH_C:
+            case BW_SWITCH_UP:
+            case BW_SWITCH_DOWN: // Don't mess with the button pulls, must be pulled up
+                break;
+            default: // Pull down
+                gpio_set_pulls(i, false, true);
         }
     }
 
     // Unlock the VREG control interface
     hw_set_bits(&powman_hw->vreg_ctrl, POWMAN_PASSWORD_BITS | POWMAN_VREG_CTRL_UNLOCK_BITS);
+
+    // Reset usb controller
+    reset_block_mask(RESETS_RESET_USBCTRL_BITS);
+    unreset_block_mask_wait_blocking(RESETS_RESET_USBCTRL_BITS);
+
+    // Mux the controller to the onboard usb phy
+    usb_hw->muxing = USB_USB_MUXING_TO_PHY_BITS | USB_USB_MUXING_SOFTCON_BITS;
+
+    // Initializes the USB peripheral for device mode and enables it.
+    // Don't need to enable the pull up here. Force VBUS
+    usb_hw->main_ctrl = USB_MAIN_CTRL_CONTROLLER_EN_BITS;
+
+    // Enable individual controller IRQS here. Processor interrupt enable will be used
+    // for the global interrupt enable...
+    // Note: Force VBUS detect cause disconnection not detectable
+    usb_hw->sie_ctrl = USB_SIE_CTRL_EP0_INT_1BUF_BITS;
+    usb_hw->inte = USB_INTS_BUFF_STATUS_BITS | USB_INTS_BUS_RESET_BITS | USB_INTS_SETUP_REQ_BITS |
+                    USB_INTS_DEV_SUSPEND_BITS | USB_INTS_DEV_RESUME_FROM_HOST_BITS | USB_INTS_DEV_CONN_DIS_BITS;
+
 
     // Turn off USB PHY and apply pull downs on DP & DM
     usb_hw->phy_direct = USB_USBPHY_DIRECT_TX_PD_BITS | USB_USBPHY_DIRECT_RX_PD_BITS | USB_USBPHY_DIRECT_DM_PULLDN_EN_BITS | USB_USBPHY_DIRECT_DP_PULLDN_EN_BITS;
@@ -147,4 +261,114 @@ int powman_off_for_ms(uint64_t duration_ms) {
 
     uint64_t ms = powman_timer_get_ms();
     return powman_off_until_time(ms + duration_ms);
+}
+
+static inline bool double_tap_flag_is_set(void) {
+    return powman_hw->chip_reset & POWMAN_CHIP_RESET_DOUBLE_TAP_BITS;
+}
+
+static inline void set_double_tap_flag(void) {
+    powman_set_bits(&powman_hw->chip_reset, POWMAN_CHIP_RESET_DOUBLE_TAP_BITS);
+}
+
+static inline void clear_double_tap_flag(void) {
+    powman_clear_bits(&powman_hw->chip_reset, POWMAN_CHIP_RESET_DOUBLE_TAP_BITS);
+}
+
+static inline void setup_gpio(bool buttons_only) {
+    // Init all button GPIOs
+    gpio_init_mask(BW_SWITCH_MASK);
+    gpio_set_dir_in_masked(BW_SWITCH_MASK);
+    gpio_set_pulls(BW_SWITCH_A, true, false);
+    gpio_set_pulls(BW_SWITCH_B, true, false);
+    gpio_set_pulls(BW_SWITCH_C, true, false);
+    gpio_set_pulls(BW_SWITCH_UP, true, false);
+    gpio_set_pulls(BW_SWITCH_DOWN, true, false);
+
+    if(buttons_only) {
+        return;
+    }
+
+    // Init the button interrupt
+    gpio_init(BW_SWITCH_INT);
+    gpio_set_dir(BW_SWITCH_INT, GPIO_IN);
+    gpio_set_pulls(BW_SWITCH_INT, true, false);
+
+    // Init the RTC interrupt
+    gpio_init(BW_RTC_ALARM);
+    gpio_set_dir(BW_RTC_ALARM, GPIO_IN);
+    gpio_set_pulls(BW_RTC_ALARM, true, false);
+
+    // Init the VBUS detect
+    gpio_init(BW_VBUS_DETECT);
+    gpio_set_dir(BW_VBUS_DETECT, GPIO_IN);
+
+    // Set up LEDs
+    gpio_init_mask(0b1111);
+    gpio_set_dir_out_masked(0b1111);
+
+    // Set up long press detect
+    gpio_init(BW_RESET_SW);
+    gpio_set_dir(BW_RESET_SW, GPIO_IN);
+    gpio_pull_up(BW_RESET_SW);
+
+    // Enable I2C power
+    gpio_init(BW_SW_POWER_EN);
+    gpio_set_dir(BW_SW_POWER_EN, GPIO_OUT);
+    gpio_put(BW_SW_POWER_EN, 1);
+}
+
+// Latch inputs, disable RTC interrupt
+static inline void setup_system(void) {
+    user_button_state = ~gpio_get_all();
+    sleep_ms(5);
+    user_button_state |= ~gpio_get_all();
+
+    i2c_enable();
+    pcf85063_disable_interrupt();
+}
+
+static void __attribute__((constructor)) powman_startup(void) {
+    setup_gpio(false);
+
+    // If we haven't reset via a button press we ought not to delay startup
+    if (!(powman_hw->chip_reset & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS)) return;
+
+    if (!double_tap_flag_is_set()) {
+        // Arm, wait, then disarm and continue booting
+        set_double_tap_flag();
+
+        for(int i = 0; i < POWMAN_DOUBLE_RESET_TIMEOUT_MS / 50; i++) {
+            // DEBUG: Crudely flicker leds
+            gpio_put_masked(0b1111, i & 1);
+            busy_wait_us(50 * 1000);
+        }
+        gpio_put_masked(0b1111, 0);
+        clear_double_tap_flag();
+        if(gpio_get(BW_RESET_SW) == 0) {
+            // If the reset sw is pressed at this point, assume it's held
+            powman_init();
+
+            // We must set the pulls on the user buttons or they will not be sufficient
+            // to trigger the interrupt pin
+            setup_gpio(true);
+
+            int err;
+            //(void)powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP0_CH, BW_VBUS_DETECT, true, true, 1000);
+            err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP1_CH, BW_RTC_ALARM, true, false, 1000);
+            //err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP2_CH, BW_RESET_SW, true, true, 1000);
+            err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP3_CH, BW_SWITCH_INT, true, false, 1000);
+            (void)err;
+
+            i2c_disable();
+            int rc = powman_off();
+            hard_assert(rc == PICO_OK);
+            hard_assert(false); // should never get here!
+        }
+        setup_system();
+        return;
+    }
+    clear_double_tap_flag();
+    powman_wake_with_doubletap = true;
+    setup_system();
 }
