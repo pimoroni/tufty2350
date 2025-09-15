@@ -288,6 +288,11 @@ static inline void setup_gpio(bool buttons_only) {
         return;
     }
 
+    // Init the home button
+    gpio_init(BW_SWITCH_HOME);
+    gpio_set_dir(BW_SWITCH_HOME, GPIO_IN);
+    gpio_set_pulls(BW_SWITCH_HOME, true, false);
+
     // Init the button interrupt
     gpio_init(BW_SWITCH_INT);
     gpio_set_dir(BW_SWITCH_INT, GPIO_IN);
@@ -317,21 +322,28 @@ static inline void setup_gpio(bool buttons_only) {
     gpio_put(BW_SW_POWER_EN, 1);
 }
 
-// Latch inputs, disable RTC interrupt
-static inline void setup_system(void) {
+// Latch inputs
+static inline void latch_inputs(void) {
     user_button_state = ~gpio_get_all();
     sleep_ms(5);
     user_button_state |= ~gpio_get_all();
+}
 
+// disable RTC interrupt
+static inline void setup_system(void) {
     i2c_enable();
     pcf85063_disable_interrupt();
 }
 
 static void __attribute__((constructor)) powman_startup(void) {
     setup_gpio(false);
+    latch_inputs();
 
     // If we haven't reset via a button press we ought not to delay startup
-    if (!(powman_hw->chip_reset & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS)) return;
+    if (!(powman_hw->chip_reset & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS)) {
+        setup_system();
+        return;
+    };
 
     if (!double_tap_flag_is_set()) {
         // Arm, wait, then disarm and continue booting
