@@ -1,6 +1,7 @@
 import cppmem
 import machine
 import powman
+import micropython
 from picographics import DISPLAY_EXPLORER, PicoGraphics
 
 
