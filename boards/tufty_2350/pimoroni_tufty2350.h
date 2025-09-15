@@ -49,7 +49,7 @@
 // Interrupt channels for GPIO wakeup
 #define BW_VBUS_DETECT   (11) // No pull, active high?
 #define BW_RTC_ALARM     (13) // Pull up, active low
-#define BW_SWITCH_USER   (22) // AKA boot
+#define BW_SWITCH_HOME   (22) // AKA boot
 #define BW_SWITCH_INT    (15) // Pull up, active low
 #define BW_SWITCH_MASK   ((1 << BW_SWITCH_A) | (1 << BW_SWITCH_B) | (1 << BW_SWITCH_C) | (1 << BW_SWITCH_UP) | (1 << BW_SWITCH_DOWN))
 
