@@ -1,6 +1,7 @@
 # cmake file for Raspberry Pi Pico 2 W
 set(PICO_BOARD "pimoroni_tufty2350")
 set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR})
+set(PICO_PLATFORM "rp2350")
 set(PICO_NUM_GPIOS 48)
 
 # Board specific version of the frozen manifest

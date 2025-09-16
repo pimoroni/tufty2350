@@ -18,72 +18,111 @@ enum {
     WAKE_BUTTON_A = 0x00,
     WAKE_BUTTON_B,
     WAKE_BUTTON_C,
-    WAKE_TIMER = 0xf0,
+    WAKE_BUTTON_UP,
+    WAKE_BUTTON_DOWN,
+    WAKE_DOUBLETAP,     // Reset was double-pressed
+    WAKE_USER_SW,       // User-switch on reverse of board
+    WAKE_VBUS_DETECT,   // USB VBUS
+    WAKE_RTC,           // Onboard RTC alarm interrupt
+    WAKE_ALARM = 0xf0,  // Internal timer timeout
     WAKE_UNKNOWN = 0xff,
 };
 
 mp_obj_t _sleep_get_wake_reason(void) {
     uint8_t wake_reason = powman_get_wake_reason();
-    if(wake_reason & POWMAN_WAKE_ALARM) {
-        return MP_ROM_INT(WAKE_TIMER);
-    }
-    if(wake_reason & POWMAN_WAKE_PWRUP0) return MP_ROM_INT(WAKE_BUTTON_A);
-    if(wake_reason & POWMAN_WAKE_PWRUP1) return MP_ROM_INT(WAKE_BUTTON_B);
-    if(wake_reason & POWMAN_WAKE_PWRUP2) return MP_ROM_INT(WAKE_BUTTON_C);
+    if(wake_reason & POWMAN_WAKE_PWRUP0) return MP_ROM_INT(WAKE_VBUS_DETECT);
+    if(wake_reason & POWMAN_WAKE_PWRUP1) return MP_ROM_INT(WAKE_RTC);
+    if(wake_reason & POWMAN_WAKE_PWRUP2) return MP_ROM_INT(WAKE_USER_SW);
+    if(wake_reason & POWMAN_WAKE_PWRUP3) {
+        uint32_t user_sw = powman_get_user_switches();
+        // One of the buttons has been pressed? figure out which...
+        // Note this is a first input wins scenario, if the user wants more
+        // specific information about *which* buttons were pressed at startup
+        // (ie: if there are multiple) they should call get_wake_buttons.
+        if(user_sw & (1 << BW_SWITCH_A))    return MP_ROM_INT(WAKE_BUTTON_A);
+        if(user_sw & (1 << BW_SWITCH_B))    return MP_ROM_INT(WAKE_BUTTON_B);
+        if(user_sw & (1 << BW_SWITCH_C))    return MP_ROM_INT(WAKE_BUTTON_C);
+        if(user_sw & (1 << BW_SWITCH_UP))   return MP_ROM_INT(WAKE_BUTTON_UP);
+        if(user_sw & (1 << BW_SWITCH_DOWN)) return MP_ROM_INT(WAKE_BUTTON_DOWN);
+        return mp_obj_new_int(user_sw);
+    };
+    if(wake_reason & POWMAN_DOUBLETAP)   return MP_ROM_INT(WAKE_DOUBLETAP);
+    if(wake_reason & POWMAN_WAKE_ALARM)  return MP_ROM_INT(WAKE_ALARM);
     return MP_ROM_INT(WAKE_UNKNOWN);
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(_sleep_get_wake_reason_obj, _sleep_get_wake_reason);
 
-/*! \brief Send system to sleep until the specified GPIO changes
+mp_obj_t _sleep_get_wake_buttons(void) {
+    uint32_t user_sw = powman_get_user_switches();
+    mp_obj_t tuple_items[5];
+    int i = 0;
+    if(user_sw & (1 << BW_SWITCH_A)) {tuple_items[i] = machine_pin_find(mp_obj_new_int(BW_SWITCH_A));i++;}
+    if(user_sw & (1 << BW_SWITCH_B)) {tuple_items[i] = machine_pin_find(mp_obj_new_int(BW_SWITCH_B));i++;}
+    if(user_sw & (1 << BW_SWITCH_C)) {tuple_items[i] = machine_pin_find(mp_obj_new_int(BW_SWITCH_C));i++;}
+    if(user_sw & (1 << BW_SWITCH_UP)) {tuple_items[i] = machine_pin_find(mp_obj_new_int(BW_SWITCH_UP));i++;}
+    if(user_sw & (1 << BW_SWITCH_DOWN)) {tuple_items[i] = machine_pin_find(mp_obj_new_int(BW_SWITCH_DOWN));i++;}
+    return mp_obj_new_tuple(i, tuple_items);
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(_sleep_get_wake_buttons_obj, _sleep_get_wake_buttons);
+
+/*! \brief Send system to sleep (pressing reset will always wake it)
+ */
+mp_obj_t _shipping_mode(void) {
+    int err;
+    powman_init();
+    err = powman_off();
+    hard_assert(err == PICO_OK);
+    hard_assert(false); // should never get here!
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(_shipping_mode_obj, _shipping_mode);
+
+
+/*! \brief Send system to sleep until a button/system interrupt occurs
  *
- * \param gpio_pin The pin to provide the wake up
- * \param edge true for leading edge, false for trailing edge
- * \param high true for active high, false for active low
  * \param timeout wakeup after timeout milliseconds if no edge occurs
  */
-mp_obj_t _sleep_goto_dormant_until_pin(size_t n_args, const mp_obj_t *args) {
-    enum { ARG_pin, ARG_edge, ARG_high, ARG_timeout };
+mp_obj_t _sleep_sleep(size_t n_args, const mp_obj_t *args) {
+    enum { ARG_timeout };
 
-    uint pin = UINT16_MAX;
-    if(args[ARG_pin] != mp_const_none) {
-        pin = mp_hal_get_pin_obj(args[ARG_pin]);
-    }
-    bool edge = mp_obj_is_true(args[ARG_edge]);
-    bool high = mp_obj_is_true(args[ARG_high]);
     uint64_t timeout_ms = 0;
+    int err;
 
-    if (n_args == 4) {
+    if (n_args == 1) {
         timeout_ms = (uint64_t)mp_obj_get_float(args[ARG_timeout]) * 1000;
     }
 
     powman_init();
 
-    if (pin != UINT16_MAX) {
-        powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP0_CH, pin, edge, high, 1000);
-    } else {
-        int err = 0;
-        err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP0_CH, 12, edge, high, 1000); // Tufty Button A
-        if (err == -1) {mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Timeout waiting for Button A"));}
-        err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP1_CH, 13, edge, high, 1000); // Tufty Button B
-        if (err == -1) {mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Timeout waiting for Button B"));}
-        err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP2_CH, 14, edge, high, 1000); // Tufty Button C
-        if (err == -1) {mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Timeout waiting for Button C"));}
-    }
+    // We must set the pulls on the user buttons or they will not be sufficient
+    // to trigger the interrupt pin
+    gpio_init_mask(BW_SWITCH_MASK);
+    gpio_set_dir_in_masked(BW_SWITCH_MASK);
+    gpio_set_pulls(BW_SWITCH_A, true, false);
+    gpio_set_pulls(BW_SWITCH_B, true, false);
+    gpio_set_pulls(BW_SWITCH_C, true, false);
+    gpio_set_pulls(BW_SWITCH_UP, true, false);
+    gpio_set_pulls(BW_SWITCH_DOWN, true, false);
+
+    //err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP0_CH, BW_VBUS_DETECT, true, true, 1000);
+    err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP1_CH, BW_RTC_ALARM, true, false, 1000);
+    //err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP2_CH, BW_RESET_SW, true, true, 1000);
+    err = powman_setup_gpio_wakeup(POWMAN_WAKE_PWRUP3_CH, BW_SWITCH_INT, true, false, 1000);
+
 
     // power off
-    int rc = 0;
     if (timeout_ms > 0) {
         absolute_time_t timeout = make_timeout_time_ms(timeout_ms);
-        rc = powman_off_until_time(timeout);
+        err = powman_off_until_time(timeout);
     } else {
-        rc = powman_off();
+        err = powman_off();
     }
-    hard_assert(rc == PICO_OK);
+    hard_assert(err == PICO_OK);
     hard_assert(false); // should never get here!
 
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(_sleep_goto_dormant_until_pin_obj, 3, 4, _sleep_goto_dormant_until_pin);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(_sleep_sleep_obj, 0, 1, _sleep_sleep);
 
 /*! \brief Send system to dormant until the specified time, note for RP2040 the RTC must be driven by an external clock
  *
@@ -129,15 +168,23 @@ static MP_DEFINE_CONST_FUN_OBJ_1(_sleep_goto_dormant_for_obj, _sleep_goto_dorman
 
 static const mp_map_elem_t sleep_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_powman) },
-    { MP_ROM_QSTR(MP_QSTR_goto_dormant_until_pin), MP_ROM_PTR(&_sleep_goto_dormant_until_pin_obj) },
+    { MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&_sleep_sleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_goto_dormant_until), MP_ROM_PTR(&_sleep_goto_dormant_until_obj) },
     { MP_ROM_QSTR(MP_QSTR_goto_dormant_for), MP_ROM_PTR(&_sleep_goto_dormant_for_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_wake_reason), MP_ROM_PTR(&_sleep_get_wake_reason_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get_wake_buttons), MP_ROM_PTR(&_sleep_get_wake_buttons_obj) },
+    { MP_ROM_QSTR(MP_QSTR_shipping_mode), MP_ROM_PTR(&_shipping_mode_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_WAKE_BUTTON_A), MP_ROM_INT(WAKE_BUTTON_A) },
     { MP_ROM_QSTR(MP_QSTR_WAKE_BUTTON_B), MP_ROM_INT(WAKE_BUTTON_B) },
     { MP_ROM_QSTR(MP_QSTR_WAKE_BUTTON_C), MP_ROM_INT(WAKE_BUTTON_C) },
-    { MP_ROM_QSTR(MP_QSTR_WAKE_TIMER),    MP_ROM_INT(WAKE_TIMER)    }, // TODO: Rename to ALARM?
+    { MP_ROM_QSTR(MP_QSTR_WAKE_BUTTON_UP), MP_ROM_INT(WAKE_BUTTON_UP) },
+    { MP_ROM_QSTR(MP_QSTR_WAKE_BUTTON_DOWN), MP_ROM_INT(WAKE_BUTTON_DOWN) },
+    { MP_ROM_QSTR(MP_QSTR_WAKE_DOUBLETAP), MP_ROM_INT(WAKE_DOUBLETAP) },
+    { MP_ROM_QSTR(MP_QSTR_WAKE_USER_SW),  MP_ROM_INT(WAKE_USER_SW)  },
+    { MP_ROM_QSTR(MP_QSTR_WAKE_VBUS_DETECT),  MP_ROM_INT(WAKE_VBUS_DETECT)  },
+    { MP_ROM_QSTR(MP_QSTR_WAKE_RTC),      MP_ROM_INT(WAKE_RTC)      },
+    { MP_ROM_QSTR(MP_QSTR_WAKE_ALARM),    MP_ROM_INT(WAKE_ALARM)    },
     { MP_ROM_QSTR(MP_QSTR_WAKE_UNKNOWN),  MP_ROM_INT(WAKE_UNKNOWN)  },
 };
 static MP_DEFINE_CONST_DICT(mp_module_sleep_globals, sleep_globals_table);
