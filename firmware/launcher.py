@@ -46,7 +46,7 @@ if state["running"] != "launcher":
 
 display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
-# display.led(0)
+display.set_backlight(0)
 
 # Colours
 BACKGROUND = display.create_pen(*state["colours"][0])
@@ -247,7 +247,13 @@ except (ValueError, KeyError):
 
     print(state["selected_file"])
 
+i = 0
+
 while True:
+    if i < 15:
+        i += 1
+        display.set_backlight(i / 15)
+        time.sleep(1.0 / 60)
 
     if display.pressed(tufty2350.BUTTON_A):
         if (selected_index % MAX_PER_ROW) > 0:
