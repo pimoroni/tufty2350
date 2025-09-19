@@ -125,6 +125,7 @@ class Tests:
 
     def test_vbat(self):
         voltage = vbat.read_u16() * (3.3 / 65536) * 2
+        print(voltage)
         if voltage > 4.2 or voltage < 3.6:
             raise Exception("E7")
 
@@ -216,7 +217,7 @@ class Tests:
             display.clear()
             display.set_pen(WHITE)
             display.text("PASS", 30, 60, WIDTH, 12)
-            display.text("Remove USB and Press B to sleep.", 20, 150, WIDTH, 2)
+            display.text("Press B to sleep.", 20, 150, WIDTH, 2)
             display.update()
             time.sleep(0.5)
 
@@ -251,7 +252,7 @@ class Tests:
             display.set_pen(DARK_BLUE)
             display.clear()
             display.set_pen(WHITE)
-            display.text("< Remove USB and reconnect.", 5, 107, WIDTH, 2)
+            display.text("< Remove USB to continue", 5, 104, WIDTH, 3)
             display.update()
             # Time out to catch the user not removing the USB
             # Or to end the test if there's a failure on VBUS_DETECT
