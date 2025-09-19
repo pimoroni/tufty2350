@@ -216,8 +216,8 @@ class Tests:
             display.set_pen(DARK_GREEN)
             display.clear()
             display.set_pen(WHITE)
-            display.text("PASS", 30, 60, WIDTH, 12)
-            display.text("Press B to sleep.", 20, 150, WIDTH, 2)
+            display.text("PASS", 30, 70, WIDTH, 12)
+            display.text("Press B to sleep.", 30, 150, WIDTH, 2)
             display.update()
             time.sleep(0.5)
 
