@@ -274,7 +274,7 @@ class Tests:
         display.clear()
         display.set_pen(WHITE)
 
-        display.text("Press all face buttons + HOME", 85, 120, WIDTH, 1)
+        display.text("Press all face buttons + HOME", 10, 110, WIDTH, 2)
 
         # Draw button presses
         for button in sorted(self.buttons):
