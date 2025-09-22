@@ -1,7 +1,3 @@
-# ICON image
-# NAME Gallery
-# DESC Display your images!
-
 import os
 
 import tufty2350

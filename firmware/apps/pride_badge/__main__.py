@@ -1,7 +1,3 @@
-# ICON badge
-# NAME Pride
-# DESC A name badge with customisable Pride flag background.
-
 import math
 
 import tufty2350

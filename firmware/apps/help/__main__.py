@@ -1,7 +1,3 @@
-# ICON help
-# NAME Help
-# DESC How to use your Tufty 2350.
-
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 
 import tufty2350

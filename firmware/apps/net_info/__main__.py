@@ -1,7 +1,3 @@
-# ICON wifi
-# NAME Net Info
-# DESC View your local IP Address
-
 import ezwifi
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 

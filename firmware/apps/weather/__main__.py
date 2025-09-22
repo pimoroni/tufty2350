@@ -1,7 +1,3 @@
-# ICON cloud
-# NAME Weather
-# DESC View current weather information
-
 # This example grabs current weather details from Open Meteo and displays them on Tufty 2350.
 # Find out more about the Open Meteo API at https://open-meteo.com
 

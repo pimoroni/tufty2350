@@ -1,7 +1,3 @@
-# ICON water_full
-# NAME Hydrate
-# DESC Track your water intake.
-
 import tufty2350
 from tufty2350 import WIDTH, HEIGHT
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform, HALIGN_CENTER

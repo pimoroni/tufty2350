@@ -1,7 +1,3 @@
-# ICON badge
-# NAME Retro
-# DESC A retro badge with photo and QR code.
-
 # Copy your image to your Tufty alongside this example - it should be a 120 x 120 jpg.
 
 import time

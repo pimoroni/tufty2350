@@ -1,7 +1,3 @@
-# ICON info
-# NAME Info
-# DESC Tufty 2350 Specification & Info
-
 import tufty2350
 import version
 from tufty2350 import WIDTH

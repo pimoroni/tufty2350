@@ -9,23 +9,73 @@ from picovector import (ANTIALIAS_BEST, HALIGN_CENTER, PicoVector, Polygon,
 
 import tufty_os
 
-ICONS = {
-    "badge": "\uea67",
-    "book_2": "\uf53e",
-    "check_box": "\ue834",
-    "cloud": "\ue2bd",
-    "deployed-code": "\uf720",
-    "description": "\ue873",
-    "help": "\ue887",
-    "water_full": "\uf6d6",
-    "wifi": "\ue63e",
-    "image": "\ue3f4",
-    "info": "\ue88e",
-    "format_list_bulleted": "\ue241",
-    "joystick": "\uf5ee"
-}
+class App:
+    ICONS = {
+        "badge": "\uea67",
+        "book_2": "\uf53e",
+        "check_box": "\ue834",
+        "cloud": "\ue2bd",
+        "deployed-code": "\uf720",
+        "description": "\ue873",
+        "help": "\ue887",
+        "water_full": "\uf6d6",
+        "wifi": "\ue63e",
+        "image": "\ue3f4",
+        "info": "\ue88e",
+        "format_list_bulleted": "\ue241",
+        "joystick": "\uf5ee"
+    }
+    DIRECTORY = "apps"
+    DEFAULT_ICON = "description"
+    ERROR_ICON = "help"  # TODO: have a reserved error icon
 
-APP_DIR = "/examples"
+    def __init__(self, name):
+        self._file = name
+        self._meta = {
+            "NAME": name,
+            "ICON": App.DEFAULT_ICON,
+            "DESC": ""
+        }
+        self.path = f"{name}/__main__"
+        self._loaded = False
+
+    def read_metadata(self):
+        if self._loaded:
+            return
+
+        try:
+            exec(open(f"{App.DIRECTORY}/{self._file}/__init__.py", "r").read(), self._meta)
+        except SyntaxError:
+            self._meta["ICON"] = App.ERROR_ICON
+        self._loaded = True
+
+    @property
+    def name(self):
+        self.read_metadata()
+        return self._meta["NAME"]
+
+    @property
+    def icon(self):
+        self.read_metadata()
+        try:
+            return App.ICONS[self._meta["ICON"]]
+        except KeyError:
+            return App.ICONS[App.ERROR_ICON]
+
+    @property
+    def desc(self):
+        self.read_metadata()
+        return self._meta["DESC"]
+
+    @staticmethod
+    def is_valid(file):
+        try:
+            open(f"{App.DIRECTORY}/{file}/__init__.py", "r")
+            return True
+        except OSError:
+            return False
+
+
 FONT_SIZE = 1
 
 changed = True
@@ -48,6 +98,8 @@ display = tufty2350.Tufty2350()
 display.set_font("bitmap8")
 display.set_backlight(0)
 
+apps = [App(x) for x in os.listdir(App.DIRECTORY) if App.is_valid(x)]
+
 # Colours
 BACKGROUND = display.create_pen(*state["colours"][0])
 FOREGROUND = display.create_pen(*state["colours"][1])
@@ -68,11 +120,9 @@ TITLE_BAR.circle(308, 10, 4)
 SELECTED_BORDER = Polygon()
 SELECTED_BORDER.rectangle(0, 0, 90, 90, (10, 10, 10, 10), 5)
 
-examples = [x[:-3] for x in os.listdir(APP_DIR) if x.endswith(".py")]
-
 MAX_PER_ROW = 3
 MAX_PER_PAGE = MAX_PER_ROW * 2
-ICONS_TOTAL = len(examples)
+ICONS_TOTAL = len(apps)
 MAX_PAGE = math.ceil(ICONS_TOTAL / MAX_PER_PAGE)
 
 WIDTH = 320
@@ -112,26 +162,6 @@ def draw_disk_usage(x):
     display.rectangle(x + 12, 7, int(41 / 100.0 * f_used), 6)
 
 
-def read_header(label):
-    file = f"{APP_DIR}/{label}.py"
-
-    name = label
-    icon = ICONS["description"]
-
-    with open(file) as f:
-        header = [f.readline().strip() for _ in range(3)]
-
-    for line in header:
-        if line.startswith("# ICON "):
-            icon = line[7:].strip()
-            icon = ICONS[icon]
-
-        if line.startswith("# NAME "):
-            name = line[7:]
-
-    return name, icon
-
-
 def render(selected_index):
     global icons_total
     global selected_file
@@ -141,17 +171,17 @@ def render(selected_index):
 
     selected_page = selected_index // MAX_PER_PAGE
 
-    icons = examples[selected_page * 6:selected_page * 6 + MAX_PER_PAGE]
+    icons = apps[selected_page * 6:selected_page * 6 + MAX_PER_PAGE]
 
-    for index, label in enumerate(icons):
+    for index, app in enumerate(icons):
         x, y = centers[index]
 
-        name, icon = read_header(label)
+        app.read_metadata()
 
         display.set_pen(FOREGROUND)
         vector.set_font_size(28)
         vector.set_transform(t)
-        vector.text(icon, x, y)
+        vector.text(app.icon, x, y)
         t.translate(x, y)
         t.scale(1.0, 1.0)
 
@@ -164,8 +194,8 @@ def render(selected_index):
 
         display.set_pen(FOREGROUND)
         vector.set_font_size(18)
-        w = vector.measure_text(name)[2]
-        vector.text(name, int(x - (w / 2)), y + 45)
+        w = vector.measure_text(app.name)[2]
+        vector.text(app.name, int(x - (w / 2)), y + 45)
 
     for i in range(MAX_PAGE):
         x = 310
@@ -197,7 +227,7 @@ def wait_for_user_to_release_buttons():
 def launch_example(file):
     wait_for_user_to_release_buttons()
 
-    file = f"{APP_DIR}/{file}"
+    file = f"{App.DIRECTORY}/{file}"
 
     for k in locals().keys():
         if k not in ("gc", "file", "tufty_os"):
@@ -240,12 +270,16 @@ def button(pin):
             selected_file %= MAX_PER_ROW
 
 
-try:
-    selected_index = examples.index(state["selected_file"])
-except (ValueError, KeyError):
-    selected_index = 0
+def app_index(file):
+    index = 0
+    for app in apps:
+        if app.path == file:
+            return index
+        index += 1
+    return 0
 
-    print(state["selected_file"])
+
+selected_index = app_index(state["selected_file"])
 
 i = 0
 
@@ -281,7 +315,7 @@ while True:
             changed = True
 
     if changed:
-        state["selected_file"] = examples[selected_index]
+        state["selected_file"] = apps[selected_index].path
         tufty_os.state_save("launcher", state)
         changed = False
         wait_for_user_to_release_buttons()

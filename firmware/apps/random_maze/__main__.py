@@ -1,7 +1,3 @@
-# ICON joystick
-# NAME Maze
-# DESC Escape the randomly generated mazes!
-
 """
 A single player game demo. Navigate a set of mazes from the start (red) to the goal (green).
 Mazes get bigger / harder with each increase in level.

@@ -1,7 +1,3 @@
-# ICON image
-# NAME Sketch
-# DESC Sketch on the go!
-
 import time
 import tufty2350
 from picovector import (ANTIALIAS_BEST, HALIGN_CENTER, PicoVector, Polygon,
