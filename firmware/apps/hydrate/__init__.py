@@ -1,9 +1,9 @@
-#import badgeware
-#from badgeware import WIDTH, HEIGHT
+import badgeware
+from badgeware import WIDTH, HEIGHT
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform, HALIGN_CENTER
 
-#display = badgeware.display
-#display.set_thickness(2)
+display = badgeware.display
+display.set_thickness(2)
 
 # Pico Vector
 vector = PicoVector(badgeware.display)
