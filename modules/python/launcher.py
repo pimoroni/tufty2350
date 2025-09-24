@@ -3,8 +3,6 @@ import math
 import time
 
 import badgeware
-from picovector import (ANTIALIAS_BEST, HALIGN_CENTER, PicoVector, Polygon,
-                        Transform)
 
 FONT_SIZE = 1
 
@@ -19,15 +17,20 @@ state = {
 }
 
 display = badgeware.display
-WIDTH, HEIGHT = display.get_bounds()
+display.set_font("bitmap8")
+display.set_backlight(0)
+WIDTH, HEIGHT = badgeware.WIDTH, badgeware.HEIGHT
+
+# Pico Vector
+vector = badgeware.vector
+vector.set_font("Roboto-Medium-With-Material-Symbols.af", 20)
+vector.set_font_align(badgeware.HALIGN_CENTER)
+t = badgeware.Transform()
 
 badgeware.state_load("launcher", state)
 
 if state["running"] != "launcher":
     badgeware.launch(state["running"])
-
-display.set_font("bitmap8")
-display.set_backlight(0)
 
 apps = badgeware.apps
 
@@ -36,27 +39,17 @@ BACKGROUND = display.create_pen(*state["colours"][0])
 FOREGROUND = display.create_pen(*state["colours"][1])
 HIGHLIGHT = display.create_pen(*state["colours"][2])
 
-# Pico Vector
-vector = PicoVector(badgeware.display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-t = Transform()
-vector.set_font("Roboto-Medium-With-Material-Symbols.af", 20)
-vector.set_font_align(HALIGN_CENTER)
-vector.set_transform(t)
-
-TITLE_BAR = Polygon()
+TITLE_BAR = badgeware.Polygon()
 TITLE_BAR.rectangle(2, 2, 316, 16, (8, 8, 8, 8))
 TITLE_BAR.circle(308, 10, 4)
 
-SELECTED_BORDER = Polygon()
+SELECTED_BORDER = badgeware.Polygon()
 SELECTED_BORDER.rectangle(0, 0, 90, 90, (10, 10, 10, 10), 5)
 
 MAX_PER_ROW = 3
 MAX_PER_PAGE = MAX_PER_ROW * 2
 ICONS_TOTAL = len(apps)
 MAX_PAGE = math.ceil(ICONS_TOTAL / MAX_PER_PAGE)
-
-WIDTH = 320
 
 # Page layout
 centers = [[50, 65], [162, 65], [WIDTH - 50, 65], [50, 170], [162, 170], [WIDTH - 50, 170]]

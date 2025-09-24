@@ -7,6 +7,7 @@ import cppmem
 import machine
 import micropython
 import powman
+from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform, HALIGN_CENTER   # noqa F401
 
 board = os.uname().machine.split(" ")[1]
 
@@ -14,9 +15,6 @@ if board == "Tufty":
 
     from picographics import DISPLAY_EXPLORER, PicoGraphics
     display = PicoGraphics(DISPLAY_EXPLORER, rotate=180)
-
-    WIDTH = 320
-    HEIGHT = 240
 
     LIGHT_SENSOR = machine.ADC(machine.Pin("LIGHT_SENSE"))
 
@@ -28,6 +26,12 @@ elif board == "Badger":
     pass
 elif board == "Blinky":
     pass
+
+WIDTH, HEIGHT = display.get_bounds()
+
+# Pico Vector
+vector = PicoVector(display)
+vector.set_antialiasing(ANTIALIAS_BEST)
 
 # We can rely on these having been set up by powman... maybe
 BUTTON_DOWN = machine.Pin.board.BUTTON_DOWN
@@ -199,6 +203,7 @@ class App:
 
 # List the apps available on device
 apps = [App(x) for x in os.listdir(App.DIRECTORY) if App.is_valid(x)]
+
 
 def wait_for_user_to_release_buttons():
     while pressed_any():
