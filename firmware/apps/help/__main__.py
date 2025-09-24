@@ -1,15 +1,14 @@
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 
-import tufty2350
-from tufty2350 import WIDTH
+import badgeware
+from badgeware import WIDTH
 
 LINE_HEIGHT = 20
 
-display = tufty2350.Tufty2350()
-# display.led(128)
+display = badgeware.display
 
 # Pico Vector
-vector = PicoVector(display.display)
+vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_BEST)
 t = Transform()
 
@@ -26,7 +25,14 @@ FOREGROUND = display.create_pen(210, 208, 160)
 HIGHLIGHT = display.create_pen(115, 148, 107)
 
 
-while True:
+def init():
+    pass
+
+
+def update():
+    pass
+
+def render():
     # Clear to white
     display.set_pen(BACKGROUND)
     display.clear()

@@ -1,15 +1,12 @@
-import tufty2350
-from tufty2350 import WIDTH, HEIGHT
+import badgeware
+from badgeware import WIDTH, HEIGHT
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform, HALIGN_CENTER
-import tufty_os
-import time
 
-display = tufty2350.Tufty2350()
-# display.led(0)
+display = badgeware.display
 display.set_thickness(2)
 
 # Pico Vector
-vector = PicoVector(display.display)
+vector = PicoVector(badgeware.display)
 vector.set_antialiasing(ANTIALIAS_BEST)
 vector.set_font("Roboto-Medium-With-Material-Symbols.af", 20)
 vector.set_font_align(HALIGN_CENTER)
@@ -50,21 +47,64 @@ state = {
     "unit": MEASUREMENT_UNIT,
     "total": 0
 }
-tufty_os.state_load("hydrate", state)
+badgeware.state_load("hydrate", state)
 
 changed = False
 
-woken_by_button = tufty2350.woken_by_button()
+woken_by_button = badgeware.woken_by_button()
+
+def button(pin):
+    global changed
+    changed = True
+
+    if pin == badgeware.BUTTON_A:
+        state["total"] += WATER_MEASUREMENTS[0]
+
+    if pin == badgeware.BUTTON_B:
+        state["total"] += WATER_MEASUREMENTS[1]
+
+    if pin == badgeware.BUTTON_C:
+        state["total"] += WATER_MEASUREMENTS[2]
+
+    # Press up to reset the total.
+    if pin == badgeware.BUTTON_UP:
+        state["total"] = 0
+
+    if pin == badgeware.BUTTON_DOWN:
+        pass
+
+    if pin == badgeware.BUTTON_HOME:
+        pass
+
+    badgeware.wait_for_user_to_release_buttons()
 
 
-def wait_for_user_to_release_buttons():
-    while display.pressed_any():
-        time.sleep(0.01)
+if not woken_by_button:
+    changed = True
 
+def init():
+    pass
+
+def update():
+    global changed
+
+    if badgeware.pressed(badgeware.BUTTON_A):
+        button(badgeware.BUTTON_A)
+    if badgeware.pressed(badgeware.BUTTON_B):
+        button(badgeware.BUTTON_B)
+    if badgeware.pressed(badgeware.BUTTON_C):
+        button(badgeware.BUTTON_C)
+
+    if badgeware.pressed(badgeware.BUTTON_UP):
+        button(badgeware.BUTTON_UP)
+    if badgeware.pressed(badgeware.BUTTON_DOWN):
+        button(badgeware.BUTTON_DOWN)
+
+    if changed:
+        changed = False
+        badgeware.state_save("hydrate", state)
 
 def render():
-
-    # display.led(128)
 
     # Clear to white
     display.set_pen(BACKGROUND)
@@ -110,53 +150,3 @@ def render():
 
     # Update the screen!
     display.update()
-    #  display.led(0)
-
-
-def button(pin):
-    global changed
-    changed = True
-
-    if pin == tufty2350.BUTTON_A:
-        state["total"] += WATER_MEASUREMENTS[0]
-
-    if pin == tufty2350.BUTTON_B:
-        state["total"] += WATER_MEASUREMENTS[1]
-
-    if pin == tufty2350.BUTTON_C:
-        state["total"] += WATER_MEASUREMENTS[2]
-
-    # Press up to reset the total.
-    if pin == tufty2350.BUTTON_UP:
-        state["total"] = 0
-
-    if pin == tufty2350.BUTTON_DOWN:
-        pass
-
-    if pin == tufty2350.BUTTON_USER:
-        pass
-
-    wait_for_user_to_release_buttons()
-
-
-if not woken_by_button:
-    changed = True
-
-while True:
-
-    if display.pressed(tufty2350.BUTTON_A):
-        button(tufty2350.BUTTON_A)
-    if display.pressed(tufty2350.BUTTON_B):
-        button(tufty2350.BUTTON_B)
-    if display.pressed(tufty2350.BUTTON_C):
-        button(tufty2350.BUTTON_C)
-
-    if display.pressed(tufty2350.BUTTON_UP):
-        button(tufty2350.BUTTON_UP)
-    if display.pressed(tufty2350.BUTTON_DOWN):
-        button(tufty2350.BUTTON_DOWN)
-
-    if changed:
-        changed = False
-        tufty_os.state_save("hydrate", state)
-        render()

@@ -1,85 +1,14 @@
 import gc
 import math
-import os
 import time
 
-import tufty2350
+import badgeware
 from picovector import (ANTIALIAS_BEST, HALIGN_CENTER, PicoVector, Polygon,
                         Transform)
-
-import tufty_os
-
-class App:
-    ICONS = {
-        "badge": "\uea67",
-        "book_2": "\uf53e",
-        "check_box": "\ue834",
-        "cloud": "\ue2bd",
-        "deployed-code": "\uf720",
-        "description": "\ue873",
-        "help": "\ue887",
-        "water_full": "\uf6d6",
-        "wifi": "\ue63e",
-        "image": "\ue3f4",
-        "info": "\ue88e",
-        "format_list_bulleted": "\ue241",
-        "joystick": "\uf5ee"
-    }
-    DIRECTORY = "apps"
-    DEFAULT_ICON = "description"
-    ERROR_ICON = "help"  # TODO: have a reserved error icon
-
-    def __init__(self, name):
-        self._file = name
-        self._meta = {
-            "NAME": name,
-            "ICON": App.DEFAULT_ICON,
-            "DESC": ""
-        }
-        self.path = f"{name}/__main__"
-        self._loaded = False
-
-    def read_metadata(self):
-        if self._loaded:
-            return
-
-        try:
-            exec(open(f"{App.DIRECTORY}/{self._file}/__init__.py", "r").read(), self._meta)
-        except SyntaxError:
-            self._meta["ICON"] = App.ERROR_ICON
-        self._loaded = True
-
-    @property
-    def name(self):
-        self.read_metadata()
-        return self._meta["NAME"]
-
-    @property
-    def icon(self):
-        self.read_metadata()
-        try:
-            return App.ICONS[self._meta["ICON"]]
-        except KeyError:
-            return App.ICONS[App.ERROR_ICON]
-
-    @property
-    def desc(self):
-        self.read_metadata()
-        return self._meta["DESC"]
-
-    @staticmethod
-    def is_valid(file):
-        try:
-            open(f"{App.DIRECTORY}/{file}/__init__.py", "r")
-            return True
-        except OSError:
-            return False
-
 
 FONT_SIZE = 1
 
 changed = True
-exited_to_launcher = False
 
 state = {
     "selected_icon": "ebook",
@@ -89,16 +18,16 @@ state = {
     "colours": [(24, 59, 78), (245, 238, 220), (255, 135, 0)]
 }
 
-tufty_os.state_load("launcher", state)
+badgeware.state_load("launcher", state)
 
 if state["running"] != "launcher":
-    tufty_os.launch(state["running"])
+    badgeware.launch(state["running"])
 
-display = tufty2350.Tufty2350()
+display = badgeware.display
 display.set_font("bitmap8")
 display.set_backlight(0)
 
-apps = [App(x) for x in os.listdir(App.DIRECTORY) if App.is_valid(x)]
+apps = badgeware.apps
 
 # Colours
 BACKGROUND = display.create_pen(*state["colours"][0])
@@ -106,7 +35,7 @@ FOREGROUND = display.create_pen(*state["colours"][1])
 HIGHLIGHT = display.create_pen(*state["colours"][2])
 
 # Pico Vector
-vector = PicoVector(display.display)
+vector = PicoVector(badgeware.display)
 vector.set_antialiasing(ANTIALIAS_BEST)
 t = Transform()
 vector.set_font("Roboto-Medium-With-Material-Symbols.af", 20)
@@ -132,11 +61,11 @@ centers = [[50, 65], [162, 65], [WIDTH - 50, 65], [50, 170], [162, 170], [WIDTH 
 
 
 def draw_disk_usage(x):
-    _, f_used, _ = tufty_os.get_disk_usage()
+    _, f_used, _ = badgeware.get_disk_usage()
 
     display.set_pen(FOREGROUND)
 
-    display.image(
+    badgeware.image(
         bytearray(
             (
                 0b00000000,
@@ -219,50 +148,31 @@ def render(selected_index):
     gc.collect()
 
 
-def wait_for_user_to_release_buttons():
-    while display.pressed_any():
-        time.sleep(0.01)
-
-
-def launch_example(file):
-    wait_for_user_to_release_buttons()
-
-    file = f"{App.DIRECTORY}/{file}"
-
-    for k in locals().keys():
-        if k not in ("gc", "file", "tufty_os"):
-            del locals()[k]
-
-    gc.collect()
-
-    tufty_os.launch(file)
-
-
 def button(pin):
     global changed
     global selected_file
     global icons_total
     changed = True
 
-    if pin == tufty2350.BUTTON_A:
+    if pin == badgeware.BUTTON_A:
         if (selected_file % MAX_PER_ROW) > 0:
             selected_file -= 1
 
-    if pin == tufty2350.BUTTON_B:
-        launch_example((state["page"] * MAX_PER_PAGE) + selected_file)
+    if pin == badgeware.BUTTON_B:
+        badgeware.launch((state["page"] * MAX_PER_PAGE) + selected_file)
 
-    if pin == tufty2350.BUTTON_C:
+    if pin == badgeware.BUTTON_C:
         if (selected_file % MAX_PER_ROW) < MAX_PER_ROW - 1:
             selected_file += 1
 
-    if pin == tufty2350.BUTTON_UP:
+    if pin == badgeware.BUTTON_UP:
         if selected_file >= MAX_PER_ROW:
             selected_file -= MAX_PER_ROW
         else:
             state["page"] = (state["page"] - 1) % MAX_PAGE
             selected_file += MAX_PER_ROW
 
-    if pin == tufty2350.BUTTON_DOWN:
+    if pin == badgeware.BUTTON_DOWN:
         if selected_file < MAX_PER_ROW and icons_total > MAX_PER_ROW:
             selected_file += MAX_PER_ROW
         elif selected_file >= MAX_PER_ROW or icons_total < MAX_PER_ROW + 1:
@@ -283,32 +193,35 @@ selected_index = app_index(state["selected_file"])
 
 i = 0
 
+changed = True
+
 while True:
     if i < 15:
         i += 1
         display.set_backlight(i / 15)
         time.sleep(1.0 / 60)
 
-    if display.pressed(tufty2350.BUTTON_A):
+    if badgeware.pressed(badgeware.BUTTON_A):
         if (selected_index % MAX_PER_ROW) > 0:
             selected_index -= 1
             changed = True
 
-    if display.pressed(tufty2350.BUTTON_B):
-        launch_example(state["selected_file"])
+    if badgeware.pressed(badgeware.BUTTON_B):
+        badgeware.launch(state["selected_file"])
+        changed = True
 
-    if display.pressed(tufty2350.BUTTON_C):
+    if badgeware.pressed(badgeware.BUTTON_C):
         if (selected_index % MAX_PER_ROW) < MAX_PER_ROW - 1:
             selected_index += 1
             selected_index = min(selected_index, ICONS_TOTAL - 1)
             changed = True
 
-    if display.pressed(tufty2350.BUTTON_UP):
+    if badgeware.pressed(badgeware.BUTTON_UP):
         if selected_index >= MAX_PER_ROW:
             selected_index -= MAX_PER_ROW
             changed = True
 
-    if display.pressed(tufty2350.BUTTON_DOWN):
+    if badgeware.pressed(badgeware.BUTTON_DOWN):
         if selected_index < ICONS_TOTAL - 1:
             selected_index += MAX_PER_ROW
             selected_index = min(selected_index, ICONS_TOTAL - 1)
@@ -316,8 +229,8 @@ while True:
 
     if changed:
         state["selected_file"] = apps[selected_index].path
-        tufty_os.state_save("launcher", state)
+        badgeware.state_save("launcher", state)
         changed = False
-        wait_for_user_to_release_buttons()
+        badgeware.wait_for_user_to_release_buttons()
 
         render(selected_index)
