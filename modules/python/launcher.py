@@ -18,12 +18,14 @@ state = {
     "colours": [(24, 59, 78), (245, 238, 220), (255, 135, 0)]
 }
 
+display = badgeware.display
+WIDTH, HEIGHT = display.get_bounds()
+
 badgeware.state_load("launcher", state)
 
 if state["running"] != "launcher":
     badgeware.launch(state["running"])
 
-display = badgeware.display
 display.set_font("bitmap8")
 display.set_backlight(0)
 

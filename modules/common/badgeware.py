@@ -157,7 +157,7 @@ class App:
             "ICON": App.DEFAULT_ICON,
             "DESC": ""
         }
-        self.path = f"{name}/__main__"
+        self.path = f"{name}/__init__"
         self._loaded = False
 
     def read_metadata(self):
@@ -165,7 +165,7 @@ class App:
             return
 
         try:
-            exec(open(f"{App.DIRECTORY}/{self._file}/__init__.py", "r").read(), self._meta)
+            exec(open(f"{App.DIRECTORY}/{self._file}/metadata.py", "r").read(), self._meta)
         except SyntaxError:
             self._meta["ICON"] = App.ERROR_ICON
         self._loaded = True
@@ -191,7 +191,7 @@ class App:
     @staticmethod
     def is_valid(file):
         try:
-            open(f"{App.DIRECTORY}/{file}/__init__.py", "r")
+            open(f"{App.DIRECTORY}/{file}/metadata.py", "r")
             return True
         except OSError:
             return False
@@ -199,7 +199,6 @@ class App:
 
 # List the apps available on device
 apps = [App(x) for x in os.listdir(App.DIRECTORY) if App.is_valid(x)]
-
 
 def wait_for_user_to_release_buttons():
     while pressed_any():
