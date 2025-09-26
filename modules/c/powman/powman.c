@@ -311,7 +311,7 @@ static inline void setup_gpio(bool buttons_only) {
     // Init the charge status detect
     gpio_init(BW_CHARGE_STAT);
     gpio_set_dir(BW_CHARGE_STAT, GPIO_IN);
-    gpio_set_pulls(BW_CHARGE_STAT, false, false);
+    gpio_set_pulls(BW_CHARGE_STAT, true, false);
 
     // Set up LEDs
     gpio_init_mask(0b1111);
