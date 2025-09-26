@@ -8,6 +8,7 @@ import machine
 import micropython
 import powman
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform, HALIGN_CENTER   # noqa F401
+from math import floor
 
 board = os.uname().machine.split(" ")[1]
 
@@ -41,11 +42,18 @@ BUTTON_C = machine.Pin.board.BUTTON_C
 BUTTON_UP = machine.Pin.board.BUTTON_UP
 BUTTON_HOME = machine.Pin.board.BUTTON_HOME
 
+VBAT_SENSE = machine.ADC(machine.Pin.board.VBAT_SENSE)
+CHARGE_STAT = machine.Pin.board.CHARGE_STAT
+SENSE_1V1 = machine.ADC(machine.Pin.board.SENSE_1V1)
+
 SYSTEM_VERY_SLOW = 0
 SYSTEM_SLOW = 1
 SYSTEM_NORMAL = 2
 SYSTEM_FAST = 3
 SYSTEM_TURBO = 4
+
+BAT_MAX = 4.20
+BAT_MIN = 3.00
 
 SYSTEM_FREQS = [
     4000000,
@@ -67,6 +75,7 @@ BUTTONS = {
 cppmem.set_mode(cppmem.MICROPYTHON)
 
 exit_to_launcher = False
+conversion_factor = (3.3 / 65536)
 
 
 def woken_by_button():
@@ -210,30 +219,27 @@ def wait_for_user_to_release_buttons():
         time.sleep(0.01)
 
 
+def sample_adc_u16(adc, samples=1):
+
+    val = []
+    for _ in range(samples):
+        val.append(adc.read_u16())
+    return sum(val) / len(val)
+
+
 def get_battery_level():
-    """
-    # Battery measurement
-    vbat_adc = machine.ADC(PIN_BATTERY)
-    vref_adc = machine.ADC(PIN_1V2_REF)
-    vref_en = machine.Pin(PIN_VREF_POWER)
-    vref_en.init(machine.Pin.OUT)
-    vref_en.value(0)
+    # Use the battery voltage to estimate the remaining percentage
 
-    # Enable the onboard voltage reference
-    vref_en.value(1)
+    # Get the average reading over 20 samples from our VBAT and VREF
+    voltage = sample_adc_u16(VBAT_SENSE, 20) * conversion_factor * 2
+    vref = sample_adc_u16(SENSE_1V1, 20) * conversion_factor
+    voltage = voltage / vref * 1.1
 
-    # Calculate the logic supply voltage, as will be lower that the usual 3.3V when running off low batteries
-    vdd = 1.24 * (65535 / vref_adc.read_u16())
-    vbat = (
-        (vbat_adc.read_u16() / 65535) * 3 * vdd
-    )  # 3 in this is a gain, not rounding of 3.3V
+    # Cap the value at 4.2v
+    voltage = min(voltage, BAT_MAX)
 
-    # Disable the onboard voltage reference
-    vref_en.value(0)
-
-    # Convert the voltage to a level to display onscreen
-    return vbat
-    """
+    # Return the battery level as a perecentage
+    return floor((voltage - BAT_MIN) / (BAT_MAX - BAT_MIN) * 100)
 
 
 def get_disk_usage():
