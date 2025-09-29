@@ -52,7 +52,7 @@ SYSTEM_NORMAL = 2
 SYSTEM_FAST = 3
 SYSTEM_TURBO = 4
 
-BAT_MAX = 4.20
+BAT_MAX = 4.15
 BAT_MIN = 3.00
 
 SYSTEM_FREQS = [
@@ -338,7 +338,6 @@ def launch(file):
         if k not in ("gc", "file", "badgeware_os"):
             del locals()[k]
     """
-    gc.collect()
 
     state_set_running(file)
 
