@@ -219,6 +219,10 @@ def wait_for_user_to_release_buttons():
         time.sleep(0.01)
 
 
+def is_charging():
+    return not CHARGE_STAT.value()
+
+
 def sample_adc_u16(adc, samples=1):
 
     val = []
@@ -231,8 +235,8 @@ def get_battery_level():
     # Use the battery voltage to estimate the remaining percentage
 
     # Get the average reading over 20 samples from our VBAT and VREF
-    voltage = sample_adc_u16(VBAT_SENSE, 20) * conversion_factor * 2
-    vref = sample_adc_u16(SENSE_1V1, 20) * conversion_factor
+    voltage = sample_adc_u16(VBAT_SENSE, 10) * conversion_factor * 2
+    vref = sample_adc_u16(SENSE_1V1, 10) * conversion_factor
     voltage = voltage / vref * 1.1
 
     # Cap the value at 4.2v
