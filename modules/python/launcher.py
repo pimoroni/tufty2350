@@ -18,7 +18,7 @@ state = {
 
 display = badgeware.display
 display.set_font("bitmap8")
-display.set_backlight(0)
+display.set_backlight(1.0)
 WIDTH, HEIGHT = badgeware.WIDTH, badgeware.HEIGHT
 
 # Pico Vector
@@ -38,6 +38,8 @@ apps = badgeware.apps
 BACKGROUND = display.create_pen(*state["colours"][0])
 FOREGROUND = display.create_pen(*state["colours"][1])
 HIGHLIGHT = display.create_pen(*state["colours"][2])
+RED = display.create_pen(255, 0, 0)
+YELLOW = display.create_pen(255, 255, 0)
 
 TITLE_BAR = badgeware.Polygon()
 TITLE_BAR.rectangle(2, 2, 316, 16, (8, 8, 8, 8))
@@ -84,6 +86,25 @@ def draw_disk_usage(x):
     display.rectangle(x + 11, 6, 43, 8)
     display.set_pen(HIGHLIGHT)
     display.rectangle(x + 12, 7, int(41 / 100.0 * f_used), 6)
+
+
+def draw_battery_remaining(x):
+
+    percentage = badgeware.get_battery_level()
+
+    if badgeware.is_charging():
+        display.set_pen(YELLOW)
+    elif percentage <= 10:
+        display.set_pen(RED)
+    else:
+        display.set_pen(FOREGROUND)
+
+    display.rectangle(x + 10, 5, 20, 10)
+    display.rectangle(x + 30, 8, 2, 4)
+    display.set_pen(BACKGROUND)
+    display.rectangle(x + 11, 6, 18, 8)
+    display.set_pen(HIGHLIGHT)
+    display.rectangle(x + 12, 7, int(16 / 100 * percentage), 6)
 
 
 def render(selected_index):
@@ -134,6 +155,7 @@ def render(selected_index):
     vector.draw(TITLE_BAR)
 
     draw_disk_usage(130)
+    draw_battery_remaining(265)
 
     display.set_pen(FOREGROUND)
     vector.set_font_size(14)
@@ -191,6 +213,7 @@ i = 0
 changed = True
 
 while True:
+
     if i < 15:
         i += 1
         display.set_backlight(i / 15)
@@ -222,10 +245,11 @@ while True:
             selected_index = min(selected_index, ICONS_TOTAL - 1)
             changed = True
 
+    state["selected_file"] = apps[selected_index].path
+
     if changed:
-        state["selected_file"] = apps[selected_index].path
         badgeware.state_save("launcher", state)
         changed = False
         badgeware.wait_for_user_to_release_buttons()
 
-        render(selected_index)
+    render(selected_index)
