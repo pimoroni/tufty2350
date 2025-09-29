@@ -1,61 +1,69 @@
 import badgeware
 from badgeware import WIDTH
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
-
-TEXT_SIZE = 1
-LINE_HEIGHT = 15
 
 display = badgeware.display
+vector = badgeware.vector
+t = badgeware.Transform()
 
-# Colours
-BACKGROUND = display.create_pen(154, 203, 208)
-FOREGROUND = display.create_pen(242, 239, 231)
-HIGHLIGHT = display.create_pen(72, 166, 167)
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-t = Transform()
+class App:
+    def init(self):
+        # Colours
+        self.BACKGROUND = display.create_pen(154, 203, 208)
+        self.FOREGROUND = display.create_pen(242, 239, 231)
+        self.HIGHLIGHT = display.create_pen(72, 166, 167)
 
-TITLE_BAR = Polygon()
-TITLE_BAR.rectangle(2, 2, WIDTH - 4, 16, (8, 8, 8, 8))
-TITLE_BAR.circle(WIDTH - 10, 10, 4)
+        self.TEXT_SIZE = 1
+        self.LINE_HEIGHT = 15
 
-TEXT_BOX = Polygon()
-TEXT_BOX.rectangle(2, 60, WIDTH - 4, 125, (8, 8, 8, 8))
+        self.TITLE_BAR = badgeware.Polygon()
+        self.TITLE_BAR.rectangle(2, 2, WIDTH - 4, 16, (8, 8, 8, 8))
+        self.TITLE_BAR.circle(WIDTH - 10, 10, 4)
 
-while True:
+        self.TEXT_BOX = badgeware.Polygon()
+        self.TEXT_BOX.rectangle(2, 60, WIDTH - 4, 125, (8, 8, 8, 8))
 
-    # Clear to white
-    display.set_pen(BACKGROUND)
-    display.clear()
+    def update(self):
+        pass
 
-    display.set_font("bitmap8")
-    display.set_pen(FOREGROUND)
-    vector.draw(TITLE_BAR)
-    display.set_pen(HIGHLIGHT)
-    display.text("tuftyOS", 7, 6, WIDTH, 1.0)
-    display.text("info", WIDTH - 40, 6, WIDTH, 1)
+    def render(self):
 
-    display.set_pen(HIGHLIGHT)
-    vector.draw(TEXT_BOX)
+        # Clear to white
+        display.set_pen(self.BACKGROUND)
+        display.clear()
 
-    display.set_pen(FOREGROUND)
+        display.set_font("bitmap8")
+        display.set_pen(self.FOREGROUND)
+        vector.draw(self.TITLE_BAR)
+        display.set_pen(self.HIGHLIGHT)
+        display.text("tuftyOS", 7, 6, WIDTH, 1.0)
+        display.text("info", WIDTH - 40, 6, WIDTH, 1)
 
-    y = 62 + int(LINE_HEIGHT / 2)
+        display.set_pen(self.HIGHLIGHT)
+        vector.draw(self.TEXT_BOX)
 
-    display.text("Made by Pimoroni, powered by MicroPython", 5, y, WIDTH, TEXT_SIZE)
-    y += LINE_HEIGHT
-    display.text("Dual-core RP2350, Up to 150MHz with 520KB of SRAM", 5, y, WIDTH, TEXT_SIZE)
-    y += LINE_HEIGHT
-    display.text("16MB of QSPI flash", 5, y, WIDTH, TEXT_SIZE)
-    y += LINE_HEIGHT
-    display.text("320 x 240 pixel IPS LCD screen", 5, y, WIDTH, TEXT_SIZE)
-    y += LINE_HEIGHT
-    display.text("For more info:", 5, y, WIDTH, TEXT_SIZE)
-    y += LINE_HEIGHT
-    display.text("https://pimoroni.com/badgeware", 5, y, WIDTH, TEXT_SIZE)
-    y += LINE_HEIGHT
-    display.text("\nBadgewareOS", 5, y, WIDTH, TEXT_SIZE)
+        display.set_pen(self.FOREGROUND)
 
-    display.update()
+        y = 62 + int(self.LINE_HEIGHT / 2)
+
+        display.text("Made by Pimoroni, powered by MicroPython", 5, y, WIDTH, self.TEXT_SIZE)
+        y += self.LINE_HEIGHT
+        display.text("Dual-core RP2350, Up to 150MHz with 520KB of SRAM", 5, y, WIDTH, self.TEXT_SIZE)
+        y += self.LINE_HEIGHT
+        display.text("16MB of QSPI flash", 5, y, WIDTH, self.TEXT_SIZE)
+        y += self.LINE_HEIGHT
+        display.text("320 x 240 pixel IPS LCD screen", 5, y, WIDTH, self.TEXT_SIZE)
+        y += self.LINE_HEIGHT
+        display.text("For more info:", 5, y, WIDTH, self.TEXT_SIZE)
+        y += self.LINE_HEIGHT
+        display.text("https://pimoroni.com/badgeware", 5, y, WIDTH, self.TEXT_SIZE)
+        y += self.LINE_HEIGHT
+        display.text("\nBadgewareOS", 5, y, WIDTH, self.TEXT_SIZE)
+
+        display.update()
+
+
+app = App()
+init = app.init
+update = app.update
+render = app.render
