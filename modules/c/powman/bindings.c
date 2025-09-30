@@ -28,6 +28,22 @@ enum {
     WAKE_UNKNOWN = 0xff,
 };
 
+void mp_pico_panic(const char *fmt, ...) {
+    va_list args;
+
+    if (fmt) {
+        va_start(args, fmt);
+        int ret = mp_vprintf(&mp_plat_print, fmt, args);
+        (void)ret;
+        va_end(args);
+    }
+
+    while (1) {
+        mp_event_handle_nowait();
+        sleep_ms(1);
+    }
+}
+
 mp_obj_t _sleep_get_wake_reason(void) {
     uint8_t wake_reason = powman_get_wake_reason();
     if(wake_reason & POWMAN_WAKE_PWRUP0) return MP_ROM_INT(WAKE_VBUS_DETECT);

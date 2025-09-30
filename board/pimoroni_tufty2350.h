@@ -17,6 +17,9 @@
 #ifndef _BOARDS_PICO2_W_H
 #define _BOARDS_PICO2_W_H
 
+
+#define PICO_PANIC_FUNCTION mp_pico_panic
+
 // Board config
 // RTC = PCF85063e
 #define BW_RTC_I2C       i2c0

@@ -14,8 +14,8 @@ board = os.uname().machine.split(" ")[1]
 
 if board == "Tufty":
 
-    from picographics import DISPLAY_EXPLORER, PicoGraphics
-    display = PicoGraphics(DISPLAY_EXPLORER, rotate=180)
+    from picographics import DISPLAY_TUFTY_2350, PicoGraphics
+    display = PicoGraphics(DISPLAY_TUFTY_2350)
 
     LIGHT_SENSOR = machine.ADC(machine.Pin("LIGHT_SENSE"))
 
