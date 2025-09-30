@@ -1,9 +1,10 @@
 import gc
 import json
 import os
+import sys
 import time
+import pcf85063a
 
-import cppmem
 import machine
 import micropython
 import powman
@@ -33,6 +34,34 @@ WIDTH, HEIGHT = display.get_bounds()
 # Pico Vector
 vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_BEST)
+
+# RTC
+rtc = pcf85063a.PCF85063A(machine.I2C())
+
+
+def localtime_to_rtc():
+    rtc.datetime(time.localtime())
+
+
+def rtc_to_localtime():
+    dt = rtc.datetime()
+    machine.RTC().datetime((dt[0], dt[1], dt[2], dt[6], dt[3], dt[4], dt[5], 0))
+
+
+def time_from_ntp():
+    import ntptime
+    ntptime.settime()
+    del sys.modules["ntptime"]
+    gc.collect()
+    localtime_to_rtc()
+
+
+if time.localtime()[0] >= 2025:
+    localtime_to_rtc()
+
+elif rtc.datetime()[0] >= 2025:
+    rtc_to_localtime()
+
 
 # We can rely on these having been set up by powman... maybe
 BUTTON_DOWN = machine.Pin.board.BUTTON_DOWN
@@ -70,9 +99,6 @@ BUTTONS = {
     BUTTON_C,
     BUTTON_UP
 }
-
-
-cppmem.set_mode(cppmem.MICROPYTHON)
 
 exit_to_launcher = False
 conversion_factor = (3.3 / 65536)
