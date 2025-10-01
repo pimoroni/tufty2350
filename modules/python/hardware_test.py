@@ -1,5 +1,5 @@
 import network
-import tufty2350
+import badgeware
 from machine import Pin, Timer, ADC, I2C
 import time
 from pcf85063a import PCF85063A
@@ -20,10 +20,11 @@ E7 - VBAT SENSE reading was out of range
 E8 - SW_POWER_EN function test failed
 E10 - MAC Address invalid
 E11 - Time out during button test
+E12 - Light sensor reading out of range
 
 """
 
-display = tufty2350.Tufty2350()
+display = badgeware.display
 
 WHITE = display.create_pen(255, 255, 255)
 BLACK = display.create_pen(0, 0, 0)
@@ -82,9 +83,9 @@ class Tests:
         self.vendor = "28:CD:C1"
 
         # a dict to store the button name, state and label location on screen
-        self.buttons = {"A": [False, (50, 215)], "B": [False, (148, 215)],
-                        "C": [False, (249, 215)], "UP": [False, (WIDTH - 25, 57)],
-                        "DOWN": [False, (WIDTH - 25, 157)], "HOME": [False, (WIDTH // 2 - 15, 10)]}
+        self.buttons = {"A": [False, (24, 107)], "B": [False, (73, 107)],
+                        "C": [False, (123, 107)], "UP": [False, (WIDTH - 13, 30)],
+                        "DOWN": [False, (WIDTH - 13, 82)], "HOME": [False, (WIDTH // 2 - 7, 5)]}
 
     def test_wireless(self):
         if self.wifi_pass is None:
@@ -104,7 +105,7 @@ class Tests:
         display.set_pen(DARK_RED)
         display.clear()
         display.set_pen(WHITE)
-        display.text(str(error), 100, 75, WIDTH, 12)
+        display.text(str(error), 50, 36, WIDTH, 6)
         display.update()
 
     def test_buttons(self):
@@ -128,6 +129,11 @@ class Tests:
         print(voltage)
         if voltage > 4.2 or voltage < 3.6:
             raise Exception("E7")
+
+    def test_light(self):
+        reading = badgeware.get_light()
+        if reading < 100 or reading > 2000:
+            raise Exception("E12")
 
     # Toggle the case lights on the back of the badge
     def cl_toggle(self, _t):
@@ -187,6 +193,8 @@ class Tests:
             if self.rtc_pass is False:
                 raise Exception("E4")
 
+            self.test_light()
+
             button_timeout = time.time()
             while True:
                 if time.time() - button_timeout > 10:
@@ -216,8 +224,8 @@ class Tests:
             display.set_pen(DARK_GREEN)
             display.clear()
             display.set_pen(WHITE)
-            display.text("PASS", 30, 70, WIDTH, 12)
-            display.text("Press B to sleep.", 30, 150, WIDTH, 2)
+            display.text("PASS", 15, 35, WIDTH, 6)
+            display.text("Press B to sleep.", 15, 75, WIDTH, 1)
             display.update()
             time.sleep(0.5)
 
@@ -252,7 +260,7 @@ class Tests:
             display.set_pen(DARK_BLUE)
             display.clear()
             display.set_pen(WHITE)
-            display.text("< Remove USB to continue", 5, 104, WIDTH, 3)
+            display.text("< Remove USB to continue", 5, 54, WIDTH, 1)
             display.update()
             # Time out to catch the user not removing the USB
             # Or to end the test if there's a failure on VBUS_DETECT
@@ -274,14 +282,14 @@ class Tests:
         display.clear()
         display.set_pen(WHITE)
 
-        display.text("Press all face buttons + HOME", 10, 110, WIDTH, 2)
+        display.text("Press all face buttons + HOME", 5, 55, WIDTH, 1)
 
         # Draw button presses
         for button in sorted(self.buttons):
             pressed = self.buttons[button][0]
             if not pressed:
                 x, y = self.buttons[button][1]
-                display.rectangle(x, y, 20, 20)
+                display.rectangle(x, y, 10, 10)
 
         display.update()
 
