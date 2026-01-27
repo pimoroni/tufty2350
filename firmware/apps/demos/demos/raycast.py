@@ -100,10 +100,10 @@ def update():
 
   # cast rays for player sight
   num_rays = screen.width
-  result = algorithm.dda(player.pos, player.angle, player.fov, num_rays, 20, world_map, MAP_SIZE_X, MAP_SIZE_Y)
+  result = algorithm.raycast(player.pos, player.angle, player.fov, num_rays, 20, world_map, MAP_SIZE_X, MAP_SIZE_Y, screen.width)
 
   for screen_x, ray in enumerate(result):
-    for (tile_id, cb_p, _cb_g, _edge, _offset, distance) in ray:
+    for (tile_id, cb_p, _cb_g, _edge, _offset, distance, angle) in ray:
       if tile_id == 1:
           height = (2 / distance) * d_proj
           b = min(255, distance * 20)

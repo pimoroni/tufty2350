@@ -316,33 +316,28 @@ namespace picovector {
     blit(target, _bounds, tr);
   }
 
-
   /*
-    renders a vertical span onto the target image using this image as a
-    texture.
-
-    - p: the starting point of the span on the target
-    - c: the count of pixels to render
-    - uvs: the start coordinate of the texture
-    - uve: the end coordinate of the texture
+    blits a horizontal span of pixels onto the target image using interpolated
+    samples from the source image along a line starting at uv1 and ending at
+    uv2
   */
-  void image_t::vspan_tex(image_t *target, vec2_t p, uint c, vec2_t uvs, vec2_t uve) {
+  void image_t::blit_hspan(image_t *target, vec2_t p, uint c, vec2_t uv1, vec2_t uv2) {
     rect_t b = target->_clip;
     if(p.x < b.x || p.x > b.x + b.w) {
       return;
     }
 
-    float ustep = (uve.x - uvs.x) / float(c);
-    float vstep = (uve.y - uvs.y) / float(c);
-    float u = uvs.x;
-    float v = uvs.y;
+    float ustep = (uv2.x - uv1.x) / float(c);
+    float vstep = (uv2.y - uv1.y) / float(c);
+    float u = uv1.x;
+    float v = uv1.y;
 
-    for(int y = p.y; y < p.y + c; y++) {
+    for(int x = p.y; x < p.y + c; x++) {
       u += ustep;
       v += vstep;
 
-      if(y >= b.y && y < b.y + b.h) {
-        uint32_t *dst = (uint32_t *)target->ptr(p.x, y);
+      if(x >= b.y && x < b.y + b.h) {
+        uint32_t *dst = (uint32_t *)target->ptr(x, p.y);
 
         int tx = round(u);
         int ty = round(v);
@@ -359,8 +354,57 @@ namespace picovector {
     }
   }
 
+  /*
+    blits a vertical span of pixels onto the target image using interpolated
+    samples from the source image along a line starting at uv1 and ending at
+    uv2
+  */
+  void image_t::blit_vspan(image_t *target, vec2_t p, uint c, vec2_t uv1, vec2_t uv2) {
+    rect_t b = target->_clip;
+    if(p.x < b.x || p.x > b.x + b.w) {
+      return;
+    }
 
-  void image_t::draw(shape_t *shape) {
+    fx16_t u = f_to_fx16(uv1.x);
+    fx16_t v = f_to_fx16(uv1.y);
+
+    fx16_t ud = f_to_fx16(uv2.x - uv1.x) / c;
+    fx16_t vd = f_to_fx16(uv2.y - uv1.y) / c;
+
+    if(p.y < b.y) {
+      u += ud * (b.y - p.y);
+      v += vd * (b.y - p.y);
+      c -= int(b.y - p.y);
+      p.y = b.y;
+    }
+
+    if(p.y + c > b.y + b.h) {
+      c = b.h - p.y;
+    }
+
+    uint32_t *dst = (uint32_t *)target->ptr(p.x, p.y);
+    int stride = target->_row_stride >> 2;
+    for(uint i = 0u; i < c; i++) {
+      u += ud;
+      v += vd;
+
+      uint32_t col = *(uint32_t *)this->ptr((u + 32768) >> 16, (v + 32768) >> 16);
+
+      if(this->_has_palette) {
+        col = this->_palette[col];
+      }
+
+      if(this->_alpha != 255) {
+        col = _premul_mul_alpha(col, this->_alpha);
+      }
+
+      *dst = target->_blend_func(*dst, _r(col), _g(col), _b(col), _a(col));
+      dst += stride;
+    }
+  }
+
+
+  void image_t::shape(shape_t *shape) {
     render(shape, this, &shape->transform, _brush);
   }
 

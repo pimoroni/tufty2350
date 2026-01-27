@@ -18,9 +18,49 @@ extern "C" {
   MPY_BIND_STATICMETHOD_VAR(5, dda, {
     vec2_obj_t *p = (vec2_obj_t *)MP_OBJ_TO_PTR(args[0]);
     float angle = mp_obj_get_float(args[1]);
+    int max = mp_obj_get_int(args[2]);
+    int step = 0;
+
+    mp_obj_t result = mp_obj_new_list(0, NULL);
+    float ray_ang = angle * (M_PI / 180.0f); // radians
+    vec2_t v = vec2_t(cosf(ray_ang), sinf(ray_ang));
+
+    dda(p->v, v, [&step, &result, &max](float hit_x, float hit_y, int gx, int gy, int edge, float offset, float distance) -> bool {
+      vec2_obj_t *cb_p = mp_obj_malloc(vec2_obj_t, &type_vec2);
+      vec2_obj_t *cb_g = mp_obj_malloc(vec2_obj_t, &type_vec2);
+
+      cb_p->v.x = hit_x;
+      cb_p->v.y = hit_y;
+
+      cb_g->v.x = gx;
+      cb_g->v.y = gy;
+
+      mp_obj_t items[5] = {
+        MP_OBJ_FROM_PTR(cb_p),
+        MP_OBJ_FROM_PTR(cb_g),
+        mp_obj_new_int(edge),
+        mp_obj_new_float(offset),
+        mp_obj_new_float(distance)
+      };
+
+      mp_obj_list_append(result, mp_obj_new_tuple(5, items));
+      step++;
+
+      return step < max;
+    });
+
+
+    return result;
+  })
+
+
+  MPY_BIND_STATICMETHOD_VAR(5, raycast, {
+    vec2_obj_t *p = (vec2_obj_t *)MP_OBJ_TO_PTR(args[0]);
+    float angle = mp_obj_get_float(args[1]);
     float fov = mp_obj_get_float(args[2]);
     int rays = mp_obj_get_int(args[3]);
     int max = mp_obj_get_int(args[4]);
+
 
     mp_buffer_info_t map;
     mp_get_buffer_raise(args[5], &map, MP_BUFFER_RW);
@@ -28,19 +68,27 @@ extern "C" {
 
     int width = mp_obj_get_int(args[6]);
     int height = mp_obj_get_int(args[7]);
+    int screen_width = mp_obj_get_int(args[8]);
 
     mp_obj_t *result = new mp_obj_t[rays];
 
-    for(int i = 0; i < rays; i++) {
-      float offset = float((i - (rays / 2.0f)) / (rays / 2.0f)) * fov / 2.0f;
+    float fov_rad = fov * (M_PI / 180.0f);
+    float d_proj = (screen_width * 0.5f) / tanf(fov_rad * 0.5f);
 
-      vec2_t v = vec2_t(cos((angle + offset) * (M_PI / 180.0f)), sin((angle + offset) * (M_PI / 180.0f)));
+    for(int i = 0; i < rays; i++) {
+      float x = (i + 0.5f) * (screen_width / (float)rays); // column center in pixels
+      float dx = x - screen_width * 0.5f;
+
+      float delta = atanf(dx / d_proj);                // radians
+      float ray_ang = angle * (M_PI / 180.0f) + delta; // radians
+
+      vec2_t v = vec2_t(cosf(ray_ang), sinf(ray_ang));
 
       int step = 0;
 
       mp_obj_t ray = mp_obj_new_list(0, NULL);
 
-      dda(p->v, v, [&step, &data, &width, &ray, &max](float hit_x, float hit_y, int gx, int gy, int edge, float offset, float distance) -> bool {
+      dda(p->v, v, [&step, &data, &width, &ray, &max, &ray_ang](float hit_x, float hit_y, int gx, int gy, int edge, float offset, float distance) -> bool {
         vec2_obj_t *cb_p = mp_obj_malloc(vec2_obj_t, &type_vec2);
         vec2_obj_t *cb_g = mp_obj_malloc(vec2_obj_t, &type_vec2);
 
@@ -52,16 +100,17 @@ extern "C" {
 
         if(data[(gy * width) + gx] > 0) {
 
-          mp_obj_t items[6] = {
+          mp_obj_t items[7] = {
             mp_obj_new_int(data[(gy * width) + gx]),
             MP_OBJ_FROM_PTR(cb_p),
             MP_OBJ_FROM_PTR(cb_g),
             mp_obj_new_int(edge),
             mp_obj_new_float(offset),
-            mp_obj_new_float(distance)
+            mp_obj_new_float(distance),
+            mp_obj_new_float(ray_ang),
           };
 
-          mp_obj_list_append(ray, mp_obj_new_tuple(6, items));
+          mp_obj_list_append(ray, mp_obj_new_tuple(7, items));
 
           if(data[(gy * width) + gx] >= 128) {
             return false;
@@ -82,6 +131,7 @@ extern "C" {
   MPY_BIND_LOCALS_DICT(algorithm,
     MPY_BIND_ROM_PTR_STATIC(clip_line),
     MPY_BIND_ROM_PTR_STATIC(dda),
+    MPY_BIND_ROM_PTR_STATIC(raycast),
   )
 
 
