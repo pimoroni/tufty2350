@@ -63,7 +63,7 @@ font_ignore = pixel_font.load("/system/assets/fonts/ignore.ppf")
 screen.font = font_ignore
 
 TEXT_SIZE = 12
-screen.antialias = 4
+screen.antialias = image.X4
 
 
 def get_light():
