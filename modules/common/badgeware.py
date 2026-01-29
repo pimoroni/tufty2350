@@ -692,17 +692,6 @@ builtins.X2 = image.X2
 builtins.X4 = image.X4
 
 
-# Temporary shim to keep "pen()" working
-def _pen(*args):
-    if len(args) in (3, 4):
-        screen.pen = color.rgb(*args)
-    else:
-        screen.pen = args[0]
-
-
-builtins.pen = _pen
-
-
 # Finally, build in badgeware as "bw" for less frequently used things
 builtins.bw = sys.modules["badgeware"]
 
