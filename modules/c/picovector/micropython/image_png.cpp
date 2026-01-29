@@ -121,7 +121,6 @@ extern "C" {
           }
         }
       } break;
-      /*
       case PNG_PIXEL_GRAYSCALE: {
         uint32_t *pdst = (uint32_t *)target->ptr(0, pDraw->y);
         while(w--) {
@@ -130,23 +129,23 @@ extern "C" {
 
           switch(pDraw->iBpp) {
             case 8: {
-              *pdst = rgba(src, src, src);
+              *pdst = rgb_color_t(src, src, src, 255)._p;
               pdst++;
             } break;
 
             case 4: {
               int src1 = (src & 0xf0) | ((src & 0xf0) >> 4);
               int src2 = (src & 0x0f) | ((src & 0x0f) << 4);
-              *pdst = rgba(src1, src1, src1);
+              *pdst = rgb_color_t(src1, src1, src1, 255)._p;
               pdst++;
-              *pdst = rgba(src2, src2, src2);
+              *pdst = rgb_color_t(src2, src2, src2, 255)._p;
               pdst++;
             } break;
 
             case 1: {
               for(int i = 0; i < 8; i++) {
                 int v = src & 0b10000000 ? 255 : 0;
-                *pdst = rgba(v, v, v);
+                *pdst = rgb_color_t(v, v, v, 255)._p;
                 pdst++;
                 src <<= 1;
               }
@@ -156,7 +155,6 @@ extern "C" {
           psrc++;
         }
       } break;
-       */
 
       default: {
         // TODO: raise file not supported error
