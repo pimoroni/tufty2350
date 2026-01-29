@@ -10,8 +10,10 @@ try:
 except OSError:
     pass
 
-
 try:
     __import__("/main")
 except ImportError:
-    __import__("/system/main")
+    try:
+        __import__("/system/main")
+    except ImportError:
+        import _error  # noqa: F401
