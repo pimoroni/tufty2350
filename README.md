@@ -1,7 +1,9 @@
 # Tufty 2350<!-- omit in toc -->
- 
+
 Tufty — a glorious blend of everything you love about Badger, now with a vibrant full-colour display and silky-smooth animation.
 Perfect for mini dashboards, fast-paced games, and eye-catching widgets.
+
+Get your very own Tufty from [https://shop.pimoroni.com/products/tufty-2350](https://shop.pimoroni.com/products/tufty-2350)
 
 ![Tufty 2350 front](https://badgewa.re/static/images/tufty_web_front.png)
 
@@ -34,6 +36,16 @@ More details at [https://badgewa.re](https://badgewa.re)
 
 ### Updating/Reflashing Firmware
 
+:warning: Our firmware comes in two flavours:
+
+1. `tufty-vX.X.X-micropython-with-filesystem` which will replace all the apps and software on your device with the defaults, and
+
+2. `tufty-vX.X.X-micropython.uf2` which will replace only the firmware.
+
+Pick your desired firmware image from the latest release at [https://github.com/pimoroni/tufty2350/releases/latest](https://github.com/pimoroni/tufty2350/releases/latest)
+
+Then:
+
 * Connect your badge to your computer with a USB Type-C to USB A cable.
 * Turn your badge around so the back is facing you.
 * Press and hold the BOOT button towards the far left.
@@ -48,7 +60,7 @@ More details at [https://badgewa.re](https://badgewa.re)
 * Turn your badge around so the back is facing you.
 * Double-tap the RESET button, located toward the right on the left-hand side of the badge.
 * A disk named "Tufty2350" should appear on your computer.
-* Drag your app directory into /system/apps.
+* Copy your app directory into /system/apps.
 * *Safely Unmount* the disk from your computer. This may take a second.
 * Your badge should reboot into the menu!
 
