@@ -686,6 +686,12 @@ for k in ("mode", "HIRES", "LORES", "DIRTY", "SpriteSheet", "load_font", "rom_fo
     setattr(builtins, k, locals()[k])  # noqa: B010
 
 
+# Hoist image anti-aliasing constants
+builtins.OFF = image.OFF
+builtins.X2 = image.X2
+builtins.X4 = image.X4
+
+
 # Temporary shim to keep "pen()" working
 def _pen(*args):
     if len(args) in (3, 4):
