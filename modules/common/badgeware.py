@@ -659,8 +659,8 @@ LIGHT_SENSOR = machine.ADC(machine.Pin("LIGHT_SENSE"))
 DEFAULT_FONT = rom_font.sins
 ERROR_FONT = rom_font.desert
 
-FG = color.rgb(255, 255, 255)
-BG = color.rgb(20, 40, 60)
+FG = color.white
+BG = color.black
 
 VBAT_SENSE = machine.ADC(machine.Pin.board.VBAT_SENSE)
 VBUS_DETECT = machine.Pin.board.VBUS_DETECT
