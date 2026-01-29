@@ -12,6 +12,7 @@ Get your very own Tufty from [https://shop.pimoroni.com/products/tufty-2350](htt
 - [Help](#help)
   - [Updating/Reflashing Firmware](#updatingreflashing-firmware)
   - [Installing Apps](#installing-apps)
+  - [Configuring WiFi](#configuring-wifi)
   - [API Documentation](#api-documentation)
 
 ## Specs
@@ -60,7 +61,17 @@ Then:
 * Turn your badge around so the back is facing you.
 * Double-tap the RESET button, located toward the right on the left-hand side of the badge.
 * A disk named "Tufty2350" should appear on your computer.
-* Copy your app directory into /system/apps.
+* Copy your app directory into "apps".
+* *Safely Unmount* the disk from your computer. This may take a second.
+* Your badge should reboot into the menu!
+
+### Configuring WiFi
+
+* Connect your badge to your computer with a USB Type-C to USB A cable.
+* Turn your badge around so the back is facing you.
+* Double-tap the RESET button, located toward the right on the left-hand side of the badge.
+* A disk named "Tufty2350" should appear on your computer.
+* Edit the file "secrets.py" and fill in your WiFi credentials.
 * *Safely Unmount* the disk from your computer. This may take a second.
 * Your badge should reboot into the menu!
 
