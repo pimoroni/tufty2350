@@ -208,6 +208,20 @@ MPY_BIND_VAR(1, dither, {
     return mp_const_none;
   })
 
+
+MPY_BIND_VAR(1, onebit, {
+    const image_obj_t *self = (image_obj_t *)MP_OBJ_TO_PTR(args[0]);
+    self->image->onebit();
+    return mp_const_none;
+  })
+
+
+MPY_BIND_VAR(1, monochrome, {
+    const image_obj_t *self = (image_obj_t *)MP_OBJ_TO_PTR(args[0]);
+    self->image->monochrome();
+    return mp_const_none;
+  })
+
 // do we want to allow this with premultiplied alpha?
 // would we undo the multiply and return rgba?
 MPY_BIND_VAR(2, get, {
@@ -219,7 +233,8 @@ MPY_BIND_VAR(2, get, {
       point = mp_obj_get_vec2_from_xy(&args[1]);
     }
     color_obj_t *color = mp_obj_malloc(color_obj_t, &type_color);
-    color->c->_p = self->image->get(point.x, point.y);
+    uint32_t c = self->image->get(point.x, point.y);
+    color->c = new rgb_color_t(_r(c), _g(c), _b(c), _a(c));
     return MP_OBJ_FROM_PTR(color);
   })
 
@@ -322,27 +337,27 @@ MPY_BIND_VAR(2, measure_text, {
 
     vec2_t p; // position on screen to start rendering span
     int c; // height of span
-    vec2_t uvs; // start uv coordinate
-    vec2_t uve; // end uv coordinate
+    vec2_t uv0; // start uv coordinate
+    vec2_t uv1; // end uv coordinate
 
     if(n_args == 6) {
       p = mp_obj_get_vec2(args[2]);
       c = mp_obj_get_float(args[3]);
-      uvs = mp_obj_get_vec2(args[4]);
-      uve = mp_obj_get_vec2(args[5]);
+      uv0 = mp_obj_get_vec2(args[4]);
+      uv1 = mp_obj_get_vec2(args[5]);
     } else if(n_args == 9) {
       p.x = mp_obj_get_float(args[2]);
       p.y = mp_obj_get_float(args[3]);
       c = mp_obj_get_float(args[4]);
-      uvs.x = mp_obj_get_float(args[5]);
-      uvs.y = mp_obj_get_float(args[6]);
-      uve.x = mp_obj_get_float(args[7]);
-      uve.y = mp_obj_get_float(args[8]);
+      uv0.x = mp_obj_get_float(args[5]);
+      uv0.y = mp_obj_get_float(args[6]);
+      uv1.x = mp_obj_get_float(args[7]);
+      uv1.y = mp_obj_get_float(args[8]);
     } else {
       mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("invalid parameters, expected either blit_vspan(p, c, uvs, uve) or blit_vspan(x, y, x, uvsx, uvsy, uvex, uvey)"));
     }
 
-    src->image->blit_vspan(self->image, p, c, uvs, uve);
+    src->image->blit_vspan(self->image, p, c, uv0, uv1);
 
     return mp_const_none;
   })
@@ -387,6 +402,12 @@ MPY_BIND_VAR(3, blit, {
 
       if(n_args == 3 && mp_obj_is_vec2(args[2])) {
         src->image->blit(self->image, mp_obj_get_vec2(args[2]));
+        return mp_const_none;
+      }
+
+      if(n_args == 4 && mp_obj_is_float(args[2]) && mp_obj_is_float(args[3])) {
+        vec2_t p = mp_obj_get_vec2_from_xy(&args[2]);
+        src->image->blit(self->image, p);
         return mp_const_none;
       }
 
@@ -693,6 +714,8 @@ MPY_BIND_LOCALS_DICT(image,
 
       MPY_BIND_ROM_PTR(blur),
       MPY_BIND_ROM_PTR(dither),
+      MPY_BIND_ROM_PTR(onebit),
+      MPY_BIND_ROM_PTR(monochrome),
 
       // vector
       MPY_BIND_ROM_PTR(shape),

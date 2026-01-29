@@ -145,8 +145,8 @@ namespace picovector {
       void blit(image_t *t, const vec2_t p);
       void blit(image_t *t, rect_t tr);
       void blit(image_t *t, rect_t sr, rect_t tr);
-      void blit_hspan(image_t *target, vec2_t p, uint c, vec2_t uvs, vec2_t uve);
-      void blit_vspan(image_t *target, vec2_t p, uint c, vec2_t uvs, vec2_t uve);
+      void blit_hspan(image_t *target, vec2_t p, int c, vec2_t uv0, vec2_t uv1);
+      void blit_vspan(image_t *target, vec2_t p, int c, vec2_t uv0, vec2_t uv1);
   };
 
 }

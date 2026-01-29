@@ -321,36 +321,54 @@ namespace picovector {
     samples from the source image along a line starting at uv1 and ending at
     uv2
   */
-  void image_t::blit_hspan(image_t *target, vec2_t p, uint c, vec2_t uv1, vec2_t uv2) {
+  void image_t::blit_hspan(image_t *target, vec2_t p, int c, vec2_t uv0, vec2_t uv1) {
     rect_t b = target->_clip;
     if(p.x < b.x || p.x > b.x + b.w) {
       return;
     }
 
-    float ustep = (uv2.x - uv1.x) / float(c);
-    float vstep = (uv2.y - uv1.y) / float(c);
-    float u = uv1.x;
-    float v = uv1.y;
+    fx16_t u = f_to_fx16(uv0.x);
+    fx16_t v = f_to_fx16(uv0.y);
 
-    for(int x = p.y; x < p.y + c; x++) {
-      u += ustep;
-      v += vstep;
+    fx16_t ud = f_to_fx16(uv1.x - uv0.x) / c;
+    fx16_t vd = f_to_fx16(uv1.y - uv0.y) / c;
 
-      if(x >= b.y && x < b.y + b.h) {
-        uint32_t *dst = (uint32_t *)target->ptr(x, p.y);
+    if(p.x < b.x) {
+      u += ud * (b.x - p.x);
+      v += vd * (b.x - p.x);
+      c -= int(b.x - p.x);
+      p.x = b.x;
+    }
 
-        int tx = round(u);
-        int ty = round(v);
+    if(p.x + c > b.x + b.w) {
+      c = b.w - p.x;
+    }
 
-        uint32_t col;
-        if(this->_has_palette) {
-          col = this->_palette[*(uint8_t *)this->ptr(tx, ty)];
-        } else {
-          col = *((uint32_t *)this->ptr(tx, ty));
-        }
+    uint32_t tw = int(this->_bounds.w - 1);
+    uint32_t th = int(this->_bounds.h - 1);
 
-        *dst = target->_blend_func(*dst, _r(col), _g(col), _b(col), _a(col));
+    uint32_t *dst = (uint32_t *)target->ptr(p.x, p.y);
+    for(int i = 0; i < c; i++) {
+      u += ud;
+      v += vd;
+
+      // get fractional part of u, v coordinates and scale to source image
+      uint32_t cu = ((u & 0xffffu) * tw) >> 16;
+      uint32_t cv = ((v & 0xffffu) * th) >> 16;
+
+      //uint32_t col = *(uint32_t *)this->ptr((u + 32768) >> 16, (v + 32768) >> 16);
+      uint32_t col = *(uint32_t *)this->ptr(cu, cv);
+
+      if(this->_has_palette) {
+        col = this->_palette[col];
       }
+
+      if(this->_alpha != 255) {
+        col = _premul_mul_alpha(col, this->_alpha);
+      }
+
+      *dst = target->_blend_func(*dst, _r(col), _g(col), _b(col), _a(col));
+      dst++;
     }
   }
 
@@ -359,17 +377,17 @@ namespace picovector {
     samples from the source image along a line starting at uv1 and ending at
     uv2
   */
-  void image_t::blit_vspan(image_t *target, vec2_t p, uint c, vec2_t uv1, vec2_t uv2) {
+  void image_t::blit_vspan(image_t *target, vec2_t p, int c, vec2_t uv0, vec2_t uv1) {
     rect_t b = target->_clip;
     if(p.x < b.x || p.x > b.x + b.w) {
       return;
     }
 
-    fx16_t u = f_to_fx16(uv1.x);
-    fx16_t v = f_to_fx16(uv1.y);
+    fx16_t u = f_to_fx16(uv0.x);
+    fx16_t v = f_to_fx16(uv0.y);
 
-    fx16_t ud = f_to_fx16(uv2.x - uv1.x) / c;
-    fx16_t vd = f_to_fx16(uv2.y - uv1.y) / c;
+    fx16_t ud = f_to_fx16(uv1.x - uv0.x) / c;
+    fx16_t vd = f_to_fx16(uv1.y - uv0.y) / c;
 
     if(p.y < b.y) {
       u += ud * (b.y - p.y);
@@ -382,13 +400,22 @@ namespace picovector {
       c = b.h - p.y;
     }
 
+    uint32_t tw = int(this->_bounds.w - 1);
+    uint32_t th = int(this->_bounds.h - 1);
+
     uint32_t *dst = (uint32_t *)target->ptr(p.x, p.y);
-    int stride = target->_row_stride >> 2;
-    for(uint i = 0u; i < c; i++) {
+
+    uint32_t stride = target->_row_stride >> 2;
+    for(int i = 0; i < c; i++) {
       u += ud;
       v += vd;
 
-      uint32_t col = *(uint32_t *)this->ptr((u + 32768) >> 16, (v + 32768) >> 16);
+      // get fractional part of u, v coordinates and scale to source image
+      uint32_t cu = ((u & 0xffffu) * tw) >> 16;
+      uint32_t cv = ((v & 0xffffu) * th) >> 16;
+
+      //uint32_t col = *(uint32_t *)this->ptr((u + 32768) >> 16, (v + 32768) >> 16);
+      uint32_t col = *(uint32_t *)this->ptr(cu, cv);
 
       if(this->_has_palette) {
         col = this->_palette[col];
@@ -584,8 +611,9 @@ namespace picovector {
   }
 
   void image_t::put(int x, int y) {
-    x = max(int(_clip.x), min(x, int(_clip.x + _clip.w - 1)));
-    y = max(int(_clip.y), min(y, int(_clip.y + _clip.h - 1)));
+    if(x < _clip.x || x >= _clip.x + _clip.w || y < _clip.y || y >= _clip.y + _clip.h) {
+      return;
+    }
     this->_span_func(this, this->_brush, x, y, 1);
   }
 
@@ -611,8 +639,4 @@ namespace picovector {
     }
     return *((uint32_t *)ptr(x, y));
   }
-
-
-
-
 }
