@@ -61,6 +61,8 @@ namespace pimoroni {
     gpio_set_function(cs, GPIO_FUNC_SIO);
     gpio_set_dir(cs, GPIO_OUT);
 
+    gpio_init(vsync);
+
     // if a backlight pin is provided then set it up for
     // pwm control
     pwm_config cfg = pwm_get_default_config();
@@ -103,7 +105,7 @@ namespace pimoroni {
 
     sleep_ms(100);
 
-    uint8_t madctl = MADCTL::ROW_ORDER; //MADCTL::ROW_ORDER | MADCTL::SWAP_XY | MADCTL::SCAN_ORDER;
+    uint8_t madctl = MADCTL::ROW_ORDER | MADCTL::SCAN_ORDER; //MADCTL::ROW_ORDER | MADCTL::SWAP_XY | MADCTL::SCAN_ORDER;
     uint16_t caset[2] = {0, 239};
     uint16_t raset[2] = {0, 319};
 
@@ -193,6 +195,9 @@ namespace pimoroni {
     }
 
     wait_for_dma();
+
+    // Wait for vsync
+    while (gpio_get(vsync) == 0);
 
     uint8_t cmd = reg::RAMWR;
     gpio_put(dc, 0); // command mode

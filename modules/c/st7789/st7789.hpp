@@ -37,6 +37,7 @@ namespace pimoroni {
     uint rd_sck = 31;
     uint d0 = 32;
     uint bl = 26;
+    uint vsync = 21;
 
     // pio stuff
     PIO parallel_pio = pio1;
