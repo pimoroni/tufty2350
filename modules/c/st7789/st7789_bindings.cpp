@@ -81,6 +81,12 @@ mp_obj_t st7789_set_max_pio_clock(mp_obj_t self_in, mp_obj_t value_in) {
     return mp_const_none;
 }
 
+mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in) {
+    (void)self_in;
+    display->set_vsync(mp_obj_is_true(sync_in));
+    return mp_const_none;
+}
+
 
 mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     (void)self_in;
