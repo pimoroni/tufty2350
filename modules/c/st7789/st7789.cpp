@@ -1,5 +1,6 @@
 #include "st7789.hpp"
 
+#include "py/runtime.h"
 
 namespace pimoroni {
 
@@ -197,7 +198,13 @@ namespace pimoroni {
     wait_for_dma();
 
     // Wait for vsync
-    while (gpio_get(vsync) == 0);
+    if (use_vsync) {
+      while (gpio_get(vsync) == 0) {
+  #ifdef mp_event_handle_nowait
+        mp_event_handle_nowait();
+  #endif
+      }
+    }
 
     uint8_t cmd = reg::RAMWR;
     gpio_put(dc, 0); // command mode
@@ -268,5 +275,9 @@ namespace pimoroni {
   void ST7789::set_max_pio_clock(uint32_t hz) {
     max_pio_clk = hz;
     startup_hz = 0;
+  }
+
+  void ST7789::set_vsync(bool sync) {
+    use_vsync = sync;
   }
 }

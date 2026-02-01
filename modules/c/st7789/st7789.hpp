@@ -49,6 +49,9 @@ namespace pimoroni {
     int parallel_offset;
     uint st_dma;
 
+    // Whether to vsync
+    bool use_vsync = true;
+
   public:
     // Parallel init
     ST7789() {
@@ -112,6 +115,7 @@ namespace pimoroni {
     uint32_t *get_framebuffer();
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
     void set_max_pio_clock(uint32_t hz);
+    void set_vsync(bool sync);
 
   private:
     void init();
