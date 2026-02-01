@@ -83,7 +83,7 @@ namespace pimoroni {
 
       // Determine clock divider
       startup_hz = clock_get_hz(clk_sys);
-      sm_config_set_clkdiv(&c, fmax(1.0f, float(startup_hz) / max_pio_clk));
+      sm_config_set_clkdiv(&c, ceil(2.f * fmax(1.0f, float(startup_hz) / max_pio_clk)) * 0.5f);
 
       pio_sm_init(parallel_pio, parallel_sm, parallel_offset, &c);
       pio_sm_set_enabled(parallel_pio, parallel_sm, true);
