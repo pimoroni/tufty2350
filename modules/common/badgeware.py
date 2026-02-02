@@ -441,6 +441,7 @@ def mode(mode, force=False):
     builtins.screen = image(*resolution, memoryview(display))
     screen.font = font if font is not None else DEFAULT_FONT
     screen.pen = brush if brush is not None else BG
+    display.fullres(bool(mode & HIRES))
 
     return True
 
@@ -464,7 +465,7 @@ def run(update, init=None, on_exit=None):
                 if (result := update()) is not None:
                     gc.collect()
                     return result
-                display.update(screen.width == 320)
+                display.update()
         finally:
             if on_exit:
                 on_exit()
@@ -591,7 +592,7 @@ def fatal_error(title, error):
 
     message(title, error)
 
-    display.update(screen.width == 320)
+    display.update()
     while True:
         io.poll()
         if io.pressed:

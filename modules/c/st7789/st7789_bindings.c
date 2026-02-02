@@ -3,7 +3,8 @@
 /***** Module Functions *****/
 
 static MP_DEFINE_CONST_FUN_OBJ_1(st7789___del___obj, st7789___del__);
-static MP_DEFINE_CONST_FUN_OBJ_2(st7789_update_obj, st7789_update);
+static MP_DEFINE_CONST_FUN_OBJ_1(st7789_update_obj, st7789_update);
+static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_mode_obj, st7789_set_mode);
 static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_backlight_obj, st7789_set_backlight);
 static MP_DEFINE_CONST_FUN_OBJ_3(st7789_command_obj, st7789_command);
 static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_max_pio_clock_obj, st7789_set_max_pio_clock);
@@ -13,6 +14,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(st7789_set_vsync_obj, st7789_set_vsync);
 static const mp_rom_map_elem_t st7789_locals[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&st7789___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&st7789_update_obj) },
+    { MP_ROM_QSTR(MP_QSTR_fullres), MP_ROM_PTR(&st7789_set_mode_obj) },
     { MP_ROM_QSTR(MP_QSTR_backlight), MP_ROM_PTR(&st7789_set_backlight_obj) },
     { MP_ROM_QSTR(MP_QSTR_command), MP_ROM_PTR(&st7789_command_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_max_pio_clock), MP_ROM_PTR(&st7789_set_max_pio_clock_obj) },
