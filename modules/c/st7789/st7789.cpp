@@ -186,7 +186,7 @@ namespace pimoroni {
     gpio_put(cs, 1);
   }
 
-  void ST7789::update(bool fullres) {
+  void ST7789::update() {
     // Determine clock divider
     const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
 
@@ -219,7 +219,7 @@ namespace pimoroni {
 
     // The copy from framebuffer to linebuffer also serves to rotate the image
     // 90 degrees to match the scan orientation and prevent diagonal tearing.
-    if(fullres) {
+    if(fullres_mode) {
       for(int x = 0; x < fullres_width; x++) {
         for(int y = 0; y < fullres_height; y++) {
           uint32_t src = framebuffer[y * fullres_width + x];
@@ -253,6 +253,10 @@ namespace pimoroni {
     // Yeet the last column into the abyss and save a little time
     // wait_for_dma();
     // gpio_put(cs, 1);
+  }
+
+  void ST7789::set_mode(bool mode) {
+    this->fullres_mode = mode;
   }
 
   void ST7789::set_backlight(uint8_t brightness) {

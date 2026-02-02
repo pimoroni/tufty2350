@@ -45,9 +45,9 @@ mp_obj_t st7789___del__(mp_obj_t self_in) {
     return mp_const_none;
 }
 
-mp_obj_t st7789_update(mp_obj_t self_in, mp_obj_t fullres_in) {
+mp_obj_t st7789_update(mp_obj_t self_in) {
     (void)self_in;
-    display->update(mp_obj_is_true(fullres_in));
+    display->update();
     return mp_const_none;
 }
 
@@ -78,6 +78,12 @@ mp_obj_t st7789_set_backlight(mp_obj_t self_in, mp_obj_t value_in) {
 mp_obj_t st7789_set_max_pio_clock(mp_obj_t self_in, mp_obj_t value_in) {
     (void)self_in;
     display->set_max_pio_clock(mp_obj_get_uint(value_in));
+    return mp_const_none;
+}
+
+mp_obj_t st7789_set_mode(mp_obj_t self_in, mp_obj_t mode_in) {
+    (void)self_in;
+    display->set_mode(mp_obj_is_true(mode_in));
     return mp_const_none;
 }
 
