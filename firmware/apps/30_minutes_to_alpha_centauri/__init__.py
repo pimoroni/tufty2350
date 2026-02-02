@@ -366,8 +366,7 @@ def draw_wall(image, topleft, bottomleft, topright, bottomright, tex):
             t = i / width
             toppoint = topleft.y + ((topright.y - topleft.y) * t)
             bottompoint = math.floor(bottomleft.y + ((bottomright.y - bottomleft.y) * t))
-            u = t * TEXTURE_SIZE
-            image.vspan_tex(tile, x_pos, toppoint, bottompoint - toppoint, u, 0, u, TEXTURE_SIZE - 1)
+            image.blit_vspan(tile, x_pos, toppoint, bottompoint - toppoint, t, 0, t, 1)
             seg_brightness = BRIGHTNESSES[x_pos]
             screen.pen = color.rgb(0, 0, 0, seg_brightness)
             screen.line(vec2(x_pos, toppoint), vec2(x_pos, bottompoint))
