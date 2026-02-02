@@ -415,10 +415,12 @@ namespace picovector {
       uint32_t cv = ((v & 0xffffu) * th) >> 16;
 
       //uint32_t col = *(uint32_t *)this->ptr((u + 32768) >> 16, (v + 32768) >> 16);
-      uint32_t col = *(uint32_t *)this->ptr(cu, cv);
+      uint32_t col;
 
       if(this->_has_palette) {
-        col = this->_palette[col];
+        col = this->_palette[*(uint8_t*)this->ptr(cu, cv)];
+      } else {
+        col = *(uint32_t *)this->ptr(cu, cv);
       }
 
       if(this->_alpha != 255) {
