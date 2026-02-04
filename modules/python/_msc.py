@@ -1,4 +1,4 @@
-from badgeware import run
+from badgeware import run, set_case_led
 import rp2
 import random
 
@@ -123,6 +123,9 @@ disk_mode = DiskMode()
 def update():
   # set transfer state here
   disk_mode.transferring = rp2.is_msc_busy()
+
+  for led in range(4):
+    set_case_led(led, int(disk_mode.transferring))
 
   # draw the ui
   disk_mode.draw()
