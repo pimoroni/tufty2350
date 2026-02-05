@@ -70,7 +70,8 @@ class Badge():
     def poll(self):
         _input.poll()
 
-    # returns either BADGER, TUFTY, or BLINKY
+    # returns either badger, tufty, or blinky
+    @property
     def model(self):
         return MODEL
 
