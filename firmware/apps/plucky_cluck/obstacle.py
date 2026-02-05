@@ -1,5 +1,4 @@
 import random
-from badgeware import SpriteSheet
 
 sprites = SpriteSheet("assets/obstacles.png", 2, 1)
 
@@ -12,7 +11,7 @@ class Obstacle:
     def spawn():
         # create a new obstacle and reset the obstacle spawn timer
         Obstacle.obstacles.append(Obstacle())
-        Obstacle.next_spawn_time = io.ticks + 2500
+        Obstacle.next_spawn_time = badge.ticks + 2500
 
         # clean up any obstacles that are now off screen and can be removed
         Obstacle.obstacles = [o for o in Obstacle.obstacles if o.x > -32]

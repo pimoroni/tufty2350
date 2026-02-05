@@ -1,6 +1,5 @@
 import os
 import math
-from badgeware import is_dir, file_exists
 
 import ui
 
@@ -45,7 +44,7 @@ class App:
         # if this icon wasn't already activated then flag it for the spin animation
         if not self.active and active:
             self.spin = True
-            self.spin_start = io.ticks
+            self.spin_start = badge.ticks
         self.active = active
 
     def draw(self):
@@ -56,7 +55,7 @@ class App:
         if self.spin:
             # create a spin animation that runs over 100ms
             speed = 100
-            frame = io.ticks - self.spin_start
+            frame = badge.ticks - self.spin_start
 
             # calculate the width of the tile during this part of the animation
             width = round(math.cos(frame / speed) * 3) / 3

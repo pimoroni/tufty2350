@@ -41,7 +41,7 @@ glyph_renderers = {
 
 
 def update():
-  i = round(io.ticks / 200)
+  i = round(badge.ticks / 200)
   i %= 10
 
   message = """[pen:180,150,120]Upon the mast I gleam and grin, A sentinel of bone and sin. Wind and thunder, night and hull- None fear the sea like a [pen:230,220,200]pirate skull[pen:180,150,120][skull].
@@ -51,7 +51,7 @@ def update():
 
   x = 5
   y = 5
-  width = math.sin(io.ticks / 500) * 40 + 110
+  width = math.sin(badge.ticks / 500) * 40 + 110
   height = 200
   tokens = text_tokenise(screen, message, glyph_renderers)
   bounds = rect(x, y, width, height)

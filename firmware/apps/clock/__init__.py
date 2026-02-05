@@ -13,7 +13,7 @@ os.chdir(APP_DIR)
 sys.path.insert(0, APP_DIR)
 
 
-from badgeware import run, State, rtc
+from badgeware import run, State
 import time
 import ntptime
 from daylightsaving import DaylightSavingPolicy, DaylightSaving
@@ -683,38 +683,38 @@ def update():
     # Any face button press will move it into the regular running mode.
     if clock_state == ClockState.FirstRun:
         intro_screen()
-        if any(x in io.pressed for x in [io.BUTTON_A, io.BUTTON_B, io.BUTTON_C, io.BUTTON_UP, io.BUTTON_DOWN]):
+        if any(x in badge.pressed() for x in [BUTTON_A, BUTTON_B, BUTTON_C, BUTTON_UP, BUTTON_DOWN]):
             clock_state = ClockState.Running
             state["first_run"] = False
             write_settings()
 
     # Next we check if anything's been pressed before choosing what to display.
-    if io.BUTTON_UP in io.pressed:
+    if badge.pressed(BUTTON_UP):
         state["dark_mode"] = not state["dark_mode"]
         write_settings()
         switch_palette()
 
-    if io.BUTTON_DOWN in io.pressed:
+    if badge.pressed(BUTTON_DOWN):
         state["colour_scheme"] += 1
         if state["colour_scheme"] > 8:
             state["colour_scheme"] = 1
         write_settings()
         switch_palette()
 
-    if io.BUTTON_C in io.pressed:
+    if badge.pressed(BUTTON_C):
         state["clock_style"] += 1
         if state["clock_style"] > 4:
             state["clock_style"] = 1
         write_settings()
 
-    if io.BUTTON_A in io.pressed:
+    if badge.pressed(BUTTON_A):
         state["clock_style"] -= 1
         if state["clock_style"] < 1:
             state["clock_style"] = 4
         write_settings()
 
     # If the year in the RTC is 2021 or earlier, we need to sync so it has the same effect as pressing B.
-    if io.BUTTON_B in io.pressed or time.gmtime()[0] <= 2021 and clock_state == ClockState.Running:
+    if badge.pressed(BUTTON_B) or time.gmtime()[0] <= 2021 and clock_state == ClockState.Running:
         user_message("Updating...", ["Updating time", "from NTP server...", "Getting WiFi details..."])
         clock_state = ClockState.ConnectWiFi
 

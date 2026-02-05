@@ -37,7 +37,7 @@ except OSError:
 
 motion_samples = []
 graph = [25 for val in range(22)]
-last_graph = io.ticks
+last_graph = badge.ticks
 
 light_samples = []
 LIGHT_MIN = 0
@@ -100,10 +100,10 @@ def draw_temperature(_wx, wy, ww, wh):
     win.clear()
 
     # add values to the dummy graph animation
-    if io.ticks - last_graph > 10:
-        graph.append(25 + math.sin(io.ticks) * 8)
+    if badge.ticks - last_graph > 10:
+        graph.append(25 + math.sin(badge.ticks) * 8)
         graph = graph[-22:]
-        last_graph = io.ticks
+        last_graph = badge.ticks
 
     # draw the bars for the graph
     for i, t in enumerate(graph):
@@ -259,12 +259,12 @@ class Widget:
         if self == Widget.widgets[Widget.selected]:
             # We don't want to overwrite 'selected' if it already has ticks
             if not self.selected:
-                self.selected = io.ticks
+                self.selected = badge.ticks
         else:
             self.selected = False
 
         # A one pixel jump when the icon is initially selected
-        if io.ticks - self.selected < 50:
+        if badge.ticks - self.selected < 50:
             yo = -2
         else:
             yo = 0
@@ -383,19 +383,19 @@ def update():
     Widget.update()
 
     if not Widget.is_fullscreen():
-        if io.BUTTON_A in io.pressed:
+        if badge.pressed(BUTTON_A):
             if Widget.selected > 0:
                 Widget.selected -= 1
             else:
                 Widget.selected = len(Widget.widgets) - 1
 
-        if io.BUTTON_C in io.pressed:
+        if badge.pressed(BUTTON_C):
             if Widget.selected < len(Widget.widgets) - 1:
                 Widget.selected += 1
             else:
                 Widget.selected = 0
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         Widget.widgets[Widget.selected].full_view = not Widget.widgets[Widget.selected].full_view
 
 

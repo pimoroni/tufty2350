@@ -1,4 +1,3 @@
-from badgeware import SpriteSheet
 from obstacle import Obstacle
 
 sprites = SpriteSheet("assets/chicken.png", 7, 2)
@@ -23,7 +22,7 @@ class Chicken:
 
         if self.last_update:
             # apply gravity to chicken's velocity based on the time since the last update
-            time_delta = (io.ticks - self.last_update) / 1000
+            time_delta = (badge.ticks - self.last_update) / 1000
             self.velocity = self.velocity + (self.gravity * time_delta)
 
             # move chicken based on their current velocity
@@ -38,7 +37,7 @@ class Chicken:
                 self.pos = (self.pos[0], 0)
                 self.velocity = 0
 
-        self.last_update = io.ticks
+        self.last_update = badge.ticks
 
         # check if we've passed or hit any obstacles
         chicken_bounds = self.bounds()
@@ -68,13 +67,13 @@ class Chicken:
 
     def is_done_dying(self):
         # return true once chicken's death animation cycle has completed
-        return (io.ticks - self.died_at) > 900
+        return (badge.ticks - self.died_at) > 900
 
     def die(self):
         # set the timestamp for when chicken died so we can pace her death animation
         # and redirect to the GAME OVER screen after 1.5 seconds
         if not self.died_at:
-            self.died_at = io.ticks
+            self.died_at = badge.ticks
 
     def jump(self):
         # up, up, up, and away!
@@ -98,7 +97,7 @@ class Chicken:
             screen.blit(sprite, vec2(self.pos[0], self.pos[1]))
         else:
             # if chicken is dying then play the death animation
-            frame = (io.ticks - self.died_at) / 100
+            frame = (badge.ticks - self.died_at) / 100
             if frame < dead.count():
                 sprite = dead.frame(frame)
                 screen.blit(sprite, vec2(self.pos[0], self.pos[1]))

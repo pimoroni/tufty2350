@@ -26,17 +26,17 @@ def update_cursor():
     global left_dial_angle, right_dial_angle
 
     # update the cursor position based on user input and shift the dial animation
-    if not last_cursor_move or (io.ticks - last_cursor_move) > 20:
+    if not last_cursor_move or (badge.ticks - last_cursor_move) > 20:
         last_cursor = cursor
-        if io.BUTTON_A in io.held:
+        if badge.held(BUTTON_A):
             cursor = (cursor[0] - 4, cursor[1])
-        if io.BUTTON_C in io.held:
+        if badge.held(BUTTON_C):
             cursor = (cursor[0] + 4, cursor[1])
-        if io.BUTTON_UP in io.held:
+        if badge.held(BUTTON_UP):
             cursor = (cursor[0], cursor[1] - 4)
-        if io.BUTTON_DOWN in io.held:
+        if badge.held(BUTTON_DOWN):
             cursor = (cursor[0], cursor[1] + 4)
-        last_cursor_move = io.ticks
+        last_cursor_move = badge.ticks
 
     # clamp cursor to canvas bounds
     cursor = (

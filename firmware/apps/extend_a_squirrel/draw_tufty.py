@@ -163,7 +163,7 @@ class Renderer:
 
         screen.pen = color.white
 
-        if int(io.ticks / 500) % 2:
+        if int(badge.ticks / 500) % 2:
             screen.font = small_font
             center_text("Press B to start", 10)
 
@@ -229,6 +229,6 @@ class Renderer:
 
         screen.pen = color.white
 
-        if int(io.ticks / 500) % 2:
+        if int(badge.ticks / 500) % 2:
             screen.font = small_font
             center_text("Press B to play again", screen.height - 20)

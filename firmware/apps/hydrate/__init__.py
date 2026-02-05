@@ -5,7 +5,7 @@ import math
 sys.path.insert(0, "/system/apps/hydrate")
 os.chdir("/system/apps/hydrate")
 
-from badgeware import run, State, clamp
+from badgeware import run, State
 
 CX = screen.width / 2
 CY = screen.height / 2
@@ -140,7 +140,7 @@ def draw_background():
         x = 0
         for _col in range(16):
             dist = math.sqrt((x + 5 - cx) ** 2 + (y + 5 - cy) ** 2)
-            pulse = (math.sin(-io.ticks / 400 + (dist / 6)) / 2) + 0.5
+            pulse = (math.sin(-badge.ticks / 400 + (dist / 6)) / 2) + 0.5
             pulse = 0.8 + (pulse / 2)
             screen.pen = color.rgb(255, 255, 255, 50 * pulse)
             screen.rectangle(x, y, 10, 10)
@@ -156,28 +156,28 @@ def init():
 def update():
     global state, show_menu, menu_value
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         show_menu = not show_menu
 
     if show_menu:
         # increase/decrease the value to add
         # short press is +/- 5ml and long is +/- 25ml
-        if io.BUTTON_A in io.pressed:
+        if badge.pressed(BUTTON_A):
             menu_value -= 5
-        elif io.BUTTON_A in io.held:
+        elif badge.held(BUTTON_A):
             menu_value -= 25
-        if io.BUTTON_C in io.pressed:
+        if badge.pressed(BUTTON_C):
             menu_value += 5
-        elif io.BUTTON_C in io.held:
+        elif badge.held(BUTTON_C):
             menu_value += 25
 
-        if io.BUTTON_DOWN in io.pressed:
+        if badge.pressed(BUTTON_DOWN):
             state["current"] += menu_value
             menu_value = 0
             show_menu = not show_menu
             State.save("hydrate", state)
 
-        if io.BUTTON_UP in io.held:
+        if badge.held(BUTTON_UP):
             state["current"] = 0
             State.save("hydrate", state)
 

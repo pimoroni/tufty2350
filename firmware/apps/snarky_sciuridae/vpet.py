@@ -1,4 +1,3 @@
-from badgeware import clamp, SpriteSheet
 import random
 import math
 
@@ -21,10 +20,10 @@ class Pet:
     self._clean = 100
     self._animation = None
     self._mood = None
-    self._mood_changed_at = (io.ticks / 1000)
+    self._mood_changed_at = (badge.ticks / 1000)
     self._action = None
     self._action_changed_at = None
-    self._position_changed_at = (io.ticks / 1000)
+    self._position_changed_at = (badge.ticks / 1000)
     self._position = (80, y + 2)
     self._direction = 1
     self._target = 80
@@ -49,10 +48,10 @@ class Pet:
 
     # select sprite for current animation frame
     if self._action:
-      action_time = (io.ticks / 1000) - self._action_changed_at
+      action_time = (badge.ticks / 1000) - self._action_changed_at
       image = Pet._animations[self._action].frame(round(action_time * 10))
     else:
-      image = Pet._animations[self._mood].frame(round(io.ticks / 100))
+      image = Pet._animations[self._mood].frame(round(badge.ticks / 100))
 
     width, height = image.width * 4, image.height * 4
 
@@ -65,7 +64,7 @@ class Pet:
     width *= self._direction
 
     # is pet floating?
-    floating = math.sin(io.ticks / 250) * 5 + 5 if self._mood == "dead" else 0
+    floating = math.sin(badge.ticks / 250) * 5 + 5 if self._mood == "dead" else 0
 
     # offset sprite
     x -= abs(width / 2)
@@ -87,12 +86,12 @@ class Pet:
   # set a new target position for pet to move to
   def move_to(self, target):
     self._target = target
-    self._position_changed_at = (io.ticks / 1000)
+    self._position_changed_at = (badge.ticks / 1000)
 
   # move pet back into centre frame
   def move_to_center(self):
     self._target = 80
-    self._position_changed_at = (io.ticks / 1000)
+    self._position_changed_at = (badge.ticks / 1000)
 
   # select a random position for pet to move to
   def move_to_random(self):
@@ -100,7 +99,7 @@ class Pet:
 
   # return the number of seconds since pet moved
   def time_since_last_position_change(self):
-    return (io.ticks / 1000) - self._position_changed_at
+    return (badge.ticks / 1000) - self._position_changed_at
 
   # return pets current position
   def position(self):
@@ -109,11 +108,11 @@ class Pet:
   # change pets mood
   def set_mood(self, mood):
     self._mood = mood
-    self._mood_changed_at = (io.ticks / 1000)
+    self._mood_changed_at = (badge.ticks / 1000)
 
   def do_action(self, action):
     self._action = action
-    self._action_changed_at = (io.ticks / 1000)
+    self._action_changed_at = (badge.ticks / 1000)
 
   def current_action(self):
     return self._action
@@ -146,7 +145,7 @@ class Pet:
 
     # if pet is performing an action then let it run for 2 seconds and end it
     if self._action:
-      if (io.ticks / 1000) - self._action_changed_at > 2:
+      if (badge.ticks / 1000) - self._action_changed_at > 2:
         self._action = None
 
   # select a random mood for pet
@@ -156,7 +155,7 @@ class Pet:
 
   # return the number of seconds since pets mood changed
   def time_since_last_mood_change(self):
-    return (io.ticks / 1000) - self._mood_changed_at
+    return (badge.ticks / 1000) - self._mood_changed_at
 
 # define pets animations and the number of frames
 animations = {

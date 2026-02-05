@@ -25,9 +25,9 @@ def update():
   i =  0
   for coastline in coastlines:
     i = i + 1
-    x = math.sin(io.ticks / 1000) * 100
-    y = math.cos(io.ticks / 700) * 30
-    s = 1 #math.sin(io.ticks / 1000) * 1 + 2
+    x = math.sin(badge.ticks / 1000) * 100
+    y = math.cos(badge.ticks / 700) * 30
+    s = 1 #math.sin(badge.ticks / 1000) * 1 + 2
 
     screen.pen = color.hsv(i * 2, 200, 160)
 

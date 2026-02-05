@@ -20,7 +20,7 @@ import gc
 import random
 from collections import namedtuple
 
-from badgeware import run, SpriteSheet
+from badgeware import run
 
 
 class GameState:
@@ -255,7 +255,7 @@ class Player(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.last_move = io.ticks
+        self.last_move = badge.ticks
 
         self.current_animation = animations["right"]
 
@@ -265,37 +265,37 @@ class Player(object):
 
     def update(self, maze):
 
-        if io.ticks - self.last_move > 20:
-            if io.BUTTON_A in io.held and maze[self.y][self.x - 1] < (1 << WALL_BITSHIFT):
+        if badge.ticks - self.last_move > 20:
+            if badge.held(BUTTON_A) and maze[self.y][self.x - 1] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= W
                 self.x -= 1
                 maze[self.y][self.x] |= E
                 self.current_animation = animations["left"]
-                self.last_move = io.ticks
+                self.last_move = badge.ticks
 
-            elif io.BUTTON_C in io.held and maze[self.y][self.x + 1] < (1 << WALL_BITSHIFT):
+            elif badge.held(BUTTON_C) and maze[self.y][self.x + 1] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= E
                 self.x += 1
                 maze[self.y][self.x] |= W
                 self.current_animation = animations["right"]
-                self.last_move = io.ticks
+                self.last_move = badge.ticks
 
-            elif io.BUTTON_UP in io.held and maze[self.y - 1][self.x] < (1 << WALL_BITSHIFT):
+            elif badge.held(BUTTON_UP) and maze[self.y - 1][self.x] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= N
                 self.y -= 1
                 maze[self.y][self.x] |= S
                 self.current_animation = animations["up"]
-                self.last_move = io.ticks
+                self.last_move = badge.ticks
 
-            elif io.BUTTON_DOWN in io.held and maze[self.y + 1][self.x] < (1 << WALL_BITSHIFT):
+            elif badge.held(BUTTON_DOWN) and maze[self.y + 1][self.x] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= S
                 self.y += 1
                 maze[self.y][self.x] |= N
                 self.current_animation = animations["down"]
-                self.last_move = io.ticks
+                self.last_move = badge.ticks
 
     def draw(self):
-        image = self.current_animation.frame(round(io.ticks / 100))
+        image = self.current_animation.frame(round(badge.ticks / 100))
 
         screen.blit(image, rect(self.x * wall_separation + offset_x,
                           self.y * wall_separation + offset_y,
@@ -361,7 +361,7 @@ def center_text(text, y):
 def intro():
     global state
 
-    image = animations["down"].frame(round(io.ticks / 100))
+    image = animations["down"].frame(round(badge.ticks / 100))
 
     screen.blit(BACKGROUND, vec2(0, 0))
     screen.blit(image, rect((screen.width / 2) - 16, CY - 50, 32, 32))
@@ -370,11 +370,11 @@ def intro():
     screen.font = large_font
     center_text("Bee a-maze'd!", CY - 10)
     # blink button message
-    if int(io.ticks / 500) % 2:
+    if int(badge.ticks / 500) % 2:
         screen.font = font
         center_text("Press B to start", CY + 20)
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         state = GameState.PLAYING
 
 
@@ -390,7 +390,7 @@ def draw_complete_banner():
     center_text(f"Level {level + 1} Complete!", CY - 15)
     center_text("Press B to continue", CY + 5)
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         complete = False
         level += 1
         build_maze()
