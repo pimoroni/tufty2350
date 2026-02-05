@@ -13,3 +13,4 @@ extern mp_obj_t st7789_set_mode(mp_obj_t self_in, mp_obj_t value_in);
 extern mp_obj_t st7789_command(mp_obj_t self_in, mp_obj_t reg_in, mp_obj_t data_in);
 extern mp_obj_t st7789_set_max_pio_clock(mp_obj_t self_in, mp_obj_t value_in);
 extern mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in);
+extern void st7789_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest);
