@@ -95,12 +95,12 @@ class Badge():
             return None
 
         self._current_mode = mode
-    
+
         if MODEL == "tufty":
             display.fullres(bool(mode & HIRES))
 
         elif MODEL == "badger":
-            display.speed((_current_mode >> 4) & 0xf)
+            display.speed((self._current_mode >> 4) & 0xf)
 
         # TODO: Mutate the existing screen object?
         font = getattr(getattr(builtins, "screen", None), "font", None)
