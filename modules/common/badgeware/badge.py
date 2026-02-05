@@ -125,21 +125,17 @@ class Badge():
         return None
 
     def battery_voltage(self):
-        return 0
+        # Get the average reading over 20 samples from our VBAT and VREF
+        voltage = sample_adc_u16(VBAT_SENSE, 10) * conversion_factor * 2
+        vref = sample_adc_u16(SENSE_1V1, 10) * conversion_factor
+        return  voltage / vref * 1.1
 
     def usb_connected(self):
         return bool(VBUS_DETECT.value())
 
     def battery_level(self):
         # Use the battery voltage to estimate the remaining percentage
-
-        # Get the average reading over 20 samples from our VBAT and VREF
-        voltage = sample_adc_u16(VBAT_SENSE, 10) * conversion_factor * 2
-        vref = sample_adc_u16(SENSE_1V1, 10) * conversion_factor
-        voltage = voltage / vref * 1.1
-
-        # Return the battery level as a percentage
-        return min(100, max(0, round(123 - (123 / pow((1 + pow((voltage / 3.2), 80)), 0.165)))))
+        return min(100, max(0, round(123 - (123 / pow((1 + pow((self.battery_voltage() / 3.2), 80)), 0.165)))))
 
     def is_charging(self):
         # We only want to return the charge status if the USB cable is connected.
