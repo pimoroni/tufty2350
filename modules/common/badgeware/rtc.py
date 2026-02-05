@@ -18,7 +18,7 @@ class RTC:
             self.rtc_to_localtime()
 
     def datetime(self, dt=None):
-        dtf = self._rtc.datetime()
+        dtf = self._rtc.datetime
         return dtf() if dt is None else dtf(dt)
 
     def localtime_to_rtc(self):
