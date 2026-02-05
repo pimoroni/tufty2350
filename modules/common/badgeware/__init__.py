@@ -18,17 +18,17 @@ def run(update, init=None, on_exit=None):
     screen.font = DEFAULT_FONT
     screen.pen = color.black
     screen.clear()
-    screen.pen = badge.foreground()
+    screen.pen = badge.default_pen()
     try:
         if init:
             init()
             gc.collect()
         try:
             while True:
-                if badge.background() is not None:
-                    screen.pen = badge.background()
+                if badge.default_clear() is not None:
+                    screen.pen = badge.default_clear()
                     screen.clear()
-                screen.pen = badge.foreground()
+                screen.pen = badge.default_pen()
                 badge.poll()
                 if (result := update()) is not None:
                     gc.collect()
@@ -150,5 +150,5 @@ State = __import__(".frozen/badgeware/state").State
 DEFAULT_FONT = rom_font.sins
 
 badge.mode(LORES | VSYNC)
-badge.foreground(color.white)
-badge.background(color.black)
+badge.default_pen(color.white)
+badge.default_clear(color.black)
