@@ -1,7 +1,7 @@
 import sys
 import os
 import math
-from badgeware import run, clamp
+from badgeware import run
 
 sys.path.insert(0, "/system/apps/badge")
 os.chdir("/system/apps/badge")
@@ -53,7 +53,7 @@ def draw_background():
         x = 0
         for _col in range(16):
             dist = math.sqrt((x + 5 - cx) ** 2 + (y + 5 - cy) ** 2)
-            pulse = (math.sin(-io.ticks / 400 + (dist / 6)) / 2) + 0.5
+            pulse = (math.sin(-badge.ticks / 400 + (dist / 6)) / 2) + 0.5
             pulse = 0.8 + (pulse / 2)
             screen.pen = color.rgb(0, 0, 0, 100 * pulse)
             screen.rectangle(x, y, 10, 10)
@@ -107,27 +107,27 @@ def update():
     # ripple effect
     draw_background()
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         flip = True
-        flip_start = io.ticks
+        flip_start = badge.ticks
         rear_view = not rear_view
 
-    if io.BUTTON_UP in io.held:
+    if badge.held(BUTTON_UP):
         change_background(h=5)
 
-    if io.BUTTON_DOWN in io.held:
+    if badge.held(BUTTON_DOWN):
         change_background(h=5)
 
-    if io.BUTTON_C in io.held:
+    if badge.held(BUTTON_C):
         change_background(c=5)
 
-    if io.BUTTON_A in io.held:
+    if badge.held(BUTTON_A):
         change_background(c=-5)
 
     if flip:
         # create a spin animation that runs over 100ms
         speed = 95
-        frame = io.ticks - flip_start
+        frame = badge.ticks - flip_start
 
         # calculate the width of the tile during this part of the animation
         width = round(math.cos(frame / speed) * 3) / 3

@@ -43,7 +43,7 @@ score = 0
 
 renderer = Renderer()
 
-timer = io.ticks
+timer = badge.ticks
 
 
 # The Snake class stores the location and direction of the head,
@@ -103,22 +103,22 @@ newdirection = 0
 def intro_controls():
     global game_speed, grid_size, state
 
-    if io.BUTTON_A in io.pressed:
+    if badge.pressed(BUTTON_A):
         if game_speed > 1:
             game_speed -= 1
 
-    elif io.BUTTON_B in io.pressed:
+    elif badge.pressed(BUTTON_B):
         state = GameState.PLAYING
 
-    elif io.BUTTON_C in io.pressed:
+    elif badge.pressed(BUTTON_C):
         if game_speed < 9:
             game_speed += 1
 
-    elif io.BUTTON_UP in io.pressed:
+    elif badge.pressed(BUTTON_UP):
         if grid_size < 5:
             grid_size += 1
 
-    elif io.BUTTON_DOWN in io.pressed:
+    elif badge.pressed(BUTTON_DOWN):
         if grid_size > 1:
             grid_size -= 1
 
@@ -127,13 +127,13 @@ def intro_controls():
 def game_controls():
     global newdirection
 
-    if io.BUTTON_C in io.pressed and snake.direction != 3:
+    if badge.pressed(BUTTON_C) and snake.direction != 3:
         newdirection = 1
-    elif io.BUTTON_A in io.pressed and snake.direction != 1:
+    elif badge.pressed(BUTTON_A) and snake.direction != 1:
         newdirection = 3
-    elif io.BUTTON_UP in io.pressed and snake.direction != 2:
+    elif badge.pressed(BUTTON_UP) and snake.direction != 2:
         newdirection = 0
-    elif io.BUTTON_DOWN in io.pressed and snake.direction != 0:
+    elif badge.pressed(BUTTON_DOWN) and snake.direction != 0:
         newdirection = 2
 
 
@@ -194,16 +194,16 @@ def update():
     elif state == GameState.PLAYING:
         game_controls()
 
-        if io.ticks - timer > speeds[game_speed]:
+        if badge.ticks - timer > speeds[game_speed]:
             snake.direction = newdirection
             move_snake()
-            timer = io.ticks
+            timer = badge.ticks
 
         renderer.draw_play(snake, apple, score)
 
     # If we're on the game over screen, reset the game state and go back into the intro when the button is pressed.
     elif state == GameState.GAME_OVER:
-        if io.BUTTON_B in io.pressed:
+        if badge.pressed(BUTTON_B):
             game_speed = 1
             grid_size = 1
             score = 0

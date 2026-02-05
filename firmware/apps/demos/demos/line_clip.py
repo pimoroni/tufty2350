@@ -3,17 +3,17 @@ import math
 def update():
   for i in range(100):
 
-    screen.pen = color.oklch(128, 128, (io.ticks / 100) + i + 150, 100)
+    screen.pen = color.oklch(128, 128, (badge.ticks / 100) + i + 150, 100)
 
     # line clipping to rect
     p1 = vec2(
-      int(math.sin(i + io.ticks / 500) * 100 + 0),
-      int(math.sin(i + io.ticks / 400) * 100 + 0)
+      int(math.sin(i + badge.ticks / 500) * 100 + 0),
+      int(math.sin(i + badge.ticks / 400) * 100 + 0)
     )
 
     p2 = vec2(
-      int(math.sin(i + io.ticks / 300) * 100 + 320),
-      int(math.sin(i + io.ticks / 200) * 100 + 240)
+      int(math.sin(i + badge.ticks / 300) * 100 + 320),
+      int(math.sin(i + badge.ticks / 200) * 100 + 240)
     )
     clip = rect(10, 10, 140, 100)
 

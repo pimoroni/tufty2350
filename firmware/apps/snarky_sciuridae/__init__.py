@@ -28,7 +28,7 @@ def game_update():
 
     if not pet.is_dead():
         # calculate pet's new stats based on the time since last update
-        seconds = io.ticks_delta / 1000
+        seconds = badge.ticks_delta / 1000
 
         # work out how much pet's stats have reduce since the last frame
         happy_delta = (seconds / happiness_duration) * 100
@@ -39,17 +39,17 @@ def game_update():
         pet.clean(-clean_delta)
 
         # play with pet!
-        if io.BUTTON_A in io.pressed:
+        if badge.pressed(BUTTON_A):
             pet.happy(30)
             pet.do_action("dance")
 
         # feed pet!
-        if io.BUTTON_B in io.pressed:
+        if badge.pressed(BUTTON_B):
             pet.hunger(30)
             pet.do_action("eating")
 
         # clean pet!
-        if io.BUTTON_C in io.pressed:
+        if badge.pressed(BUTTON_C):
             pet.clean(30)
             pet.do_action("clean")
 
@@ -71,7 +71,7 @@ def game_update():
         pet.move_to_center()
 
         # if user pressed button b then reset pet's stats
-        if io.BUTTON_B in io.pressed:
+        if badge.pressed(BUTTON_B):
             pet = Pet(95)
 
 

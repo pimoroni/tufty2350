@@ -4,11 +4,11 @@ import math
 def update():
   screen.antialias = image.X4
 
-  i = math.sin(io.ticks / 2000) * 0.2 + 0.5
-  f = math.sin(io.ticks / 1000) * 150
-  t = f + (math.sin(io.ticks / 500) + 1.0) * 50 + 100
+  i = math.sin(badge.ticks / 2000) * 0.2 + 0.5
+  f = math.sin(badge.ticks / 1000) * 150
+  t = f + (math.sin(badge.ticks / 500) + 1.0) * 50 + 100
 
-  stroke = ((math.sin(io.ticks / 1000) + 1) * 0.05) + 0.1
+  stroke = ((math.sin(badge.ticks / 1000) + 1) * 0.05) + 0.1
 
   shapes = [
     shape.rectangle(-1, -1, 2, 2),
@@ -35,10 +35,10 @@ def update():
     for x in range(4):
       i = y * 4 + x
 
-      scale = ((math.sin((io.ticks + i * 2000) / 1000) + 1) * 3) + 5
+      scale = ((math.sin((badge.ticks + i * 2000) / 1000) + 1) * 3) + 5
 
       if i < len(shapes):
         screen.pen = color.oklch(220, 128, i * 20, 150)
 
-        shapes[i].transform = mat3().translate(x * 36 + 25, y * 26 + 20).rotate(io.ticks / 100).scale(scale)
+        shapes[i].transform = mat3().translate(x * 36 + 25, y * 26 + 20).rotate(badge.ticks / 100).scale(scale)
         screen.shape(shapes[i])

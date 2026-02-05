@@ -76,10 +76,10 @@ d_proj = (screen.width / 2) / math.tan(player.fov * (math.pi / 180) / 2)
 @micropython.native
 def update():
   player.pos = vec2(
-    math.sin(io.ticks / 2000) * 2 + 11,
-    math.cos(io.ticks / 2000) * 2 + 8
+    math.sin(badge.ticks / 2000) * 2 + 11,
+    math.cos(badge.ticks / 2000) * 2 + 8
   )
-  player.set_angle(io.ticks / 30)
+  player.set_angle(badge.ticks / 30)
 
   if display_minimap:
     # clear the minimap overlay to 0, 0, 0, 0
@@ -100,10 +100,10 @@ def update():
 
   # cast rays for player sight
   num_rays = screen.width
-  result = algorithm.dda(player.pos, player.angle, player.fov, num_rays, 20, world_map, MAP_SIZE_X, MAP_SIZE_Y)
+  result = algorithm.raycast(player.pos, math.radians(player.angle), player.fov, num_rays, 20, world_map, MAP_SIZE_X, MAP_SIZE_Y, screen.width)
 
   for screen_x, ray in enumerate(result):
-    for (tile_id, cb_p, _cb_g, _edge, _offset, distance) in ray:
+    for (tile_id, cb_p, _cb_g, _edge, _offset, distance, _ray_angle) in ray:
       if tile_id == 1:
           height = (2 / distance) * d_proj
           b = min(255, distance * 20)

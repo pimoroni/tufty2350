@@ -12,6 +12,6 @@ def magic_sprite(src, pos, scale=1, angle=0):
 
 
 def update():
-  scale = (math.sin(io.ticks / 1000) + 1.0) * 3 + 1
-  angle = math.cos(io.ticks / 500) * 100
+  scale = (math.sin(badge.ticks / 1000) + 1.0) * 3 + 1
+  angle = math.cos(badge.ticks / 500) * 100
   magic_sprite(skull, (80, 60), scale, angle)

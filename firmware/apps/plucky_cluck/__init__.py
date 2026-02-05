@@ -50,7 +50,7 @@ def reset_state():
     # reset game state
     state = GameState.PLAYING
     Obstacle.obstacles = []
-    Obstacle.next_spawn_time = io.ticks + 500
+    Obstacle.next_spawn_time = badge.ticks + 500
     chicken = Chicken()
 
 
@@ -64,7 +64,7 @@ def intro():
     center_text("Plucky Cluck", 38)
 
     # blink button message
-    if int(io.ticks / 500) % 2:
+    if int(badge.ticks / 500) % 2:
         screen.font = small_font
         center_text("Press B to start", 68)
 
@@ -73,7 +73,7 @@ def intro():
     hs = str(score["highscore"])
     center_text(f"High Score: {hs}", 95)
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         reset_state()
 
 # handle the main game loop and user input. each tick we'll update the game
@@ -85,14 +85,14 @@ def play():
     global state
 
     # if the user has pressed A then make chicken jump for her life!
-    if not chicken.is_dead() and io.BUTTON_B in io.pressed:
+    if not chicken.is_dead() and badge.pressed(BUTTON_B):
         chicken.jump()
 
     # update player and check for collision
     chicken.update()
 
     # spawn a new obstacle if the spawn timer has elapsed
-    if not chicken.is_dead() and Obstacle.next_spawn_time and io.ticks > Obstacle.next_spawn_time:
+    if not chicken.is_dead() and Obstacle.next_spawn_time and badge.ticks > Obstacle.next_spawn_time:
         Obstacle.spawn()
 
     # update obstacle positions and draw them
@@ -134,11 +134,11 @@ def game_over():
         State.save("flappy", score)
 
     # flash press button message
-    if int(io.ticks / 500) % 2:
+    if int(badge.ticks / 500) % 2:
         screen.pen = color.rgb(255, 255, 255)
         center_text("Press B to restart", 70)
 
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         reset_state()
         state = GameState.PLAYING
 

@@ -1,7 +1,6 @@
 import math
 import random
 
-from badgeware import get_battery_level, is_charging
 
 black = color.rgb(0, 0, 0)
 background = color.rgb(60, 15, 10)
@@ -35,12 +34,12 @@ class Terminal:
     speed = 250
 
     def update():
-        if io.ticks - Terminal.line_added_at > Terminal.speed:
+        if badge.ticks - Terminal.line_added_at > Terminal.speed:
             Terminal.add_line()
 
     def add_line():
         Terminal.lines.append(random.randint(20, 140))
-        Terminal.line_added_at = io.ticks
+        Terminal.line_added_at = badge.ticks
         Terminal.lines_added += 1
         if len(Terminal.lines) > Terminal.max_lines:
             Terminal.lines = Terminal.lines[len(Terminal.lines) - Terminal.max_lines:]
@@ -62,7 +61,7 @@ def draw_terminal():
     for i in range(21):
         # work out the position of screen that this line will be rendered
         y = 20 + i * 5
-        yo = ((io.ticks - Terminal.line_added_at) / Terminal.speed) * 5
+        yo = ((badge.ticks - Terminal.line_added_at) / Terminal.speed) * 5
         y = int(y - yo)
 
         # force the random seed so that word widths will always be consistent for
@@ -87,7 +86,7 @@ def draw_terminal():
 
 def draw_header():
     # create animated header text
-    dots = "." * int(math.sin(io.ticks / 250) * 2 + 2)
+    dots = "." * int(math.sin(badge.ticks / 250) * 2 + 2)
     label = f"BadgeOS v4.03{dots}"
     pos = (5, 2)
 
@@ -96,10 +95,10 @@ def draw_header():
     screen.text(label, *pos)
 
     # draw the battery indicator
-    if is_charging():
-        battery_level = (io.ticks / 20) % 100
+    if badge.is_charging():
+        battery_level = (badge.ticks / 20) % 100
     else:
-        battery_level = get_battery_level()
+        battery_level = badge.battery_level()
     pos = (137, 4)
     size = (16, 8)
     screen.pen = phosphor

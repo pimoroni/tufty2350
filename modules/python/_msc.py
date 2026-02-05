@@ -1,4 +1,4 @@
-from badgeware import run, set_case_led
+from badgeware import run
 import rp2
 import random
 
@@ -51,8 +51,8 @@ class DiskMode():
     speed = 500 if self.transferring else 1000
     for i in range(len(self.stars)):
       star = self.stars[i]
-      dx = star[0] * (io.ticks_delta / speed)
-      dy = star[1] * (io.ticks_delta / speed)
+      dx = star[0] * (badge.ticks_delta / speed)
+      dy = star[1] * (badge.ticks_delta / speed)
       age = star[2] + 1
       star = (star[0] + dx, star[1] + dy, age)
 
@@ -124,8 +124,7 @@ def update():
   # set transfer state here
   disk_mode.transferring = rp2.is_msc_busy()
 
-  for led in range(4):
-    set_case_led(led, int(disk_mode.transferring))
+  badge.set_caselights(int(disk_mode.transferring))
 
   # draw the ui
   disk_mode.draw()

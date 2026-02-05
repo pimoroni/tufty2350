@@ -40,8 +40,8 @@ gc.collect()
 # Stopping in Thonny can cause run(menu.update) to return None
 if app is not None:
     # Don't pass the b press into the app
-    while io.held:
-        io.poll()
+    while badge.held():
+        badge.poll()
 
     machine.Pin.board.BUTTON_HOME.irq(
         trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher

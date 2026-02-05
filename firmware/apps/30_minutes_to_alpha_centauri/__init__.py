@@ -462,7 +462,7 @@ def update():
 
         intro_cutscene.draw()
 
-        if io.pressed:
+        if badge.pressed():
             if not intro_cutscene.advance():
                 game_state = GameState.PLAYING
                 level_start_time = time.ticks_ms()
@@ -473,18 +473,18 @@ def update():
         # This check disables controls while fading in.
         if check_start():
 
-            if io.BUTTON_A in io.held and player.x > 20:
+            if badge.held(BUTTON_A) and player.x > 20:
                 player.x_accel -= 2
-            elif io.BUTTON_C in io.held and player.x < screen.width - 20:
+            elif badge.held(BUTTON_C) and player.x < screen.width - 20:
                 player.x_accel += 2
-            if io.BUTTON_DOWN in io.held and player.y < screen.height - 20:
+            if badge.held(BUTTON_DOWN) and player.y < screen.height - 20:
                 player.y_accel += 2
-            if io.BUTTON_UP in io.held and player.y > 20:
+            if badge.held(BUTTON_UP) and player.y > 20:
                 player.y_accel -= 2
-            if io.BUTTON_B in io.pressed:
+            if badge.pressed(BUTTON_B):
                 z_increment *= 2
                 player.boost = True
-            if io.BUTTON_B in io.released:
+            if badge.released(BUTTON_B):
                 z_increment /= 2
                 player.boost = False
 
@@ -560,7 +560,7 @@ def update():
         static = random.randint(0, 4)
         screen.blit(game_over.sprite(static, 0), rect(0, 0, screen.width, screen.height))
 
-        if io.pressed:
+        if badge.pressed():
             init_game()
             game_state = GameState.INTRO
 
@@ -597,7 +597,7 @@ def update():
         w, _ = screen.measure_text(time_text)
         screen.text(time_text, vec2((screen.width - w) / 2, 90))
 
-        if io.pressed:
+        if badge.pressed():
             init_game()
             game_state = GameState.INTRO
 

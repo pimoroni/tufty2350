@@ -1,24 +1,16 @@
 builtins = [
+# micropython
     "micropython",
     "const",
     "ptr8",
     "ptr32",
-    "mode",
-    "HIRES",
-    "LORES",
-    "SpriteSheet",
-    "load_font",
-    "rom_font",
-    "clamp",
-    "rnd",
-    "frnd",
+
+# picovector
     "algorithm",
     "brush",
     "color",
-    "default_target",
     "font",
     "image",
-    "io",
     "mat3",
     "pen",
     "pixel_font",
@@ -26,8 +18,45 @@ builtins = [
     "rect",
     "shape",
     "screen",
+
+# badgeware.py
+    "mode",
+    "HIRES",
+    "LORES",
+    "DIRTY",
+
+# badge.py
+    "badge",
+
+# math.py
+    "clamp",
+    "rnd",
+    "frnd",
+
+# text.py
+    "rom_font",
+    "load_font",
+    "scroll_text",
     "text_draw",
-    "text_tokenise"
+    "text_tokenise",
+
+# sprite.py
+    "SpriteSheet",
+    "AnimatedSprite",
+
+# filesystem.py
+    "file_exists",
+    "is_dir",
+
+# rtc.py
+    "rtc",
+
+# badge.py
+    "BUTTON_A",
+    "BUTTON_B",
+    "BUTTON_C",
+    "BUTTON_UP",
+    "BUTTON_DOWN"
 ]
 
 # Include:

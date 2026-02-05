@@ -104,9 +104,9 @@ class Bat:
 
         if not self.auto:
 
-            if io.BUTTON_UP in io.held:
+            if badge.held(BUTTON_UP):
                 self.position.y -= self.movement
-            if io.BUTTON_DOWN in io.held:
+            if badge.held(BUTTON_DOWN):
                 self.position.y += self.movement
 
             # clamp position to screen bounds
@@ -175,7 +175,7 @@ def intro():
     screen.font = large_font
     center_text("TENNIS", CY - 30)
     # blink button message
-    if int(io.ticks / 500) % 2:
+    if int(badge.ticks / 500) % 2:
         center_text("Press B to start", CY + 20)
 
     # update the position for the bats and ball
@@ -183,7 +183,7 @@ def intro():
     Bat.update()
 
     # if the user presses the B button, we'll set everything for them to take over control of our Player
-    if io.BUTTON_B in io.pressed:
+    if badge.pressed(BUTTON_B):
         state = GameState.PLAYING
 
         # Remove the auto player and create a user controlled on
@@ -244,7 +244,7 @@ def update():
         center_text("Press B to return to menu", CY + 60)
 
         # reset the game
-        if io.BUTTON_B in io.pressed:
+        if badge.pressed(BUTTON_B):
             state = GameState.INTRO
             player.score = 0
             player.auto = True

@@ -1,5 +1,4 @@
 import math
-from badgeware import SpriteSheet
 
 # load user interface sprites
 icons = SpriteSheet("assets/icons.png", 4, 1)
@@ -47,7 +46,7 @@ def draw_button(x, y, label, active):
     width = 50
 
     # create an animated bounce effect
-    bounce = math.sin(((io.ticks / 20) - x) / 10) * 2
+    bounce = math.sin(((badge.ticks / 20) - x) / 10) * 2
 
     # draw the button label
     screen.pen = color.rgb(255, 255, 255, 255 if active else 150)
@@ -75,7 +74,7 @@ def draw_bar(name, x, y, amount):
     # if bar level is low then alternate fill with red to show a warning
     screen.pen = stats_brushes[name]
     if amount <= 30:
-        blink = round(io.ticks / 250) % 2 == 0
+        blink = round(badge.ticks / 250) % 2 == 0
         if blink:
             screen.pen = stats_brushes["warning"]
     screen.shape(shape.rounded_rectangle(x + 14, y + 3, fill_width, 6, 2))
