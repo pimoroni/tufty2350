@@ -95,15 +95,19 @@ class Badge():
             return None
 
         self._current_mode = mode
+    
+        if MODEL == "tufty":
+            display.fullres(bool(mode & HIRES))
+
+        elif MODEL == "badger":
+            display.speed((_current_mode >> 4) & 0xf)
 
         # TODO: Mutate the existing screen object?
         font = getattr(getattr(builtins, "screen", None), "font", None)
         brush = getattr(getattr(builtins, "screen", None), "pen", None)
-        resolution = (320, 240) if (mode & HIRES) else (160, 120)
-        builtins.screen = image(*resolution, memoryview(display))
+        builtins.screen = image(display.WIDTH, display.HEIGHT, memoryview(display))
         screen.font = font if font is not None else rom_font.sins
         screen.pen = brush if brush is not None else self._foreground
-        display.fullres(bool(mode & HIRES))
 
         return None
 

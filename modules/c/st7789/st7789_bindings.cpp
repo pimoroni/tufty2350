@@ -103,4 +103,18 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
     return 0;
 }
 
+void st7789_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
+    if(attr == MP_QSTR_WIDTH && dest[0] == MP_OBJ_NULL) {
+        dest[0] = mp_obj_new_int(display->get_mode() ? 320 : 160);
+        return;
+    }
+
+    if(attr == MP_QSTR_HEIGHT && dest[0] == MP_OBJ_NULL) {
+        dest[0] = mp_obj_new_int(display->get_mode() ? 240 : 120);
+        return;
+    }
+
+    dest[1] = MP_OBJ_SENTINEL;
+}
+
 }

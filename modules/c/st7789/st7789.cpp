@@ -255,6 +255,10 @@ namespace pimoroni {
     // gpio_put(cs, 1);
   }
 
+  bool ST7789::get_mode() {
+    return this->fullres_mode;
+  }
+
   void ST7789::set_mode(bool mode) {
     this->fullres_mode = mode;
   }

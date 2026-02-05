@@ -114,6 +114,7 @@ namespace pimoroni {
     void update();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
+    bool get_mode();
     uint32_t *get_framebuffer();
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
     void set_max_pio_clock(uint32_t hz);
