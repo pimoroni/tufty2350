@@ -167,7 +167,7 @@ class Tests:
 
         screen.pen = WHITE
         screen.text(str(error), WIDTH / 2 - (tw / 2), HEIGHT / 2 - th / 2)
-        display.update(False)
+        display.update()
 
     def test_buttons(self):
         # Check if all buttons have been pressed
@@ -289,11 +289,11 @@ class Tests:
                 self.display_error(e)
                 time.sleep(0.1)
 
-        b.irq(self.exit_handler)
-        self.cl_timer.deinit()
+        badge.poll()
 
         # The test has passed now, we'll just stay here a while.
         while True:
+            badge.poll()
             screen.pen = DARK_GREEN
             screen.clear()
             screen.pen = WHITE
@@ -305,8 +305,16 @@ class Tests:
             for line, _width in text_lines:
                 screen.text(line, 5, y, TEXT_SIZE - 1)
                 y += 22
-            display.update(False)
-            time.sleep(0.5)
+            display.update()
+
+            if badge.pressed(BUTTON_B):
+                # Now the test has complete, we can remove the flag.
+                try:
+                    os.remove("hardware_test.txt")
+                except OSError as e:
+                    print(e)
+                powman.shipping_mode()
+
 
     # Interrupt based button testing checks the button gpio
     # and that each button is able to trigger sw_int
@@ -344,7 +352,7 @@ class Tests:
             for line, _width in text_lines:
                 screen.text(line, 5, y, TEXT_SIZE)
                 y += 15
-            display.update(False)
+            display.update()
             # Time out to catch the user not removing the USB
             # Or to end the test if there's a failure on VBUS_DETECT
             if time.time() - start_time < 5:
@@ -378,7 +386,7 @@ class Tests:
                 x, y = self.buttons[button][1]
                 screen.shape(shape.rounded_rectangle(x, y, 10, 10, 3))
 
-        display.update(False)
+        display.update()
 
 
 t = Tests()
