@@ -25,12 +25,9 @@ bdev = rp2.Flash(start=0, len=USER_FLASH_SIZE - LFS_SIZE)
 try:
     fat = vfs.VfsFat(bdev)
     vfs.mount(fat, "/system", readonly=True)
-    os.listdir("/system") # might fail with UnicodeError on corrupt FAT
 
 except:  # noqa: E722
-    from badgeware import fatal_error
-
-    fatal_error("System Error!", "Unable to mount filesystem. This may be a temporary error, reset your board again.")
+    pass
 
 
 del os, vfs, bdev, bdev_lfs, fat, lfs
