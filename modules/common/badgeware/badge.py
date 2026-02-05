@@ -3,18 +3,26 @@ import os
 import builtins
 import machine
 import powman
-
+import binascii
 
 MODEL = os.uname().machine[9:-17].lower()
+UID = binascii.hexlify(machine.unique_id()).decode("ASCII")
 
-builtins.LORES = 0
-builtins.HIRES = 1
+builtins.LORES = 0b00
+builtins.HIRES = 0b01
+builtins.VSYNC = 0b10
+
+builtins.FAST_UPDATE = 3 << 4
+builtins.FULL_UPDATE = 0 << 4
+builtins.MEDIUM_UPDATE = 2 << 4
+builtins.DITHER = 1 << 8
 
 builtins.BUTTON_A = _input.BUTTON_A
 builtins.BUTTON_B = _input.BUTTON_B
 builtins.BUTTON_C = _input.BUTTON_C
 builtins.BUTTON_UP = _input.BUTTON_UP
 builtins.BUTTON_DOWN = _input.BUTTON_DOWN
+builtins.BUTTON_HOME = _input.BUTTON_HOME
 
 
 VBAT_SENSE = machine.ADC(machine.Pin.board.VBAT_SENSE)
@@ -75,6 +83,10 @@ class Badge():
     def model(self):
         return MODEL
 
+    @property
+    def uid(self):
+        return UID
+
     def background(self, *args):
         if len(args) == 0:
             return self._background
@@ -98,6 +110,7 @@ class Badge():
 
         if MODEL == "tufty":
             display.fullres(bool(mode & HIRES))
+            display.set_vsync(bool(mode & VSYNC))
 
         elif MODEL == "badger":
             display.speed((self._current_mode >> 4) & 0xf)
@@ -193,7 +206,7 @@ class Badge():
         return [light.duty_u16() / 65535 for light in self._case_lights]
 
     def sleep(self, duration=None):
-        powman.sleep() if duration is None else powman.sleep(duration)
+        powman.goto_dormant_for(duration) if duration else powman.sleep()
 
     def wake_reason(self):
         pass

@@ -149,6 +149,6 @@ State = __import__(".frozen/badgeware/state").State
 
 DEFAULT_FONT = rom_font.sins
 
-badge.mode(LORES)
+badge.mode(LORES | VSYNC)
 badge.foreground(color.white)
 badge.background(color.black)
