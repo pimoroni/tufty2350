@@ -49,11 +49,17 @@ builtins = [
     "badge",
     "HIRES",
     "LORES",
+    "VSYNC",
+    "FAST_UPDATE",
+    "FULL_UPDATE",
+    "MEDIUM_UPDATE",
+    "DITHER",
     "BUTTON_A",
     "BUTTON_B",
     "BUTTON_C",
     "BUTTON_UP",
-    "BUTTON_DOWN"
+    "BUTTON_DOWN",
+    "BUTTON_HOME"
 ]
 
 # Include:

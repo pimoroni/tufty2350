@@ -60,7 +60,7 @@ PATH = color.rgb((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
 screen.pen = color.rgb(0, 0, 0)
 
 # enable hi-res mode
-badge.mode(HIRES)
+badge.mode(HIRES | VSYNC)
 
 CX, CY = screen.width / 2, screen.height / 2
 

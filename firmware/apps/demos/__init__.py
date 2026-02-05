@@ -6,7 +6,7 @@ APP_DIR = "/system/apps/demos"
 sys.path.insert(0, APP_DIR)
 os.chdir(APP_DIR)
 
-badge.mode(LORES)
+badge.mode(LORES | VSYNC)
 
 
 import gc
