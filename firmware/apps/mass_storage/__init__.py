@@ -1,6 +1,5 @@
 import os
 import sys
-from badgeware import run
 
 
 # Standalone bootstrap for finding app assets

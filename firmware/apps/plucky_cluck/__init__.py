@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, "/system/apps/plucky_cluck")
 os.chdir("/system/apps/plucky_cluck")
 
-from badgeware import run, State
+from badgeware import State
 from chicken import Chicken
 from obstacle import Obstacle
 

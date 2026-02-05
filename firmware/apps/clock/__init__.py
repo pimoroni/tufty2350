@@ -13,7 +13,7 @@ os.chdir(APP_DIR)
 sys.path.insert(0, APP_DIR)
 
 
-from badgeware import run, State
+from badgeware import State
 import time
 import ntptime
 from daylightsaving import DaylightSavingPolicy, DaylightSaving

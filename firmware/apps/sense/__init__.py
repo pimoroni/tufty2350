@@ -13,7 +13,7 @@ sys.path.insert(0, APP_DIR)
 
 import math
 
-from badgeware import run, fatal_error
+from badgeware import fatal_error
 from breakout_bme280 import BreakoutBME280
 from breakout_ltr559 import BreakoutLTR559
 from lsm6ds3 import LSM6DS3, NORMAL_MODE_104HZ

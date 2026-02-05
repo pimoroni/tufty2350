@@ -1,7 +1,7 @@
 import math
 
 screen.antialias = image.X4
-mode(HIRES)
+badge.mode(HIRES)
 canvas_area = (10, 15, screen.width - 20, screen.height - 35)
 
 font = pixel_font.load("/system/assets/fonts/vest.ppf")

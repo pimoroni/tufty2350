@@ -20,13 +20,9 @@ builtins = [
     "screen",
 
 # badgeware.py
-    "mode",
-    "HIRES",
-    "LORES",
-    "DIRTY",
-
-# badge.py
-    "badge",
+    "display",
+    "run",
+    "fatal_error",
 
 # math.py
     "clamp",
@@ -36,9 +32,7 @@ builtins = [
 # text.py
     "rom_font",
     "load_font",
-    "scroll_text",
-    "text_draw",
-    "text_tokenise",
+    "text",
 
 # sprite.py
     "SpriteSheet",
@@ -52,6 +46,9 @@ builtins = [
     "rtc",
 
 # badge.py
+    "badge",
+    "HIRES",
+    "LORES",
     "BUTTON_A",
     "BUTTON_B",
     "BUTTON_C",

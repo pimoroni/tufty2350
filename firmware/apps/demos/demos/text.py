@@ -53,9 +53,9 @@ def update():
   y = 5
   width = math.sin(badge.ticks / 500) * 40 + 110
   height = 200
-  tokens = text_tokenise(screen, message, glyph_renderers)
+  tokens = text.tokenise(screen, message, glyph_renderers)
   bounds = rect(x, y, width, height)
-  text_draw(screen, tokens, bounds, line_spacing=1, word_spacing=1.05)
+  text.draw(screen, tokens, bounds, line_spacing=1, word_spacing=1.05)
 
   screen.pen = color.rgb(60, 80, 100, 100)
   screen.line(bounds.x, bounds.y, bounds.x + bounds.w, bounds.y)

@@ -11,7 +11,7 @@ sys.path.insert(0, APP_DIR)
 
 import ui
 from vpet import Pet
-from badgeware import run, State
+from badgeware import State
 
 pet = Pet(95)  # create pet!
 

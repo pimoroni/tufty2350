@@ -1,6 +1,6 @@
 import sys
 import os
-from badgeware import run, fatal_error
+from badgeware import fatal_error
 import machine
 import gc
 

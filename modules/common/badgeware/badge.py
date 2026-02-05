@@ -7,6 +7,9 @@ import powman
 
 MODEL = os.uname().machine[9:-17].lower()
 
+builtins.LORES = 0
+builtins.HIRES = 1
+
 builtins.BUTTON_A = _input.BUTTON_A
 builtins.BUTTON_B = _input.BUTTON_B
 builtins.BUTTON_C = _input.BUTTON_C
@@ -39,19 +42,30 @@ def sample_adc_u16(adc, samples=1):
 
 class Badge():
     def  __init__(self):
+        if MODEL == "badger":
+            self._background = color.white
+            self._foreground = color.black
+        else:
+            self._background = color.black
+            self._foreground = color.white
+        self._current_mode = None
+
         self._case_lights = [
             machine.PWM(machine.Pin.board.CL0),
             machine.PWM(machine.Pin.board.CL1),
             machine.PWM(machine.Pin.board.CL2),
             machine.PWM(machine.Pin.board.CL3)
         ]
-
         for led in self._case_lights:
             led.freq(500)
 
     @property
     def ticks(self):
         return _input.ticks
+
+    @property
+    def ticks_delta(self):
+        return _input.ticks_delta
 
     def poll(self):
         _input.poll()
@@ -60,8 +74,37 @@ class Badge():
     def model(self):
         return MODEL
 
-    def clear_color(self, color=None):
-        self._clear_color = color
+    def background(self, *args):
+        if len(args) == 0:
+            return self._background
+        self._background = args[0]
+        return None
+
+    def foreground(self, *args):
+        if len(args) == 0:
+            return self._foreground
+        self._foreground = args[0]
+        return None
+
+    def mode(self, mode=None):
+        if mode is None:
+            return self._current_mode
+
+        if mode == self._current_mode:
+            return None
+
+        self._current_mode = mode
+
+        # TODO: Mutate the existing screen object?
+        font = getattr(getattr(builtins, "screen", None), "font", None)
+        brush = getattr(getattr(builtins, "screen", None), "pen", None)
+        resolution = (320, 240) if (mode & HIRES) else (160, 120)
+        builtins.screen = image(*resolution, memoryview(display))
+        screen.font = font if font is not None else rom_font.sins
+        screen.pen = brush if brush is not None else self._foreground
+        display.fullres(bool(mode & HIRES))
+
+        return None
 
     def battery_voltage(self):
         return 0
@@ -123,6 +166,11 @@ class Badge():
         if button is None:
             return _input.released
         return button in _input.released
+
+    def changed(self, button=None):
+        if button is None:
+            return _input.changed
+        return button in _input.changed
 
     def resolution(self):
         return screen.width, screen.height

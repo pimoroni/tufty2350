@@ -11,7 +11,7 @@ os.chdir(APP_DIR)
 # Standalone bootstrap for module imports
 sys.path.insert(0, APP_DIR)
 
-from badgeware import run, display
+from badgeware import display
 import time
 
 # Centre points for the display
