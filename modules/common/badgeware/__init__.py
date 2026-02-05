@@ -14,41 +14,21 @@ def set_brightness(value):
     display.backlight(value)
 
 
-def mode(mode, force=False):
-    global _current_mode
-
-    if mode == _current_mode and not force:
-        return False
-
-    _current_mode = mode
-
-    # TODO: Mutate the existing screen object?
-    font = getattr(getattr(builtins, "screen", None), "font", None)
-    brush = getattr(getattr(builtins, "screen", None), "pen", None)
-    resolution = (320, 240) if (mode & HIRES) else (160, 120)
-    builtins.screen = image(*resolution, memoryview(display))
-    screen.font = font if font is not None else DEFAULT_FONT
-    screen.pen = brush if brush is not None else BG
-    display.fullres(bool(mode & HIRES))
-
-    return True
-
-
 def run(update, init=None, on_exit=None):
     screen.font = DEFAULT_FONT
-    screen.pen = BG
+    screen.pen = color.black
     screen.clear()
-    screen.pen = FG
+    screen.pen = badge.foreground()
     try:
         if init:
             init()
             gc.collect()
         try:
             while True:
-                if (_current_mode & DIRTY) == 0:
-                    screen.pen = BG
+                if badge.background() is not None:
+                    screen.pen = badge.background()
                     screen.clear()
-                screen.pen = FG
+                screen.pen = badge.foreground()
                 badge.poll()
                 if (result := update()) is not None:
                     gc.collect()
@@ -110,7 +90,7 @@ def message(title, msg, window=None):
     bounds.x += 5
     bounds.w -= 10
 
-    text_draw(error_window, msg, bounds=bounds)
+    text.draw(error_window, msg, bounds=bounds)
 
 
 def fatal_error(title, error):
@@ -118,10 +98,10 @@ def fatal_error(title, error):
         error = get_exception(error)
     print(f"- ERROR: {error}")
 
-    if (_current_mode & HIRES) == 0:
+    if (badge.mode() & HIRES) == 0:
         contents = image(160, 120)
         contents.blit(screen, vec2(0, 0))
-        mode(HIRES)
+        badge.mode(HIRES)
         screen.blit(contents, rect(0, 0, 320, 240))
         del contents
 
@@ -147,16 +127,15 @@ for k, v in picovector.__dict__.items():
     if not k.startswith("__"):
         setattr(builtins, k, v)
 
-# Hoist mode-setting functions
-builtins.mode = mode
-builtins.LORES = 0b0000
-builtins.HIRES = 0b0001
-builtins.DIRTY = 0b0100
-
 # Hoist image anti-aliasing constants
 builtins.OFF = image.OFF
 builtins.X2 = image.X2
 builtins.X4 = image.X4
+
+# Hoist display and run for clean Thonny apps
+builtins.display = display
+builtins.run = run
+builtins.fatal_error = fatal_error
 
 # Import badgeware modules
 __import__(".frozen/badgeware/badge")
@@ -168,16 +147,8 @@ __import__(".frozen/badgeware/memory")
 __import__(".frozen/badgeware/rtc")
 State = __import__(".frozen/badgeware/state").State
 
-# TODO: Deprecate?
-# Finally, build in badgeware as "bw" for less frequently used things
-builtins.bw = sys.modules.get("badgeware", None)
-
 DEFAULT_FONT = rom_font.sins
-ERROR_FONT = rom_font.desert
 
-FG = color.white
-BG = color.black
-
-_current_mode = LORES
-
-mode(LORES, True)
+badge.mode(LORES)
+badge.foreground(color.white)
+badge.background(color.black)

@@ -1,4 +1,3 @@
-from badgeware import run
 import rp2
 import random
 

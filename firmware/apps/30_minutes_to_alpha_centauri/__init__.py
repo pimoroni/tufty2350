@@ -6,7 +6,6 @@ os.chdir("/system/apps/30_minutes_to_alpha_centauri")
 
 import math
 import random
-from badgeware import run
 import cutscene
 import time
 

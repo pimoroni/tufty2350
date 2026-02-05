@@ -11,12 +11,11 @@ os.chdir(APP_DIR)
 sys.path.insert(0, APP_DIR)
 
 import math
-from badgeware import run
 import random
 
 # We'll use hight resolution mode for this app!
 screen.pen = color.rgb(0, 0, 0)
-mode(HIRES)
+badge.mode(HIRES)
 
 # center points of the display
 CX, CY = screen.width / 2, screen.height / 2

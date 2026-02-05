@@ -9,10 +9,9 @@ os.chdir(APP_DIR)
 # Standalone bootstrap for module imports
 sys.path.insert(0, APP_DIR)
 
-from badgeware import run
 import ui
 
-mode(HIRES)
+badge.mode(HIRES)
 
 canvas = image(ui.canvas_area[2], ui.canvas_area[3])
 cursor = (ui.canvas_area[2] / 2, ui.canvas_area[3] / 2)

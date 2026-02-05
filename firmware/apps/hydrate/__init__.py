@@ -5,7 +5,7 @@ import math
 sys.path.insert(0, "/system/apps/hydrate")
 os.chdir("/system/apps/hydrate")
 
-from badgeware import run, State
+from badgeware import State
 
 CX = screen.width / 2
 CY = screen.height / 2

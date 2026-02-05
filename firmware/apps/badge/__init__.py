@@ -1,7 +1,6 @@
 import sys
 import os
 import math
-from badgeware import run
 
 sys.path.insert(0, "/system/apps/badge")
 os.chdir("/system/apps/badge")

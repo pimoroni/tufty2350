@@ -6,7 +6,6 @@ sys.path.insert(0, "/")
 os.chdir("/system/apps/menu")
 
 import ui
-from badgeware import run
 
 from app import Apps
 
