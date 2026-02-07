@@ -158,7 +158,14 @@ extern "C" {
   //   }
   // }
 
+#ifdef TUFTY
   rgb_color_t _color_black  = rgb_color_t(0x14, 0x1e, 0x28, 0xff);
+  rgb_color_t _color_white  = rgb_color_t(0xde, 0xee, 0xd6, 0xff);
+#else
+  rgb_color_t _color_black  = rgb_color_t(0x00, 0x00, 0x00, 0xff);
+  rgb_color_t _color_white  = rgb_color_t(0xff, 0xff, 0xff, 0xff);
+#endif
+
   rgb_color_t _color_grape  = rgb_color_t(0x44, 0x24, 0x34, 0xff);
   rgb_color_t _color_navy   = rgb_color_t(0x30, 0x34, 0x6d, 0xff);
   rgb_color_t _color_grey   = rgb_color_t(0x4e, 0x4a, 0x4e, 0xff);
@@ -173,7 +180,6 @@ extern "C" {
   rgb_color_t _color_latte  = rgb_color_t(0xd2, 0xaa, 0x99, 0xff);
   rgb_color_t _color_cyan   = rgb_color_t(0x6d, 0xc2, 0xca, 0xff);
   rgb_color_t _color_yellow = rgb_color_t(0xda, 0xd4, 0x5e, 0xff);
-  rgb_color_t _color_white  = rgb_color_t(0xde, 0xee, 0xd6, 0xff);
   rgb_color_t _color_transparent  = rgb_color_t(0x00, 0x00, 0x00, 0x00);
 
   // default palette based on Dawnbringer 16
