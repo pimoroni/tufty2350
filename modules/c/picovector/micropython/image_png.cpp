@@ -18,15 +18,52 @@ extern "C" {
   static int32_t pngdec_seek_callback(PNGFILE *png, int32_t p);
   static void pngdec_decode_callback(PNGDRAW *pDraw);
 
+  struct pngdec_decode_data_t {
+    fx16_t step_x;
+    fx16_t step_y;
+    fx16_t cur_y;
+    bool set_palette = false;
+    image_t* image;
+  };
+
   static inline int pngdec_decode(image_obj_t &target, PNG *png, int target_width, int target_height) {
+    pngdec_decode_data_t decode_data;
+
+    int width = png->getWidth();
+    int height = png->getHeight();
+
+    if (target.image != nullptr) {
+      rect_t bounds = target.image->bounds();
+      target_width = bounds.w;
+      target_height = bounds.h;
+    }
+
+    if (target_width > width) target_width = width;
+    if (target_height > height) target_height = height;
+
     if(target.image == nullptr) {
-      int width = png->getWidth();
-      int height = png->getHeight();
+      if (target_width == 0 && target_height == 0) {
+        target_width = width;
+        target_height = height;
+      }
+      else if (target_width != 0 && target_height == 0) {
+        target_height = (height * ((target_width << 16) / width)) >> 16;
+      }
+      else if (target_height != 0 && target_width == 0) {
+        target_width = (width * ((target_height << 16) / height)) >> 16;
+      }
+
       bool has_palette = png->getPixelType() == PNG_PIXEL_INDEXED;
 
-      target.image = new(m_malloc(sizeof(image_t))) image_t(width, height, RGBA8888, has_palette);
+      target.image = new(m_malloc(sizeof(image_t))) image_t(target_width, target_height, RGBA8888, has_palette);
     }
-    int status = png->decode((void *)target.image, 0);
+
+    decode_data.image = target.image;
+    decode_data.step_x = f_to_fx16((float)target_width / (float)width);
+    decode_data.step_y = f_to_fx16((float)target_height / (float)height);
+    decode_data.cur_y = -decode_data.step_y;
+
+    int status = png->decode((void *)&decode_data, 0);
     png->close();
     return status;
   }
@@ -100,42 +137,56 @@ extern "C" {
   }
 
   static void pngdec_decode_callback(PNGDRAW *pDraw) {
-    // Skip rows as required if scaling
-    int scale_skip = 0;
-    if (pDraw->y & scale_skip) {
+    pngdec_decode_data_t* decode_data = (pngdec_decode_data_t*)pDraw->pUser;
+
+    fx16_t last_y = decode_data->cur_y >> 16;
+    decode_data->cur_y += decode_data->step_y;
+    if (decode_data->cur_y >> 16 == last_y) {
       return;
     }
 
-    image_t *target = (image_t *)pDraw->pUser;
+    image_t *target = decode_data->image;
+    uint8_t *pixels = (uint8_t *)pDraw->pPixels;
 
     uint8_t *psrc = (uint8_t *)pDraw->pPixels;
     int w = pDraw->iWidth;
 
+    fx16_t cur_x = 0;
+
     switch(pDraw->iPixelType) {
       case PNG_PIXEL_TRUECOLOR: {
-        uint32_t *pdst = (uint32_t *)target->ptr(0, pDraw->y);
+        uint32_t *pdst = (uint32_t *)target->ptr(0, decode_data->cur_y >> 16);
         while(w--) {
           rgb_color_t c(psrc[0], psrc[1], psrc[2], 255);
           *pdst = c._p;
-          psrc += 3;
           pdst++;
+
+          fx16_t last_x = cur_x >> 16;
+          do {
+            psrc += 3;
+            cur_x += decode_data->step_x;
+          } while (cur_x >> 16 == last_x);          
         }
       } break;
 
       case PNG_PIXEL_TRUECOLOR_ALPHA: {
-        uint32_t *pdst = (uint32_t *)target->ptr(0, pDraw->y);
+        uint32_t *pdst = (uint32_t *)target->ptr(0, decode_data->cur_y >> 16);
         while(w--) {
           rgb_color_t c(psrc[0], psrc[1], psrc[2], psrc[3]);
           *pdst = c._p;
-          psrc += 4;
           pdst++;
-          psrc += scale_skip << 2;
+
+          fx16_t last_x = cur_x >> 16;
+          do {
+            psrc += 4;
+            cur_x += decode_data->step_x;
+          } while (cur_x >> 16 == last_x);
         }
       } break;
 
       case PNG_PIXEL_INDEXED: {
         if(target->has_palette()) {
-          if (true /*!pngdec_read_palette*/) {
+          if (!decode_data->set_palette) {
             for(int i = 0; i < 256; i++) {
               rgb_color_t c(
                 pDraw->pPalette[i * 3 + 0],
@@ -145,18 +196,22 @@ extern "C" {
               );
               target->palette(i, c._p);
             }
-            //pngdec_read_palette = true;
+            decode_data->set_palette = true;
           }
 
-          uint8_t *pdst = (uint8_t *)target->ptr(0, pDraw->y);
+          uint8_t *pdst = (uint8_t *)target->ptr(0, decode_data->cur_y >> 16);
           while(w--) {
             *pdst = *psrc;
             pdst++;
-            psrc++;
-            psrc += scale_skip;
+
+            fx16_t last_x = cur_x >> 16;
+            do {
+              psrc++;
+              cur_x += decode_data->step_x;
+            } while (cur_x >> 16 == last_x);
           }
         } else {
-          uint32_t *pdst = (uint32_t *)target->ptr(0, pDraw->y);
+          uint32_t *pdst = (uint32_t *)target->ptr(0, decode_data->cur_y >> 16);
           while(w--) {
             *pdst = rgb_color_t(
               pDraw->pPalette[*psrc * 3 + 0],
@@ -164,14 +219,18 @@ extern "C" {
               pDraw->pPalette[*psrc * 3 + 2],
               pDraw->iHasAlpha ? pDraw->pPalette[768 + *psrc] : 255
             )._p;
-            psrc++;
             pdst++;
-            psrc += scale_skip;
+
+            fx16_t last_x = cur_x >> 16;
+            do {
+              psrc++;
+              cur_x += decode_data->step_x;
+            } while (cur_x >> 16 == last_x);
           }
         }
       } break;
       case PNG_PIXEL_GRAYSCALE: {
-        uint32_t *pdst = (uint32_t *)target->ptr(0, pDraw->y);
+        uint32_t *pdst = (uint32_t *)target->ptr(0, decode_data->cur_y >> 16);
         while(w--) {
           uint8_t src = *psrc;
           // do something with index here
@@ -198,8 +257,11 @@ extern "C" {
             } break;
           }
 
-          psrc++;
-          psrc += scale_skip;
+          fx16_t last_x = cur_x >> 16;
+          do {
+            psrc++;
+            cur_x += decode_data->step_x;
+          } while (cur_x >> 16 == last_x);
         }
       } break;
 
