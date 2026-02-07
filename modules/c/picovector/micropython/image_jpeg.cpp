@@ -19,15 +19,30 @@ extern "C" {
   static int jpegdec_decode_callback(JPEGDRAW *pDraw);
 
   static inline int jpegdec_decode(image_obj_t &target, JPEGDEC *jpeg) {
+    int scale = 1;
     if(target.image == nullptr) {
-      printf("jpeg decode, new image_t(%d, %d)\n", jpeg->getWidth(), jpeg->getHeight());
-      target.image = new(m_malloc(sizeof(image_t))) image_t(jpeg->getWidth(), jpeg->getHeight(), RGBA8888, false);
+      int width = jpeg->getWidth();
+      int height = jpeg->getHeight();
+
+      // Auto scale down if image is huge
+      while (width * height > 250000) {
+        scale <<= 1;
+        width >>= 1;
+        height >>= 1;
+      }
+      if (scale > 8) {
+        return JPEG_INVALID_FILE;
+      }
+      mp_printf(&mp_plat_print, "jpeg decode, new image_t(%d, %d) scale %d\n", jpeg->getWidth(), jpeg->getHeight(), scale);
+      target.image = new(m_malloc(sizeof(image_t))) image_t(width, height, RGBA8888, false);
     }
 
     jpeg->setUserPointer((void *)target.image);
     jpeg->setPixelType(RGB888_LITTLE_ENDIAN);
 
-    int status = jpeg->decode(0, 0, 0);
+    int jpeg_options = 0;
+    if (scale > 1) jpeg_options = scale;
+    int status = jpeg->decode(0, 0, jpeg_options);
     jpeg->close();
     return status ? JPEG_SUCCESS : JPEG_DECODE_ERROR;
   }
