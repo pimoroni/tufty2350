@@ -28,7 +28,7 @@ def update():
 
     # process button inputs to switch between apps
     if io.BUTTON_C in io.pressed:
-        if (active % 3) < 2 and active < len(apps):
+        if (active % 3) < 2 and active < len(apps) - 1:
             active += 1
     if io.BUTTON_A in io.pressed:
         if (active % 3) > 0 and active > 0:
