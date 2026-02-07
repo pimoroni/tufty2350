@@ -18,32 +18,35 @@ extern "C" {
   static int32_t pngdec_seek_callback(PNGFILE *png, int32_t p);
   static void pngdec_decode_callback(PNGDRAW *pDraw);
 
-  static inline int pngdec_decode(image_obj_t &target, PNG *png) {
+  static inline int pngdec_decode(image_obj_t &target, PNG *png, int target_width, int target_height) {
     if(target.image == nullptr) {
+      int width = png->getWidth();
+      int height = png->getHeight();
       bool has_palette = png->getPixelType() == PNG_PIXEL_INDEXED;
-      target.image = new(m_malloc(sizeof(image_t))) image_t(png->getWidth(), png->getHeight(), RGBA8888, has_palette);
+
+      target.image = new(m_malloc(sizeof(image_t))) image_t(width, height, RGBA8888, has_palette);
     }
     int status = png->decode((void *)target.image, 0);
     png->close();
     return status;
   }
 
-  int pngdec_open_ram(image_obj_t &target, const void* buffer, const size_t size) {
+  int pngdec_open_ram(image_obj_t &target, const void* buffer, const size_t size, int target_width, int target_height) {
     PNG *png = new(PicoVector_working_buffer) PNG();
     int status = png->openRAM((uint8_t *)buffer, size, pngdec_decode_callback);
     if (status != PNG_SUCCESS) {
       return status;
     }
-    return pngdec_decode(target, png);
+    return pngdec_decode(target, png, target_width, target_height);
   }
 
-  int pngdec_open_file(image_obj_t &target, const char *path) {
+  int pngdec_open_file(image_obj_t &target, const char *path, int target_width, int target_height) {
     PNG *png = new(PicoVector_working_buffer) PNG();
     int status = png->open(path, pngdec_open_callback, pngdec_close_callback, pngdec_read_callback, pngdec_seek_callback, pngdec_decode_callback);
     if (status != PNG_SUCCESS) {
       return status;
     }
-    return pngdec_decode(target, png);
+    return pngdec_decode(target, png, target_width, target_height);
   }
 
   static void *pngdec_open_callback(const char *filename, int32_t *size) {
@@ -97,6 +100,12 @@ extern "C" {
   }
 
   static void pngdec_decode_callback(PNGDRAW *pDraw) {
+    // Skip rows as required if scaling
+    int scale_skip = 0;
+    if (pDraw->y & scale_skip) {
+      return;
+    }
+
     image_t *target = (image_t *)pDraw->pUser;
 
     uint8_t *psrc = (uint8_t *)pDraw->pPixels;
@@ -120,19 +129,23 @@ extern "C" {
           *pdst = c._p;
           psrc += 4;
           pdst++;
+          psrc += scale_skip << 2;
         }
       } break;
 
       case PNG_PIXEL_INDEXED: {
         if(target->has_palette()) {
-          for(int i = 0; i < 256; i++) {
-            rgb_color_t c(
-              pDraw->pPalette[i * 3 + 0],
-              pDraw->pPalette[i * 3 + 1],
-              pDraw->pPalette[i * 3 + 2],
-              pDraw->iHasAlpha ? pDraw->pPalette[768 + i] : 255
-            );
-            target->palette(i, c._p);
+          if (true /*!pngdec_read_palette*/) {
+            for(int i = 0; i < 256; i++) {
+              rgb_color_t c(
+                pDraw->pPalette[i * 3 + 0],
+                pDraw->pPalette[i * 3 + 1],
+                pDraw->pPalette[i * 3 + 2],
+                pDraw->iHasAlpha ? pDraw->pPalette[768 + i] : 255
+              );
+              target->palette(i, c._p);
+            }
+            //pngdec_read_palette = true;
           }
 
           uint8_t *pdst = (uint8_t *)target->ptr(0, pDraw->y);
@@ -140,6 +153,7 @@ extern "C" {
             *pdst = *psrc;
             pdst++;
             psrc++;
+            psrc += scale_skip;
           }
         } else {
           uint32_t *pdst = (uint32_t *)target->ptr(0, pDraw->y);
@@ -152,6 +166,7 @@ extern "C" {
             )._p;
             psrc++;
             pdst++;
+            psrc += scale_skip;
           }
         }
       } break;
@@ -184,6 +199,7 @@ extern "C" {
           }
 
           psrc++;
+          psrc += scale_skip;
         }
       } break;
 
