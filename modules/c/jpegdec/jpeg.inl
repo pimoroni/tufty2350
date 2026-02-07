@@ -2593,28 +2593,28 @@ static void JPEGPutMCU22(JPEGIMAGE *pJPEG, int x, int iPitch)
         {
             if (pJPEG->ucPixelType == RGB888_LITTLE_ENDIAN)
             {
-                for (iCol=0; iCol<6; iCol+=3)
+                for (iCol=0; iCol<2; iCol++)
                 {
                     // top left block
                     Y1 =  pY[iCol] << 12; // scale to level of conversion table
                     Cb  = pCb[0];
                     Cr  = pCr[0];
-                    JPEGPixelLE888(pOutput8 + iCol, Y1, Cb, Cr);
+                    JPEGPixelLE888(pOutput8 + iCol*3, Y1, Cb, Cr);
                     // top right block
                     Y1 =  pY[iCol+(DCTSIZE*2)] << 12; // scale to level of conversion table
                     Cb = pCb[1];
                     Cr = pCr[1];
-                    JPEGPixelLE888(pOutput8 + 6+iCol, Y1, Cb, Cr);
+                    JPEGPixelLE888(pOutput8 + 6+iCol*3, Y1, Cb, Cr);
                     // bottom left block
                     Y1 =  pY[iCol+DCTSIZE*4] << 12;  // scale to level of conversion table
                     Cb = pCb[2];
                     Cr = pCr[2];
-                    JPEGPixelLE888(pOutput8+iPitch*2 + iCol, Y1, Cb, Cr);
+                    JPEGPixelLE888(pOutput8+iPitch*2 + iCol*3, Y1, Cb, Cr);
                     // bottom right block
                     Y1 =  pY[iCol+DCTSIZE*6] << 12; // scale to level of conversion table
                     Cb  = pCb[3];
                     Cr  = pCr[3];
-                    JPEGPixelLE888(pOutput8+iPitch*2 + 6+iCol, Y1, Cb, Cr);
+                    JPEGPixelLE888(pOutput8+iPitch*2 + 6+iCol*3, Y1, Cb, Cr);
                 } // for each column
             }
             else if (pJPEG->ucPixelType == RGB565_LITTLE_ENDIAN)
