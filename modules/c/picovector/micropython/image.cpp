@@ -6,6 +6,7 @@ extern "C" {
   #include "py/stream.h"
   #include "py/reader.h"
   #include "py/runtime.h"
+  #include "py/objstr.h"
 
 
   mp_obj_t image__del__(mp_obj_t self_in) {
@@ -35,27 +36,37 @@ MPY_BIND_NEW(image, {
     return MP_OBJ_FROM_PTR(self);
 })
 
-MPY_BIND_STATICMETHOD_ARGS1(load, path, {
-    const char *s = mp_obj_str_get_str(path);
-    image_obj_t *result = mp_obj_malloc_with_finaliser(image_obj_t, &type_image);
+void image_open_helper(image_obj_t &target, mp_obj_t path_or_bytes_in) {
+  int status = 0;
+  if(mp_obj_is_str(path_or_bytes_in)) {
+    const char *path = mp_obj_str_get_str(path_or_bytes_in);
+    status = pngdec_open_file(target, path);
+    if(status != PNG_SUCCESS) {
+      status = jpegdec_open_file(target, path);
+    }
+  } else {
+    mp_buffer_info_t buf;
+    mp_get_buffer_raise(path_or_bytes_in, &buf, MP_BUFFER_READ);
+    status = pngdec_open_ram(target, buf.buf, buf.len);
+    if(status != PNG_SUCCESS) {
+      status = jpegdec_open_ram(target, buf.buf, buf.len);
+    }
+  }
+  if(status != 0) {
+    mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("unable to read image! %d"), status);
+  }
+}
 
-    PNG *png = new(PicoVector_working_buffer) PNG();
-    int status = png->open(mp_obj_str_get_str(path), pngdec_open_callback, pngdec_close_callback, pngdec_read_callback, pngdec_seek_callback, pngdec_decode_callback);
-    bool has_palette = png->getPixelType() == PNG_PIXEL_INDEXED;
-    result->image = new(m_malloc(sizeof(image_t))) image_t(png->getWidth(), png->getHeight(), RGBA8888, has_palette);
-    png->decode((void *)result->image, 0);
-    png->close();
+MPY_BIND_STATICMETHOD_ARGS1(load, path_or_bytes_in, {
+    image_obj_t *result = mp_obj_malloc_with_finaliser(image_obj_t, &type_image);
+    result->image = nullptr;
+    image_open_helper(*result, path_or_bytes_in);
     return MP_OBJ_FROM_PTR(result);
   })
 
-MPY_BIND_CLASSMETHOD_ARGS1(load_into, path, {
+MPY_BIND_CLASSMETHOD_ARGS1(load_into, path_or_bytes_in, {
     self(self_in, image_obj_t);
-    //const image_obj_t *self = (image_obj_t *)MP_OBJ_TO_PTR(args[0]);
-    PNG *png = new(PicoVector_working_buffer) PNG();
-    int status = png->open(mp_obj_str_get_str(path), pngdec_open_callback, pngdec_close_callback, pngdec_read_callback, pngdec_seek_callback, pngdec_decode_callback);
-    bool has_palette = png->getPixelType() == PNG_PIXEL_INDEXED;
-    png->decode((void *)self->image, 0);
-    png->close();
+    image_open_helper(*self, path_or_bytes_in);
     return mp_const_none;
   })
 
