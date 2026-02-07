@@ -41,14 +41,14 @@ void image_open_helper(image_obj_t &target, mp_obj_t path_or_bytes_in) {
   if(mp_obj_is_str(path_or_bytes_in)) {
     const char *path = mp_obj_str_get_str(path_or_bytes_in);
     status = pngdec_open_file(target, path);
-    if(status != PNG_SUCCESS) {
+    if(status == PNG_INVALID_FILE) {
       status = jpegdec_open_file(target, path);
     }
   } else {
     mp_buffer_info_t buf;
     mp_get_buffer_raise(path_or_bytes_in, &buf, MP_BUFFER_READ);
     status = pngdec_open_ram(target, buf.buf, buf.len);
-    if(status != PNG_SUCCESS) {
+    if(status == PNG_INVALID_FILE) {
       status = jpegdec_open_ram(target, buf.buf, buf.len);
     }
   }
