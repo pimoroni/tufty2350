@@ -3379,8 +3379,6 @@ static int DecodeJPEG(JPEGIMAGE *pJPEG)
     cDCTable2 = pJPEG->JPCI[2].dc_tbl_no;
     cACTable2 = pJPEG->JPCI[2].ac_tbl_no;
     iDCPred0 = iDCPred1 = iDCPred2 = mcuCX = mcuCY = 0;
-
-    printf("SubSample mode: 0x%x\n", pJPEG->ucSubSample);
     
     switch (pJPEG->ucSubSample) // set up the parameters for the different subsampling options
     {
