@@ -31,6 +31,15 @@ extern "C" {
     int width = jpeg->getWidth();
     int height = jpeg->getHeight();
 
+    if (target.image != nullptr) {
+      rect_t bounds = target.image->bounds();
+      target_width = bounds.w;
+      target_height = bounds.h;
+    }
+
+    if (target_width > width) target_width = width;
+    if (target_height > height) target_height = height;
+
     if(target.image == nullptr) {
       if (target_width == 0 && target_height == 0) {
         target_width = width;
@@ -49,17 +58,13 @@ extern "C" {
         width >>= 1;
         height >>= 1;
       }
-      decode_data.x_ratio = (float)target_width / (float)width;
-      decode_data.y_ratio = (float)target_height / (float)height;
 
       target.image = new(m_malloc(sizeof(image_t))) image_t(target_width, target_height, RGBA8888, false);
-    } else {
-      rect_t bounds = target.image->bounds();
-      decode_data.x_ratio = (float)bounds.w / (float)width;
-      decode_data.y_ratio = (float)bounds.h / (float)height;
     }
 
     decode_data.image = target.image;
+    decode_data.x_ratio = (float)target_width / (float)width;
+    decode_data.y_ratio = (float)target_height / (float)height;
 
     jpeg->setUserPointer((void *)&decode_data);
     jpeg->setPixelType(RGB888_LITTLE_ENDIAN);
