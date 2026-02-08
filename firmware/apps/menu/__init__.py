@@ -27,7 +27,7 @@ def update():
 
     # process button inputs to switch between apps
     if badge.pressed(BUTTON_C):
-        if (active % 3) < 2 and active < len(apps):
+        if (active % 3) < 2 and active < len(apps) - 1:
             active += 1
     if badge.pressed(BUTTON_A):
         if (active % 3) > 0 and active > 0:
