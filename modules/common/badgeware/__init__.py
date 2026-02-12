@@ -60,7 +60,7 @@ def run(update, init=None, on_exit=None):
             trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher
         )
 
-        if badge.default_clear() is None:
+        if badge.default_clear is None:
             screen.pen = color.black
             screen.clear()
 
@@ -69,13 +69,15 @@ def run(update, init=None, on_exit=None):
             gc.collect()
 
         while True:
-            if badge.default_clear() is not None:
-                screen.pen = badge.default_clear()
+            update_fn = badge.update or update
+
+            if badge.default_clear is not None:
+                screen.pen = badge.default_clear
                 screen.clear()
-            screen.pen = badge.default_pen()
+            screen.pen = badge.default_pen
 
             badge.poll()
-            if (result := update()) is not None:
+            if (result := update_fn()) is not None:
                 return result
 
             display.update()
@@ -142,7 +144,7 @@ def fatal_error(title, error):
         error = get_exception(error)
     print(f"- ERROR: {error}")
 
-    if (badge.mode() & HIRES) == 0:
+    if (badge.mode & HIRES) == 0:
         contents = image(160, 120)
         contents.blit(screen, vec2(0, 0))
         badge.mode(HIRES)
@@ -195,5 +197,5 @@ State = __import__(".frozen/badgeware/state").State
 DEFAULT_FONT = rom_font.sins
 
 badge.mode(LORES | VSYNC)
-badge.default_pen(color.white)
-badge.default_clear(color.black)
+badge.default_pen = color.white
+badge.default_clear = color.black

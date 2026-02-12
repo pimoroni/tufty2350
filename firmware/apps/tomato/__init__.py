@@ -139,12 +139,12 @@ class Tomato(object):
         self.time_elapsed = 0
 
     def case_lights_off(self):
-        badge.set_caselights(0)
+        badge.caselights(0)
 
     def toggle_case_lights(self):
         if badge.ticks - self.last_toggle > 250:
-            lights = [1.0 - light for light in badge.get_caselights()]
-            badge.set_caselights(*lights)
+            lights = [1.0 - light for light in badge.caselights()]
+            badge.caselights(*lights)
             self.last_toggle = badge.ticks
 
     def update(self):

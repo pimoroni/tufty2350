@@ -123,7 +123,7 @@ def update():
   # set transfer state here
   disk_mode.transferring = rp2.is_msc_busy()
 
-  badge.set_caselights(int(disk_mode.transferring))
+  badge.caselights(int(disk_mode.transferring))
 
   # draw the ui
   disk_mode.draw()
