@@ -2,6 +2,7 @@ import gc
 from io import StringIO
 import sys
 import time
+import os
 
 import machine
 import st7789
@@ -14,33 +15,76 @@ def set_brightness(value):
     display.backlight(value)
 
 
+def reset():
+    # HOME is also BOOT; if we reset while it's
+    # low we'll end up in bootloader mode.
+    while not machine.Pin.board.BUTTON_HOME.value():
+        pass
+    machine.reset()
+
+
 def run(update, init=None, on_exit=None):
-    screen.font = DEFAULT_FONT
-    screen.pen = color.black
-    screen.clear()
-    screen.pen = badge.default_pen()
+    modules_before_launch = list(sys.modules.keys())
     try:
+        screen.font = DEFAULT_FONT
+
+        if isinstance(update, str):
+            path = update
+            os.chdir(path)
+            sys.path.insert(0, path)
+            app = __import__(path)
+            update = app.update
+            init = getattr(app, "init", None)
+            on_exit = getattr(app, "on_exit", None)
+
+        def do_exit():
+            if on_exit:
+                on_exit()
+
+            # Clean up path
+            if sys.path[0].startswith("/system/apps"):
+                sys.path.pop(0)
+
+            # Clean up any imported modules
+            for key in sys.modules.keys():
+                if key not in modules_before_launch:
+                    del sys.modules[key]
+
+            gc.collect()
+
+        def quit_to_launcher(_pin):
+            do_exit()
+            reset()
+
+        machine.Pin.board.BUTTON_HOME.irq(
+            trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher
+        )
+
+        if badge.default_clear() is None:
+            screen.pen = color.black
+            screen.clear()
+
         if init:
             init()
             gc.collect()
-        try:
-            while True:
-                if badge.default_clear() is not None:
-                    screen.pen = badge.default_clear()
-                    screen.clear()
-                screen.pen = badge.default_pen()
-                badge.poll()
-                if (result := update()) is not None:
-                    gc.collect()
-                    return result
-                display.update()
-        finally:
-            if on_exit:
-                on_exit()
-                gc.collect()
+
+        while True:
+            if badge.default_clear() is not None:
+                screen.pen = badge.default_clear()
+                screen.clear()
+            screen.pen = badge.default_pen()
+
+            badge.poll()
+            if (result := update()) is not None:
+                return result
+
+            display.update()
 
     except Exception as e:  # noqa: BLE001
         fatal_error("Error!", get_exception(e))
+
+    finally:
+        do_exit()
 
 
 def get_exception(e):
@@ -135,6 +179,7 @@ builtins.X4 = image.X4
 # Hoist display and run for clean Thonny apps
 builtins.display = display
 builtins.run = run
+builtins.reset = reset
 builtins.fatal_error = fatal_error
 
 # Import badgeware modules
