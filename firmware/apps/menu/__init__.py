@@ -9,7 +9,8 @@ import ui
 
 from app import Apps
 
-screen.font = pixel_font.load("/system/assets/fonts/ark.ppf")
+title_font = rom_font.ark
+label_font = rom_font.sins
 
 
 # find installed apps and create apps
@@ -20,7 +21,6 @@ active = 0
 MAX_ALPHA = 255
 alpha = 30
 
-badge.poll()
 
 def update():
     global active, apps, alpha
@@ -45,12 +45,15 @@ def update():
         return f"/system/apps/{apps.active.path}"
 
     ui.draw_background()
+
+    screen.font = title_font
     ui.draw_header()
 
     # draw menu apps
     apps.draw_icons()
 
     # draw label for active menu icon
+    screen.font = label_font
     apps.draw_label()
 
     # draw hints for the active page
