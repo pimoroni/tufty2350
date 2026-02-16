@@ -10,7 +10,7 @@ font = pixel_font.load("/system/assets/fonts/vest.ppf")
 def draw_background():
     # fill the background in that classic red...
     screen.pen = color.rgb(170, 45, 40)
-    screen.shape(shape.rectangle(0, 0, screen.width, screen.height))
+    screen.rectangle(0, 0, screen.width, screen.height)
 
     # draw the embossed gold logo
     screen.font = font
@@ -37,19 +37,14 @@ def draw_background():
 
     # draw highlights on the plastic "curve"
     screen.pen = color.rgb(255, 255, 255, 100)
-    screen.shape(
-        shape.rectangle(
-            canvas_area[0] - 3, canvas_area[1] + 5, 1, canvas_area[3] - 10, 2
-        )
+    screen.rectangle(
+        canvas_area[0] - 3, canvas_area[1] + 5, 1, canvas_area[3] - 10
     )
-    screen.shape(
-        shape.rectangle(
-            canvas_area[0] + canvas_area[2] + 2,
-            canvas_area[1] + 5,
-            1,
-            canvas_area[3] - 10,
-            2,
-        )
+    screen.rectangle(
+        canvas_area[0] + canvas_area[2] + 2,
+        canvas_area[1] + 5,
+        1,
+        canvas_area[3] - 10
     )
 
 
@@ -93,12 +88,12 @@ def draw_dial(angle, pos):
 
 
 def draw_cursor(cursor):
-    cx = int(cursor[0] + canvas_area[0])
-    cy = int(cursor[1] + canvas_area[1])
+    cx = int(cursor[0] + canvas_area[0]) - 1
+    cy = int(cursor[1] + canvas_area[1]) - 1
     # draw the current cursor
     i = (math.sin(badge.ticks / 120) * 60) + 60
     screen.pen = color.rgb(i, i, i)
-    screen.shape(shape.rectangle(cx + 2, cy, 2, 1))
-    screen.shape(shape.rectangle(cx - 3, cy, 2, 1))
-    screen.shape(shape.rectangle(cx, cy + 2, 1, 2))
-    screen.shape(shape.rectangle(cx, cy - 3, 1, 2))
+    screen.rectangle(cx + 2, cy, 2, 1)
+    screen.rectangle(cx - 3, cy, 2, 1)
+    screen.rectangle(cx, cy + 2, 1, 2)
+    screen.rectangle(cx, cy - 3, 1, 2)
