@@ -334,7 +334,7 @@ def draw_nixie_clock(currenttime):
     mday = currenttime[2]
 
     suffix = "th"
-    mday_units = mday % 10
+    mday_units = mday % 20
     if mday_units == 1:
         suffix = "st"
     if mday_units == 2:
