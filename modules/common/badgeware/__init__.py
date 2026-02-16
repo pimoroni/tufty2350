@@ -144,7 +144,7 @@ def fatal_error(title, error):
         error = get_exception(error)
     print(f"- ERROR: {error}")
 
-    if (badge.mode & HIRES) == 0:
+    if (badge.mode() & HIRES) == 0:
         contents = image(160, 120)
         contents.blit(screen, vec2(0, 0))
         badge.mode(HIRES)
