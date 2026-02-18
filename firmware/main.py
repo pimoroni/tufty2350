@@ -1,3 +1,4 @@
+import machine
 import sys
 import gc
 
@@ -22,3 +23,11 @@ if app_to_launch is not None:
         badge.poll()
 
     run(app_to_launch)
+
+# HOME is also BOOT; if we reset while it's
+# low we'll end up in bootloader mode.
+while not machine.Pin.board.BUTTON_HOME.value():
+    pass
+
+# Catch any exit and reset back to the launcher
+machine.reset()

@@ -25,62 +25,75 @@ def reset():
 
 def run(update, init=None, on_exit=None):
     modules_before_launch = list(sys.modules.keys())
-    try:
-        screen.font = DEFAULT_FONT
 
+    app = None
+
+    def do_exit():
+        exit = on_exit or getattr(app, "on_exit", None)
+
+        if callable(exit):
+            exit()
+
+        # Clean up path
+        if sys.path[0].startswith("/system/apps"):
+            sys.path.pop(0)
+
+        # Clean up any imported modules
+        for key in sys.modules.keys():
+            if key not in modules_before_launch:
+                del sys.modules[key]
+
+        # Restore defaults
+        badge.mode(LORES | VSYNC)
+        badge.default_pen = color.white
+        badge.default_clear = color.black
+
+        gc.collect()
+
+    def quit_to_launcher(_pin):
+        do_exit()
+        reset()
+
+    machine.Pin.board.BUTTON_HOME.irq(
+        trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher
+    )
+
+    screen.font = DEFAULT_FONT
+
+    def clear():
+        if badge.default_clear is not None:
+            screen.pen = badge.default_clear
+            screen.clear()
+
+        screen.pen = badge.default_pen
+
+    clear()
+    badge.poll()
+
+    try:
         if isinstance(update, str):
             path = update
             os.chdir(path)
             sys.path.insert(0, path)
-            app = __import__(path)
-            update = app.update
+            app = __import__(path)  # App may block here
+            update = getattr(app, "update", None)
             init = getattr(app, "init", None)
-            on_exit = getattr(app, "on_exit", None)
 
-        def do_exit():
-            if on_exit:
-                on_exit()
-
-            # Clean up path
-            if sys.path[0].startswith("/system/apps"):
-                sys.path.pop(0)
-
-            # Clean up any imported modules
-            for key in sys.modules.keys():
-                if key not in modules_before_launch:
-                    del sys.modules[key]
-
-            gc.collect()
-
-        def quit_to_launcher(_pin):
-            do_exit()
-            reset()
-
-        machine.Pin.board.BUTTON_HOME.irq(
-            trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher
-        )
-
-        if badge.default_clear is None:
-            screen.pen = color.black
-            screen.clear()
-
-        if init:
+        if callable(init):
             init()
             gc.collect()
 
-        while True:
-            update_fn = badge.update or update
-
-            if badge.default_clear is not None:
-                screen.pen = badge.default_clear
-                screen.clear()
-            screen.pen = badge.default_pen
-
-            badge.poll()
-            if (result := update_fn()) is not None:
-                return result
-
-            display.update()
+        if callable(update):
+            while True:
+                result = update()
+                if result in (True, None):
+                    display.update()
+                elif result is False:
+                    pass
+                else:
+                    return result
+                clear()
+                badge.poll()
 
     except Exception as e:  # noqa: BLE001
         fatal_error("Error!", get_exception(e))

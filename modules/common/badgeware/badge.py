@@ -60,9 +60,6 @@ class Badge():
         # current display mode
         self._current_mode = None
 
-        # optional replacement update() function
-        self.update = None
-
         # either badger, tufty, or blinky
         self.model = MODEL
 
@@ -99,6 +96,14 @@ class Badge():
     @property
     def resolution(self):
         return screen.width, screen.height
+
+    def update(self):
+        display.update()
+        if self.default_clear is not None:
+            screen.pen = self.default_clear
+            screen.clear()
+        screen.pen = self.default_pen
+        badge.poll()
 
     def mode(self, mode=None):
         if mode is None:
