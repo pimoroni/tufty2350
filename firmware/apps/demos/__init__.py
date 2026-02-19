@@ -86,5 +86,4 @@ def update():
       screen.text(name, 5, y)
 
 
-if __name__ == "__main__":
-  run(update)
+run(update)

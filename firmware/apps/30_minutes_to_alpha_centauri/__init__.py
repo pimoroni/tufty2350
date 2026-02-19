@@ -601,5 +601,4 @@ def update():
             game_state = GameState.INTRO
 
 
-if __name__ == "__main__":
-    run(update)
+run(update)

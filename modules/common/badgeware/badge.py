@@ -97,13 +97,18 @@ class Badge():
     def resolution(self):
         return screen.width, screen.height
 
-    def update(self):
-        display.update()
+    def clear(self):
         if self.default_clear is not None:
             screen.pen = self.default_clear
             screen.clear()
         screen.pen = self.default_pen
+        return True
+
+    def update(self):
+        display.update()
+        badge.clear()
         badge.poll()
+        return True
 
     def mode(self, mode=None):
         if mode is None:

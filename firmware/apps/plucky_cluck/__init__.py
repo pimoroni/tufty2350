@@ -189,5 +189,4 @@ def center_text(text, y):
     shadow_text(text, 80 - (w / 2), y)
 
 
-if __name__ == "__main__":
-    run(update)
+run(update)

@@ -71,5 +71,4 @@ def update():
     ui.draw_dial(right_dial_angle, (screen.width - 5, screen.height - 5))
 
 
-if __name__ == "__main__":
-    run(update)
+run(update)
