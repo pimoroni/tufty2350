@@ -66,6 +66,5 @@ def update():
 
     return None
 
-
-if __name__ == "__main__":
-    run(update)
+# "on_exit" will be called if callable, else returned verbatim by `launch`
+on_exit = run(update).result

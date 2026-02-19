@@ -23,32 +23,53 @@ def reset():
     machine.reset()
 
 
-def run(update, init=None, on_exit=None):
-    modules_before_launch = list(sys.modules.keys())
+class _run:
+    @property
+    def ticks(self):
+        return badge.ticks - self.start
 
+    @property
+    def progress(self):
+        return 0 if self.duration is None else self.ticks / self.duration
+
+    def __init__(self, *args, duration=None):
+        self.start = 0
+        self.result = None
+        self.duration = duration
+        if len(args) == 1 and callable(args[0]):
+            self(args[0])
+
+    def __call__(self, update):
+        badge.poll()
+        self.start = badge.ticks
+        parent = loop
+        builtins.loop = self
+
+        try:
+            while True:
+                badge.clear()
+
+                if (result := update()) is not None:
+                    self.result = result
+                    return
+
+                display.update()
+                badge.poll()
+
+                if self.duration is not None and self.ticks >= self.duration:
+                    return
+
+        finally:
+            badge.clear()
+            builtins.loop = parent
+
+
+def launch(path):
     app = None
 
     def do_exit():
-        exit = on_exit or getattr(app, "on_exit", None)
-
-        if callable(exit):
-            exit()
-
-        # Clean up path
-        if sys.path[0].startswith("/system/apps"):
-            sys.path.pop(0)
-
-        # Clean up any imported modules
-        for key in sys.modules.keys():
-            if key not in modules_before_launch:
-                del sys.modules[key]
-
-        # Restore defaults
-        badge.mode(LORES | VSYNC)
-        badge.default_pen = color.white
-        badge.default_clear = color.black
-
-        gc.collect()
+        on_exit = getattr(app, "on_exit", None)
+        return on_exit() if callable(on_exit) else on_exit
 
     def quit_to_launcher(_pin):
         do_exit()
@@ -58,48 +79,30 @@ def run(update, init=None, on_exit=None):
         trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher
     )
 
-    screen.font = DEFAULT_FONT
-
-    def clear():
-        if badge.default_clear is not None:
-            screen.pen = badge.default_clear
-            screen.clear()
-
-        screen.pen = badge.default_pen
-
-    clear()
-    badge.poll()
+    # Grab a list of modules from before launching app
+    modules_before_launch = list(sys.modules.keys())
 
     try:
-        if isinstance(update, str):
-            path = update
-            os.chdir(path)
-            sys.path.insert(0, path)
-            app = __import__(path)  # App may block here
-            update = getattr(app, "update", None)
-            init = getattr(app, "init", None)
+        os.chdir(path)
+        sys.path.insert(0, path)
+        app = __import__(path)  # App may block here
 
-        if callable(init):
-            init()
-            gc.collect()
-
-        if callable(update):
-            while True:
-                result = update()
-                if result in (True, None):
-                    display.update()
-                elif result is False:
-                    pass
-                else:
-                    return result
-                clear()
-                badge.poll()
+        return do_exit()
 
     except Exception as e:  # noqa: BLE001
         fatal_error("Error!", get_exception(e))
 
     finally:
-        do_exit()
+        # Clean up path
+        if sys.path[0].startswith("/system/apps"):
+            sys.path.pop(0)
+
+        # Clean up any imported modules
+        for key in sys.modules.keys():
+            if key not in modules_before_launch:
+                del sys.modules[key]
+
+        gc.collect()
 
 
 def get_exception(e):
@@ -193,7 +196,9 @@ builtins.X4 = image.X4
 
 # Hoist display and run for clean Thonny apps
 builtins.display = display
-builtins.run = run
+builtins.run = _run
+builtins.launch = launch
+builtins.loop = None
 builtins.reset = reset
 builtins.fatal_error = fatal_error
 

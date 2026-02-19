@@ -119,5 +119,5 @@ def on_exit():
     State.save("badgepet", pet.save())
 
 
-if __name__ == "__main__":
-    run(update, init=init, on_exit=on_exit)
+init()
+run(update)

@@ -211,5 +211,4 @@ def update():
         renderer.draw_gameover()
 
 
-if __name__ == "__main__":
-    run(update)
+run(update)

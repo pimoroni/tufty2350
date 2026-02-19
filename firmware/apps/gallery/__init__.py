@@ -150,5 +150,4 @@ def update():
         screen.text(title, 160 - (width / 2), 0)
 
 
-if __name__ == "__main__":
-    run(update)
+run(update)
