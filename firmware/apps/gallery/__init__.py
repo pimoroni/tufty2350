@@ -14,6 +14,10 @@ ui_hidden = False
 
 files = []
 total_files = len(os.listdir("images"))
+
+if total_files == 0:
+    fatal_error("No images found!", "Enter disk mode and copy your PNGs to /apps/gallery/images")
+
 bar_width = screen.width - 20
 bar_x = (screen.width // 2) - (bar_width // 2)
 segment_width = (bar_width // total_files)
