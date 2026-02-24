@@ -65,11 +65,12 @@ class _run:
 
 
 def launch(path):
-    app = None
-
     def do_exit():
-        on_exit = getattr(app, "on_exit", None)
-        return on_exit() if callable(on_exit) else on_exit
+        if path in sys.modules:
+            app = sys.modules[path]
+            on_exit = getattr(app, "on_exit", None)
+            return on_exit() if callable(on_exit) else on_exit
+        return None
 
     def quit_to_launcher(_pin):
         do_exit()
@@ -85,7 +86,7 @@ def launch(path):
     try:
         os.chdir(path)
         sys.path.insert(0, path)
-        app = __import__(path)  # App may block here
+        __import__(path)  # App may block here
 
         return do_exit()
 
