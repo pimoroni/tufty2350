@@ -1,3 +1,6 @@
+# Eat the wakeup button press to prevent it leaking into the menu
+badge.poll()
+
 # We expect a launcher menu to be at /system/apps/menu
 app_to_launch = launch("/system/apps/menu")
 
