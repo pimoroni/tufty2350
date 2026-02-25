@@ -31,9 +31,9 @@ if cached_crc != crc:
 
 rp2.enable_msc()
 
-background = color.rgb(35, 41, 37)
-phosphor = color.rgb(211, 250, 55, 150)
-white = color.rgb(235, 245, 255)
+background = color.black
+phosphor = color.orange
+white = color.white
 faded = color.rgb(235, 245, 255, 200)
 
 try:
