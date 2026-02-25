@@ -87,7 +87,7 @@ def draw_terminal():
 def draw_header():
     # create animated header text
     dots = "." * int(math.sin(badge.ticks / 250) * 2 + 2)
-    label = f"BadgeOS v4.03{dots}"
+    label = f"BadgeOS{dots}"
     pos = (5, 2)
 
     # draw the OS title
