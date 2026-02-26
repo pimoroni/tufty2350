@@ -59,6 +59,9 @@ class _run:
                 if self.duration is not None and self.ticks >= self.duration:
                     return
 
+        except Exception as e:  # noqa: BLE001
+            fatal_error("Error!", get_exception(e))
+
         finally:
             badge.clear()
             builtins.loop = parent
