@@ -7,6 +7,7 @@ extern "C" {
   #include "py/reader.h"
   #include "py/runtime.h"
   #include "py/objstr.h"
+  #include "psram_ops.h"
 
 
   mp_obj_t image__del__(mp_obj_t self_in) {
@@ -31,6 +32,10 @@ MPY_BIND_NEW(image, {
       self->image = new(m_malloc(sizeof(image_t))) image_t(bufinfo.buf, w, h);
     } else {
       self->image = new(m_malloc(sizeof(image_t))) image_t(w, h);
+
+      // Clear new image to black, fully transparent.  This should potentially
+      // be removed once we have a copy brush or other way to clear alpha.
+      psram_memset32(self->image->ptr(0, 0), 0, self->image->buffer_size() >> 2);
     }
 
     return MP_OBJ_FROM_PTR(self);
