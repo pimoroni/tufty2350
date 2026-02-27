@@ -81,7 +81,7 @@ namespace picovector {
     }
   }
 
-  void build_nodes(path_t *path, rect_t *tb, mat3_t *transform, uint aa) {
+  void build_nodes(path_t *path, rect_t *tb, mat3_t *transform, uint32_t aa) {
     vec2_t offset = tb->tl();
     // start with the last point to close the loop, transform it, scale for antialiasing, and offset to tile origin
     vec2_t last = path->points[path->points.size() - 1];
@@ -108,7 +108,7 @@ namespace picovector {
   uint8_t alpha_map_x4[5] = {0, 63, 127, 190, 255};
   uint8_t alpha_map_x16[17] = {0, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 255};
 
-  rect_t render_nodes(rect_t *tb, uint aa) {
+  rect_t render_nodes(rect_t *tb, uint32_t aa) {
     int minx = tb->w;
     int miny = tb->h;
     int maxx = 0;
@@ -170,7 +170,7 @@ namespace picovector {
     if(shape->paths.empty()) return;
 
     // antialias level of target image
-    uint aa = (uint)target->antialias();
+    uint32_t aa = (uint32_t)target->antialias();
 
     uint8_t *p_alpha_map = alpha_map_none;
     if(aa == 1) p_alpha_map = alpha_map_x4;
@@ -279,7 +279,7 @@ namespace picovector {
 
 
 
-  void build_glyph_nodes(glyph_path_t *path, rect_t *tb, mat3_t *transform, uint aa) {
+  void build_glyph_nodes(glyph_path_t *path, rect_t *tb, mat3_t *transform, uint32_t aa) {
     vec2_t offset = tb->tl();
     // start with the last point to close the loop, transform it, scale for antialiasing, and offset to tile origin
     glyph_path_point_t *p = &path->points[path->point_count - 1];
@@ -306,7 +306,7 @@ namespace picovector {
     if(!glyph->path_count) return;
 
     // antialias level of target image
-    uint aa = (uint)target->antialias();
+    uint32_t aa = (uint32_t)target->antialias();
 
 
     uint8_t *p_alpha_map = alpha_map_none;

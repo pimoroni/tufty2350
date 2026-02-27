@@ -7,7 +7,7 @@ extern "C" {
 
   mp_obj_t shape__del__(mp_obj_t self_in) {
     self(self_in, shape_obj_t);
-    m_del_class(shape_t, self->shape);
+    PV_DELETE(shape_t, self->shape);
     return mp_const_none;
   }
   static MP_DEFINE_CONST_FUN_OBJ_1(shape__del___obj, shape__del__);

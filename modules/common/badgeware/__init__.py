@@ -54,6 +54,7 @@ class _run:
                     return
 
                 display.update()
+                gc.collect()
                 badge.poll()
 
                 if self.duration is not None and self.ticks >= self.duration:

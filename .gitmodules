@@ -1,0 +1,3 @@
+[submodule "modules/c/tlsf"]
+	path = modules/c/psram/tlsf
+	url = git@github.com:espressif/tlsf.git

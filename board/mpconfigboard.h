@@ -31,6 +31,9 @@ int mp_hal_is_pin_reserved(int n);
 #define MICROPY_HW_ENABLE_PSRAM                 (1)
 #define MICROPY_GC_SPLIT_HEAP                   (0)
 
+// First 3MB of PSRAM for GC heap, next 4MB for PicoVector, last 1MB for tmp FS
+#define MICROPY_HW_PSRAM_MAX_HEAP_SIZE          (3 * 1024 * 1024)
+
 // Alias the chip select pin specified by presto.h
 #define MICROPY_HW_PSRAM_CS_PIN                 BW_PSRAM_CS
 
