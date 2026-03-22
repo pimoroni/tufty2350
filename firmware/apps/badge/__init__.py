@@ -167,11 +167,13 @@ def update():
             screen.font = small_font
             center_text(id_role, photo_y + 12)
         else:
-            screen.font = large_font
             for account in id_socials.items():
+                screen.font = large_font
                 screen.pen = color.rgb(100, 100, 100)
                 screen.shape(shape.rounded_rectangle(20, socials_y, 17, 17, 3))
                 screen.blit(account[1]["icon"], vec2(20, socials_y))
+                if 15 <= len (account[1]["handle"]):
+                    screen.font = small_font
                 shadow_text(account[1]["handle"], 40, socials_y)
                 socials_y += 21
 
