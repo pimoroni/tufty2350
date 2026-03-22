@@ -112,7 +112,7 @@ def update():
         rear_view = not rear_view
 
     if badge.held(BUTTON_UP):
-        change_background(h=5)
+        change_background(h=-5)
 
     if badge.held(BUTTON_DOWN):
         change_background(h=5)
