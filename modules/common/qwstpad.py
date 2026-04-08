@@ -1,4 +1,5 @@
 import struct
+from collections import OrderedDict
 
 from micropython import const
 from machine import I2C
@@ -39,9 +40,9 @@ class QwSTPad:
     BUTTON_MINUS = 0x5
 
     # Mappings
-    BUTTON_MAPPING = {"A": 0xE, "B": 0xC, "X": 0xF, "Y": 0xD,
+    BUTTON_MAPPING = OrderedDict({"A": 0xE, "B": 0xC, "X": 0xF, "Y": 0xD,
                       "U": 0x1, "D": 0x4, "L": 0x2, "R": 0x3,
-                      "+": 0xB, "-": 0x5}
+                      "+": 0xB, "-": 0x5})
     LED_MAPPING = (0x6, 0x7, 0x9, 0xA)
 
     def __init__(self, i2c=None, address=DEFAULT_ADDRESS, show_address=True):
@@ -60,11 +61,15 @@ class QwSTPad:
         if show_address:
             self.set_leds(self.address_code())
 
+        self.__button_states = OrderedDict({})
+        for key, _ in self.BUTTON_MAPPING.items():
+            self.__button_states[key] = False
+
         self.__button_mask = 0
         for _, value in QwSTPad.BUTTON_MAPPING.items():
             self.__button_mask |= 1 << value
 
-        self.buttons = self.read_buttons()
+        self.buttons = 0
         self.__pressed = 0
         self.__released = 0
         self.__changed = 0
@@ -75,7 +80,8 @@ class QwSTPad:
         return self.__change_bit(0x0000, ADDRESSES.index(self.__address), True)
 
     def read_buttons(self):
-        return self.__reg_read_uint16(self.__i2c, self.__address, self.INPUT_PORT0) & self.__button_mask
+        self.update_buttons()
+        return self.__button_states
 
     def set_leds(self, states):
         self.__led_states = states & 0b1111
@@ -115,12 +121,15 @@ class QwSTPad:
     def update_buttons(self):
         old_values = self.buttons
 
-        self.buttons = self.read_buttons()
+        self.buttons = self.__reg_read_uint16(self.__i2c, self.__address, self.INPUT_PORT0) & self.__button_mask
 
         self.__changed = ~(old_values & self.buttons)
         self.__pressed = self.buttons & self.__changed
         self.__released = ~self.buttons & self.__changed
         self.__held = self.buttons
+
+        for key, value in self.BUTTON_MAPPING.items():
+            self.__button_states[key] = bool(self.__held & (1 << value))
 
     def pressed(self, button=None):
         if button is None:
