@@ -66,6 +66,11 @@ extern "C" {
   };\
   static MP_DEFINE_CONST_DICT(prefix##_locals_dict, prefix##_locals_dict_table);
 
+#define MPY_CHECK_REMAINING_ARGS(_expected)\
+    if(n_args < _expected) {\
+      mp_raise_msg_varg(&mp_type_TypeError, MP_ERROR_TEXT("function missing %d required positional arguments"), _expected - n_args);\
+    }\
+
 #define MPY_GET_XY_OR_VEC2(_index, _x, _y)\
   float _x;\
   float _y;\

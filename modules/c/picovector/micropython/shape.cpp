@@ -43,6 +43,7 @@ extern "C" {
 
   MPY_BIND_STATICMETHOD_VAR(3, regular_polygon, {
     MPY_GET_XY_OR_VEC2(0, x, y)
+    MPY_CHECK_REMAINING_ARGS(2)
     float r = mp_obj_get_float(args[0]);
     int s = mp_obj_get_float(args[1]);
     shape_obj_t *shape = mp_obj_malloc_with_finaliser(shape_obj_t, &type_shape);
@@ -52,6 +53,7 @@ extern "C" {
 
   MPY_BIND_STATICMETHOD_VAR(2, circle, {
     MPY_GET_XY_OR_VEC2(0, x, y)
+    MPY_CHECK_REMAINING_ARGS(1)
     float r = mp_obj_get_float(args[0]);
     shape_obj_t *shape = mp_obj_malloc_with_finaliser(shape_obj_t, &type_shape);
     shape->shape = circle(x, y, r);
@@ -116,13 +118,13 @@ extern "C" {
     return MP_OBJ_FROM_PTR(shape);
   })
 
-  MPY_BIND_STATICMETHOD_VAR(1, squircle, {
+  MPY_BIND_STATICMETHOD_VAR(2, squircle, {
     MPY_GET_XY_OR_VEC2(0, x, y)
+    MPY_CHECK_REMAINING_ARGS(1)
     float s = mp_obj_get_float(args[0]);
     float n = 4.0f;
     if(n_args == 2) {
       n = mp_obj_get_float(args[1]);
-      n = max(2.0f, n);
       n = max(2.0f, n);
     }
     shape_obj_t *shape = mp_obj_malloc_with_finaliser(shape_obj_t, &type_shape);
@@ -132,6 +134,7 @@ extern "C" {
 
   MPY_BIND_STATICMETHOD_VAR(5, arc, {
     MPY_GET_XY_OR_VEC2(0, x, y)  // Effectively "pops" the x/y or vec2 args from the args array
+    MPY_CHECK_REMAINING_ARGS(4)
     float i = mp_obj_get_float(args[0]);
     float o = mp_obj_get_float(args[1]);
     float f = mp_obj_get_float(args[2]);
@@ -143,6 +146,7 @@ extern "C" {
 
   MPY_BIND_STATICMETHOD_VAR(4, pie, {
     MPY_GET_XY_OR_VEC2(0, x, y)
+    MPY_CHECK_REMAINING_ARGS(3)
     float r = mp_obj_get_float(args[0]);
     float f = mp_obj_get_float(args[1]);
     float t = mp_obj_get_float(args[2]);
@@ -153,6 +157,7 @@ extern "C" {
 
   MPY_BIND_STATICMETHOD_VAR(4, star, {
     MPY_GET_XY_OR_VEC2(0, x, y)
+    MPY_CHECK_REMAINING_ARGS(3)
     int s = mp_obj_get_float(args[0]);
     float ro = mp_obj_get_float(args[1]);
     float ri = mp_obj_get_float(args[2]);
@@ -164,6 +169,7 @@ extern "C" {
   MPY_BIND_STATICMETHOD_VAR(3, line, {
     MPY_GET_XY_OR_VEC2(0, x1, y1)
     MPY_GET_XY_OR_VEC2(0, x2, y2)
+    MPY_CHECK_REMAINING_ARGS(1)
     float w = mp_obj_get_float(args[0]);
     shape_obj_t *shape = mp_obj_malloc_with_finaliser(shape_obj_t, &type_shape);
     shape->shape = line(x1, y1, x2, y2, w);
