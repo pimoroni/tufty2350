@@ -30,9 +30,10 @@ for key in id_socials.keys():
 # id card variables
 id_body = shape.rounded_rectangle(0, 0, 140, 100, 7)
 id_outline = shape.rounded_rectangle(0, 0, 140, 100, 7).stroke(2)
+lightness = 255
 hue = 255
 chroma = 0
-background = color.oklch(255, chroma, hue)
+background = color.oklch(lightness, chroma, hue)
 flip = False
 flip_start = 0
 rear_view = False
@@ -76,23 +77,33 @@ def init():
     pass
 
 
-def change_background(h=None, c=None):
+def change_background(l = None, c = None, h = None):
     # a little helper to change the background color
-    global background, hue, chroma
+    global background, lightness, chroma, hue
 
-    if h:
-        hue += h
-        hue = hue % 255
-        background = color.oklch(255, chroma, hue)
+    changed = False
+
+    if l:
+        lightness += l
+        lightness %= 255
+        changed = True
 
     if c:
         chroma += c
         chroma = clamp(chroma, 0, 255)
-        background = color.oklch(255, chroma, hue)
+        changed = True
+
+    if h:
+        hue += h
+        hue %= 255
+        changed = True
+
+    if changed:
+        background = color.oklch(lightness, chroma, hue)
 
 
 def update():
-    global flip, flip_start, rear_view, background_hue, background
+    global flip, flip_start, rear_view, background, b_pressed
 
     # unpack the x and y for the card
     x, y = card_pos
@@ -106,22 +117,58 @@ def update():
     # ripple effect
     draw_background()
 
-    if badge.pressed(BUTTON_B):
-        flip = True
-        flip_start = badge.ticks
-        rear_view = not rear_view
+    if badge.pressed (BUTTON_B):
+        # If any other button is also pressed, the B button will be used as a
+        # modifier.
+        if not badge.held (BUTTON_UP) and not badge.held (BUTTON_DOWN) and \
+           not badge.held (BUTTON_A)  and not badge.held (BUTTON_C):
+            b_pressed = badge.ticks
 
-    if badge.held(BUTTON_UP):
-        change_background(h=-5)
+    if badge.held (BUTTON_B):
+        if b_pressed is not None:
+            # If any other button is also pressed, we will use it as a
+            # modifier.
+            if badge.held (BUTTON_UP) or badge.held (BUTTON_DOWN) or \
+               badge.held (BUTTON_A)  or badge.held (BUTTON_C):
+                b_pressed = None
 
-    if badge.held(BUTTON_DOWN):
-        change_background(h=5)
+    if badge.released (BUTTON_B):
+        # Once the B button is released, flip the badge, unless the button has
+        # been used as a modifier for a different button.
+        if b_pressed is not None:
+            flip = True
+            flip_start = badge.ticks
+            rear_view = not rear_view
 
-    if badge.held(BUTTON_C):
-        change_background(c=5)
+            b_pressed = None
 
-    if badge.held(BUTTON_A):
-        change_background(c=-5)
+    if badge.held (BUTTON_UP):
+        if badge.held (BUTTON_B):
+            change_background (l = -5)
+        else:
+            change_background (h = -5)
+
+    if badge.held (BUTTON_DOWN):
+        if badge.held (BUTTON_B):
+            change_background (l = 5)
+        else:
+            change_background (h = 5)
+
+    if badge.held (BUTTON_C):
+        if badge.held (BUTTON_B):
+            # Do nothing, this would be a modifier, but we currently do not
+            # use it.
+            pass
+        else:
+            change_background (c = 5)
+
+    if badge.held (BUTTON_A):
+        if badge.held (BUTTON_B):
+            # Do nothing, this would be a modifier, but we currently do not
+            # use it.
+            pass
+        else:
+            change_background (c =- 5)
 
     if flip:
         # create a spin animation that runs over 100ms
