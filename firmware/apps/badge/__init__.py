@@ -12,7 +12,7 @@ CY = screen.height / 2
 screen.antialias = screen.X2
 
 # details to be shown on the card
-id_photo = image.load("avatar.png")
+id_photo = image.load("avatar-squirrel.png")
 id_name = "Your Name"
 id_role = "Job title"
 
