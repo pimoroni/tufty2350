@@ -11,33 +11,138 @@ CY = screen.height / 2
 
 screen.antialias = screen.X2
 
-# details to be shown on the card
-id_photo = image.load("avatar-squirrel.png")
-id_name = "Your Name"
-id_role = "Job title"
 
-# see the 'assets/social' folder to see what's supported
-id_socials = {"bluesky": {"icon": None, "handle": ""},
-              "instagram": {"icon": None, "handle": ""},
-              "github": {"icon": None, "handle": ""},
-              "discord": {"icon": None, "handle": ""}
-              }
+class Face:
+    # details to be shown on the card
+    id_photo = { "path": None, "data": None }
+    id_name = None
+    id_role = None
 
-# load in the social icons
-for key in id_socials.keys():
-    id_socials[key]["icon"] = image.load(f"assets/socials/{key}.png")
+    lightness = None
+    chroma = None
+    hue = None
+
+    id_socials = None
+
+
+    def __init__ (self, id_photo_path = None, id_name = None, id_role = None,
+                        lightness = None, chroma = None, hue = None,
+                        id_socials = None):
+        # Dict handling drove me CRAZY!
+        # Originally, this code updated the path key only via
+        # self.id_photo["path"] = id_photo_path, BUT this lead to a bug that
+        # literally took me hours to debug: the id_photo dictionary in any Face
+        # instance always referred to the same dictionary object, which meant
+        # that it was shared among instances. Modifying any key hence modified
+        # the content of all Face instances.
+        # This is probably a peculiarity of MicroPython.
+        # The workaround for this is to force the interpreter to create
+        # distinct dictionaries by always creating new ones, always specifying
+        # all keys.
+        self.id_photo = { "path": id_photo_path,
+                          "data": self.id_photo["data"] }
+        self.id_name = id_name
+        self.id_role = id_role
+
+        self.lightness = lightness
+        self.chroma = chroma
+        self.hue = hue
+
+        self.id_socials = id_socials
+
+
+    def __str__ (self):
+        return (f"Face(id_photo: {self.id_photo}, id_name: {self.id_name}, id_role: {self.id_role}, "
+                     f"lightness: {self.lightness}, chroma: {self.chroma}, hue: {self.hue}, "
+                     f"id_socials: {self.id_socials})")
+
+
+    def copy (self, other):
+        if not isinstance (other, Face):
+            raise RuntimeError ("Face.copy () can only copy objects of its own class.")
+
+        # N.B.: image data will not be a copy, we are lying in the function
+        # name!
+        self.id_photo = { "path": other.id_photo["path"],
+                          "data": other.id_photo["data"] }
+        self.id_name = other.id_name
+        self.id_role = other.id_role
+
+        self.lightness = other.lightness
+        self.chroma = other.chroma
+        self.hue = other.hue
+
+        if other.id_socials is not None:
+            self.id_socials = { }
+            for key in other.id_socials:
+                self.id_socials[key] = { "icon": other.id_socials[key]["icon"],
+                                         "handle": other.id_socials[key]["handle"] }
+        return (self)
+
+# Disclaimer: all personas listed here are made up, including handles.
+#             No endorsement was or is intended, and no such accounts existed
+#             at the time of writing.
+# Define your faces here and switch through them by long-pressing the B button.
+# Within each face definition, if any value is None, it will use the value from
+# the first face instead.
+# Make sure that the first face is always fully defined (minus the icon key in
+# the socials section, see below), or the application will crash!
+faces = [Face ("avatar-squirrel.png", # Avatar image path.
+               "Rusty A. Corn", # Description shown on front side of badge in a
+                                # large font, typically your name.
+               "Senior Nutwork Developer", # Description shown on front side of
+                                           # badge in a smaller font, e.g.,
+                                           # your job title.
+               102, 64, 60, # Badge background color in lightness, chroma and
+                            # hue values.
+               # Lastly, a list of social accounts. This is a dictionary with
+               # keys being social platform names - check the 'assets/social'
+               # directory to see what is supported - and values being another
+               # dictionary with two keys: an 'icon' key that will be used
+               # internally to store the binary image data for the platform
+               # logo, and a 'handle' key with your user name/mail
+               # address/platform handle.
+               # The 'icon' value is the only value that is allowed to be None
+               # in the first face definition - and it SHOULD also be set to
+               # None, since it will not be used, but always overwritten
+               # internally.
+               { "bluesky": { "icon": None, "handle": "rusty.acorn.tree" },
+                 "github": { "icon": None, "handle": "treenutmachine" },
+                 "discord": { "icon": None, "handle": "nutcache.dev" }
+               }),
+         Face (None, None, "Cert. Branch Routing Officer",
+               None, None, None,
+               None),
+         Face ("avatar-bee.png", "Justin T. Hive",
+               "Honeycomb Infra. Engineer",
+               255, 255, 40,
+               { "instagram": { "icon": None, "handle": "beenode.hun" },
+                 "spotify": { "icon": None, "handle": "buzz_machine" },
+               }),
+         Face ("avatar-duck.png", "Dr. Drake Pointer",
+               "Voting Mbr., Avian Arch. Cons.",
+               255, 0, 0,
+               { "steam": { "icon": None, "handle": "d1str1buted_quack" },
+                 "deviantart": { "icon": None, "handle": "waddleworks" },
+                 "twitch": { "icon": None, "handle": "pondstream33" },
+                 "youtube": { "icon": None, "handle": "Mallard Runtime" }
+               })]
+face_id = 0
+cur_face = Face ()
 
 # id card variables
 id_body = shape.rounded_rectangle(0, 0, 140, 100, 7)
 id_outline = shape.rounded_rectangle(0, 0, 140, 100, 7).stroke(2)
-lightness = 255
-hue = 255
-chroma = 0
-background = color.oklch(lightness, chroma, hue)
 flip = False
 flip_start = 0
 rear_view = False
 card_pos = (10, 10)
+# The color and background objects will be updated when applying the initial
+# face.
+lightness = None
+chroma = None
+hue = None
+background = None
 
 small_font = pixel_font.load("/system/assets/fonts/winds.ppf")
 large_font = pixel_font.load("/system/assets/fonts/nope.ppf")
@@ -73,18 +178,80 @@ def center_text(text, y):
     shadow_text(text, (screen.width / 2) - (w / 2), y)
 
 
+def apply_face(fid):
+    global face_id, cur_face, lightness, chroma, hue, background
+
+    face_id = fid % len (faces)
+    cur_face = cur_face.copy (faces[face_id])
+
+    # Fall back to first-face information if the current face does not provide
+    # more specific ones. Unless we are already handling the first face...
+    if (0 != face_id):
+        if cur_face.id_photo["path"] is None:
+            cur_face.id_photo = { "path": faces[0].id_photo["path"],
+                                  "data": faces[0].id_photo["data"] }
+        if cur_face.id_name is None:
+            cur_face.id_name = faces[0].id_name
+        if cur_face.id_role is None:
+            cur_face.id_role = faces[0].id_role
+
+        if cur_face.lightness is None:
+            cur_face.lightness = faces[0].lightness
+        if cur_face.chroma is None:
+            cur_face.chroma = faces[0].chroma
+        if cur_face.hue is None:
+            cur_face.hue = faces[0].hue
+
+        if cur_face.id_socials is None:
+            cur_face.id_socials = { }
+            for key in cur_face.id_socials.keys ():
+                cur_face.id_socials[key] = { "icon": faces[0].id_socials[key]["icon"],
+                                             "handle": faces[0].id_socials[key]["handle"] }
+
+    # Load image data.
+    # We are making a few design choices here that need some explanation:
+    #   - We are not specially handling path values that are set to None. While
+    #     image.load () will not handle None gracefully, we assume that users
+    #     will define their faces array so that the path will never be None
+    #     (especially with the fallback to the first face data we have in place
+    #      above).
+    #   - Instead of caching the actual binary image data for all faces once at
+    #     initialization time, we will just load the data for each face when
+    #     switching to it, dropping previously loaded data. This is a
+    #     compromise between RAM usage and speed. Since faces are only switched
+    #     rarely (at most every two seconds), loading the image data is not
+    #     critical. On the other hand, RAM is tight on these boards, so try not
+    #     to tax the hardware too much.
+    cur_face.id_photo = { "path": cur_face.id_photo["path"],
+                          "data": image.load (cur_face.id_photo["path"]) }
+
+    if cur_face.id_socials is not None:
+        for key in cur_face.id_socials.keys():
+            cur_face.id_socials[key] = { "icon": image.load(f"assets/socials/{key}.png"),
+                                         "handle": cur_face.id_socials[key]["handle"] }
+
+    lightness = cur_face.lightness
+    chroma = cur_face.chroma
+    hue = cur_face.hue
+    background = color.oklch(lightness, chroma, hue)
+
+
 def init():
-    pass
+    apply_face (0)
 
 
-def change_background(l = None, c = None, h = None):
+def change_face():
+    apply_face (face_id + 1)
+
+
+def change_background(li = None, c = None, h = None):
     # a little helper to change the background color
     global background, lightness, chroma, hue
 
     changed = False
 
-    if l:
-        lightness += l
+    if li:
+        lightness += li
         lightness %= 255
         changed = True
 
@@ -131,26 +298,43 @@ def update():
             if badge.held (BUTTON_UP) or badge.held (BUTTON_DOWN) or \
                badge.held (BUTTON_A)  or badge.held (BUTTON_C):
                 b_pressed = None
+            else:
+                # Make sure that we change faces immediately once the timeout
+                # for long-pressing is reached.
+                if 2000 <= (badge.ticks - b_pressed):
+                    change_face()
+
+                    b_pressed = None
 
     if badge.released (BUTTON_B):
-        # Once the B button is released, flip the badge, unless the button has
-        # been used as a modifier for a different button.
+        # Timeout might have already been reached by holding the button - do
+        # nothing here if this is the case.
+        # Once the B button is released, there are three possibilities:
+        #   - B has been used as a modifier for a different button, in that
+        #     case do nothing/forget the pressed state.
+        #   - Flip the badge if the button was pressed for less than 2 seconds.
+        #   - Change the face if the button was pressed for exactly 2 seconds.
         if b_pressed is not None:
-            flip = True
-            flip_start = badge.ticks
-            rear_view = not rear_view
+            if 2000 > (badge.ticks - b_pressed):
+                flip = True
+                flip_start = badge.ticks
+                rear_view = not rear_view
+            else:
+                # This should only happen if the button was pressed for exactly
+                # 2 seconds. Unlikely to happen, but better safe than sorry.
+                change_face()
 
             b_pressed = None
 
     if badge.held (BUTTON_UP):
         if badge.held (BUTTON_B):
-            change_background (l = -5)
+            change_background (li = -5)
         else:
             change_background (h = -5)
 
     if badge.held (BUTTON_DOWN):
         if badge.held (BUTTON_B):
-            change_background (l = 5)
+            change_background (li = 5)
         else:
             change_background (h = 5)
 
@@ -201,7 +385,7 @@ def update():
     screen.pen = color.rgb(0, 0, 0, 100)
     screen.shape(id_outline)
 
-    photo_y = y + 15 + id_photo.height
+    photo_y = y + 15 + cur_face.id_photo["data"].height
     socials_y = 22
 
     if not flip:
@@ -209,12 +393,13 @@ def update():
         screen.pen = color.rgb(0, 0, 0)
         if not rear_view:
             screen.font = large_font
-            screen.blit(id_photo, vec2(CX - id_photo.width / 2, y + 10))
-            center_text(id_name, photo_y)
+            screen.blit(cur_face.id_photo["data"], vec2(CX - cur_face.id_photo["data"].width / 2,
+                                                        y + 10))
+            center_text(cur_face.id_name, photo_y)
             screen.font = small_font
-            center_text(id_role, photo_y + 12)
+            center_text(cur_face.id_role, photo_y + 12)
         else:
-            for account in id_socials.items():
+            for account in cur_face.id_socials.items():
                 screen.font = large_font
                 y_offset = 1
                 screen.pen = color.rgb(100, 100, 100)
@@ -231,4 +416,5 @@ def on_exit():
     pass
 
 
+init ()
 run(update)
