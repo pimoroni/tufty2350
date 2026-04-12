@@ -1,6 +1,7 @@
 import os
 import rp2
 import vfs
+import ramfs
 import machine  # noqa: F401
 
 
@@ -28,5 +29,7 @@ try:
 except:  # noqa: E722
     pass
 
+ramfs.mkramfs()
 
-del os, vfs, bdev, bdev_lfs, fat, lfs
+
+del os, vfs, ramfs, bdev, bdev_lfs, fat, lfs

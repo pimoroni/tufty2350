@@ -3,6 +3,8 @@ add_library(usermod_picovector INTERFACE)
 find_package(PNGDEC CONFIG REQUIRED)
 find_package(JPEGDEC CONFIG REQUIRED)
 
+include(modules/c/psram/psram)
+
 list(APPEND SOURCES
   ${CMAKE_CURRENT_LIST_DIR}/micropython/picovector_bindings.c
   ${CMAKE_CURRENT_LIST_DIR}/micropython/picovector.cpp
@@ -46,7 +48,9 @@ target_include_directories(usermod_picovector INTERFACE
   ${CMAKE_CURRENT_LIST_DIR}
 )
 
-target_link_libraries(usermod INTERFACE usermod_picovector pngdec jpegdec)
+target_compile_definitions(usermod_picovector INTERFACE PICO=1)
+
+target_link_libraries(usermod INTERFACE usermod_picovector pngdec jpegdec psram)
 
 set_source_files_properties(
   ${SOURCES}
