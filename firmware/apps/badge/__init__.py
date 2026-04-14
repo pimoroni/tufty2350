@@ -252,7 +252,7 @@ def change_background(li = None, c = None, h = None):
 
     if li:
         lightness += li
-        lightness %= 255
+        lightness %= 256
         changed = True
 
     if c:
@@ -262,7 +262,7 @@ def change_background(li = None, c = None, h = None):
 
     if h:
         hue += h
-        hue %= 255
+        hue %= 256
         changed = True
 
     if changed:
