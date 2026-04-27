@@ -18,8 +18,8 @@ from badgeware import (
 
 from .palette import PAPER, STONE, STONE_DIM, TERRACOTTA
 from .layout import (
-    HDR_PAD_R, LINK_S_X, LINK_P_X, LINK_S_DOT_W,
-    LINK_S_GLYPH_W, STATE_DOT_W,
+    HDR_PAD_L, HDR_PAD_R, LINK_GAP, LINK_S_X, LINK_P_X,
+    LINK_S_DOT_W, LINK_S_GLYPH_W, STATE_DOT_W,
 )
 
 
