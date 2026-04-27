@@ -12,12 +12,12 @@ def parse_em_extraction(raw):
     State.pres                 = f["pressure_bar"]
     State.em_battery           = f["battery_pct"]
     State._pres_last_change_ms = time.ticks_ms()
-    # Pressure into trend ring (paired with current flow); pressure → primary;
-    # battery → header.
+    # Pressure into trend ring (paired with current flow); pressure → primary.
+    # See ble/scale.py: header isn't marked dirty per-frame to avoid flicker;
+    # battery updates ride the 10-frame periodic header_tick.
     trend.push(State.pres, State.flow)
     render.dirty_primary = True
     render.dirty_trend = True
-    render.dirty_header = True
 
 
 def parse_em_status(raw):
@@ -25,4 +25,4 @@ def parse_em_status(raw):
     if f is None:
         return
     State.em_battery = f["battery_pct"]
-    render.dirty_header = True
+    # Status frame carries battery; header redraws on the next periodic tick.

@@ -16,7 +16,10 @@ def parse_scale(raw):
     if f["timer_s"] != State._timer_prev:
         State._timer_prev           = f["timer_s"]
         State._timer_last_change_ms = time.ticks_ms()
-    # Mass + time → primary + secondary; battery → header.
+    # Mass + time → primary + secondary.  Header NOT marked dirty:
+    # scale streams at ~10 Hz, marking dirty_header every notify caused
+    # a visible flicker on the header glyphs (S/P/chg) — battery state
+    # changes far slower than scale telemetry, so the 10-frame
+    # periodic header_tick in render.tick is sufficient.
     render.dirty_primary = True
     render.dirty_secondary = True
-    render.dirty_header = True

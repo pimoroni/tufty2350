@@ -52,16 +52,11 @@ def _hline(y):
 
 
 def draw_dividers():
-    """Row borders + vertical dividers per brief grid."""
-    screen.brush = STONE_DIM
-    _hline(HDR_H - 1)              # header bottom (y=13)
-    _hline(PRIM_BOTTOM_Y)          # primary bottom (y=63)
-    _hline(SEC_BOTTOM_Y)           # secondary bottom (y=97)
-    # Vertical dividers at x=80
-    vdiv_prim = shapes.rectangle(VDIV_X, PRIM_TOP, 1, PRIM_H)
-    vdiv_sec  = shapes.rectangle(VDIV_X, SEC_TOP, 1, SEC_H)
-    screen.draw(vdiv_prim)
-    screen.draw(vdiv_sec)
+    """Row borders + vertical dividers — disabled per user request 2026-04-26.
+    Layout grid is implied by row positions and label placement; no
+    visible lines drawn between rows or columns.
+    """
+    pass
 
 
 # ── Value helpers ──────────────────────────────────────────────
@@ -95,15 +90,16 @@ def _small_label(font_sm, label, x, y):
 # ── Row redraws ─────────────────────────────────────────────────
 
 def redraw_primary(font_lg, font_sm):
-    """Primary row: MASS | PRES (28 px digits, 8 px units, 6 px labels)."""
-    # Clear row, then re-paint dividers + content (the partial-redraw
-    # clear wipes the borders, so each row redraws its own grid lines).
+    """Primary row: MASS | PRES.  No dividers or borders."""
     bg = shapes.rectangle(0, PRIM_TOP, WIDTH, PRIM_H)
     screen.brush = BG
     screen.draw(bg)
 
+    # font_sm renders 11 px tall; lab_y must keep label fully inside the row
+    # (PRIM_TOP..PRIM_TOP+PRIM_H-1) so the secondary's clear rect doesn't
+    # clip its descenders.  Leave 1 px breathing room.
     val_y = PRIM_TOP + 4
-    lab_y = PRIM_TOP + PRIM_H - 9
+    lab_y = PRIM_TOP + PRIM_H - 11 - 1
 
     digits_brush = PAPER if State.session != "IDLE" else STONE_DIM
 
@@ -114,20 +110,15 @@ def redraw_primary(font_lg, font_sm):
                COL_W + 5, val_y, pressure_brush(State.pres))
     _small_label(font_sm, "PRES", COL_W + 5, lab_y)
 
-    # Vertical divider at x=80 + bottom border at y=63 (style brief grid).
-    screen.brush = STONE_DIM
-    screen.draw(shapes.rectangle(VDIV_X, PRIM_TOP, 1, PRIM_H))
-    screen.draw(shapes.rectangle(0, PRIM_BOTTOM_Y, WIDTH, 1))
-
 
 def redraw_secondary(font_sm):
-    """Secondary row: TIME | FLOW (16 px digits, 7 px units, 5 px labels)."""
+    """Secondary row: TIME | FLOW.  No dividers or borders."""
     bg = shapes.rectangle(0, SEC_TOP, WIDTH, SEC_H)
     screen.brush = BG
     screen.draw(bg)
 
     val_y = SEC_TOP + 2
-    lab_y = SEC_TOP + SEC_H - 9
+    lab_y = SEC_TOP + SEC_H - 11 - 1
 
     digits_brush = PAPER if State.session != "IDLE" else STONE_DIM
     flow_brush = PAPER if State.session == "LIVE" else STONE_DIM
@@ -138,11 +129,6 @@ def redraw_secondary(font_sm):
     _med_value(font_sm, f"{State.flow:.1f}", "g/s",
                COL_W + 5, val_y, flow_brush)
     _small_label(font_sm, "FLOW", COL_W + 5, lab_y)
-
-    # Vertical divider at x=80 + bottom border at y=97 (style brief grid).
-    screen.brush = STONE_DIM
-    screen.draw(shapes.rectangle(VDIV_X, SEC_TOP, 1, SEC_H))
-    screen.draw(shapes.rectangle(0, SEC_BOTTOM_Y, WIDTH, 1))
 
 
 def redraw_header(font_sm, frame_counter):
@@ -157,10 +143,6 @@ def redraw_header(font_sm, frame_counter):
         State.session,
         frame_counter,
     )
-    # Bottom border at y=13.  Re-painted on every header tick so the
-    # row's BG clear above doesn't leave it invisible.
-    screen.brush = STONE_DIM
-    screen.draw(shapes.rectangle(0, HDR_H - 1, WIDTH, 1))
 
 
 def redraw_trend():
