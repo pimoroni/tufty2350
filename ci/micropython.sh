@@ -1,6 +1,6 @@
 export TERM=${TERM:="xterm-256color"}
 
-# cache buster: 2026-04-26-m8.5-departure-mono
+# cache buster: 2026-04-26-m8.5-departure-22-11
 
 MICROPYTHON_FLAVOUR="zestuart"
 MICROPYTHON_VERSION="bw-1.27.0"

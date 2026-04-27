@@ -106,8 +106,12 @@ def _load_fonts():
         # import); on MemoryError on the second load, share the large
         # font as the small one (readable but cramped).
         import gc
+        # Departure Mono renders pixel-perfect at multiples of 11 px
+        # (per its README); 22 + 11 fit LORES legibly with crisp
+        # 1-bit glyphs.  Sub-grid sizes (28, 10) get mangled by the
+        # 1-bit threshold during conversion.
         candidates = [
-            ("/rom/fonts/departure_28.ppf", "/rom/fonts/departure_10.ppf"),
+            ("/rom/fonts/departure_22.ppf", "/rom/fonts/departure_11.ppf"),
             ("/rom/fonts/absolute.ppf",     "/rom/fonts/ark.ppf"),
             ("/system/assets/fonts/absolute.ppf",
              "/system/assets/fonts/ark.ppf"),
