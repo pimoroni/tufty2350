@@ -428,15 +428,22 @@ _frame_counter = 0
 _idle_since_ms = 0
 _backlight_on  = True
 
-# Auto-dormant tracking (M9 power-saver — fixes overnight battery drain
-# when the operator walks away with the badge still chasing peripherals).
-# `_session_first_connect_ms` arms the countdown: the timer only ticks
-# *after* the first time any peripheral has been READY this session, so
-# a cold boot before the operator wakes the scale + EM doesn't dormant.
-# `_no_peripherals_since_ms` is the start of the current "all NONE"
-# stretch; reset to 0 on any reconnect, button press, or button held.
+# Auto-dormant tracking (M9 power-saver, M9.1 gate correction).
+# Fires after a sustained "no brewing happening" window with no operator
+# input. Specifically: armed + State.session != "LIVE" + no buttons,
+# continuously for `_AUTO_DORMANT_MS`.
+#
+# `_session_first_connect_ms` is the arming flag — set the first time any
+# peripheral reaches READY this session. Until armed, the countdown is
+# disabled, so a cold boot before the operator wakes the scale + EM
+# doesn't dormant on them.
+#
+# Why session-state, not link-state: the original M9 gate required every
+# target in NONE, which missed the "wedged peripheral" case (e.g. EM
+# stays connected at 0 bar while the operator walks away). LIVE-vs-not
+# is the actual signal for "is brewing happening".
 _session_first_connect_ms = 0
-_no_peripherals_since_ms  = 0
+_dormant_idle_since_ms    = 0
 _AUTO_DORMANT_MS          = 5 * 60 * 1000  # 5 min
 
 
@@ -536,7 +543,7 @@ def _dispatch_buttons():
 def update():
     """Called by badgeware.run().  Service the BLE state machine + render."""
     global _idle_since_ms, _backlight_on, _frame_counter
-    global _session_first_connect_ms, _no_peripherals_since_ms
+    global _session_first_connect_ms, _dormant_idle_since_ms
     now = time.ticks_ms()
     _frame_counter += 1
 
@@ -599,23 +606,26 @@ def update():
             pass
         BLE.scanning = False
 
-    # Auto-dormant: after 5 min with all targets in NONE state — but only
-    # AFTER the first successful connect this session (so a cold boot
-    # before the operator wakes the peripherals doesn't dormant on them).
-    # Reset on any reconnect or any button press / hold.
-    if any_ready:
-        if _session_first_connect_ms == 0:
-            _session_first_connect_ms = now
-        _no_peripherals_since_ms = 0
-    elif _session_first_connect_ms != 0 and len(none_targets) == len(BLE.targets):
-        if len(io.pressed) > 0 or len(io.held) > 0:
-            _no_peripherals_since_ms = 0
-        elif _no_peripherals_since_ms == 0:
-            _no_peripherals_since_ms = now
-        elif time.ticks_diff(now, _no_peripherals_since_ms) > _AUTO_DORMANT_MS:
-            print("[coffee] auto-dormant: 5 min with no peripherals; powering down")
+    # Auto-dormant: after 5 min in any non-LIVE session with no button
+    # input — but only AFTER the first successful connect this session
+    # (so a cold boot before the operator wakes the peripherals doesn't
+    # dormant on them).
+    if any_ready and _session_first_connect_ms == 0:
+        _session_first_connect_ms = now
+
+    armed        = _session_first_connect_ms != 0
+    not_live     = State.session != "LIVE"
+    input_active = len(io.pressed) > 0 or len(io.held) > 0
+
+    if armed and not_live and not input_active:
+        if _dormant_idle_since_ms == 0:
+            _dormant_idle_since_ms = now
+        elif time.ticks_diff(now, _dormant_idle_since_ms) > _AUTO_DORMANT_MS:
+            print("[coffee] auto-dormant: 5 min idle; powering down")
             _enter_dormant()
             return
+    else:
+        _dormant_idle_since_ms = 0
 
 
 def init():
