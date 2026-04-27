@@ -334,6 +334,18 @@ def _ble_irq(event, data):
                 t.rescan_delay_ms = min(
                     t.rescan_delay_ms * 2, _BACKOFF_MAX_MS)
                 t.reset()
+                # Cascade: scale dropping → kick EM off too.  Without
+                # the scale anchor, EM extraction data has no context,
+                # and keeping EM connected drains both batteries
+                # indefinitely if the operator left.  EM will be
+                # re-connected by the watchdog if scale comes back.
+                if t.name == "scale":
+                    em = _target_named("em")
+                    if em is not None and em.conn_handle is not None:
+                        try:
+                            ble.gap_disconnect(em.conn_handle)
+                        except Exception:
+                            pass
 
         elif event == _IRQ_GATTC_SERVICE_RESULT:
             conn_handle, start_handle, end_handle, uuid = data
@@ -415,6 +427,17 @@ _frame_counter = 0
 # M8 idle-backlight tracking (set in init(), updated by update()).
 _idle_since_ms = 0
 _backlight_on  = True
+
+# Auto-dormant tracking (M9 power-saver — fixes overnight battery drain
+# when the operator walks away with the badge still chasing peripherals).
+# `_session_first_connect_ms` arms the countdown: the timer only ticks
+# *after* the first time any peripheral has been READY this session, so
+# a cold boot before the operator wakes the scale + EM doesn't dormant.
+# `_no_peripherals_since_ms` is the start of the current "all NONE"
+# stretch; reset to 0 on any reconnect, button press, or button held.
+_session_first_connect_ms = 0
+_no_peripherals_since_ms  = 0
+_AUTO_DORMANT_MS          = 5 * 60 * 1000  # 5 min
 
 
 def _set_backlight(on):
@@ -513,6 +536,7 @@ def _dispatch_buttons():
 def update():
     """Called by badgeware.run().  Service the BLE state machine + render."""
     global _idle_since_ms, _backlight_on, _frame_counter
+    global _session_first_connect_ms, _no_peripherals_since_ms
     now = time.ticks_ms()
     _frame_counter += 1
 
@@ -563,6 +587,7 @@ def update():
 
     # State-machine watchdog: kick a scan whenever any target is unconnected.
     none_targets = [t for t in BLE.targets if t.state == Target.NONE]
+    any_ready    = any(t.state == Target.READY for t in BLE.targets)
     if none_targets and not BLE.scanning:
         min_delay = min(t.rescan_delay_ms for t in none_targets)
         if time.ticks_diff(now, BLE.last_scan_kick_ms) > min_delay:
@@ -573,6 +598,24 @@ def update():
         except Exception:
             pass
         BLE.scanning = False
+
+    # Auto-dormant: after 5 min with all targets in NONE state — but only
+    # AFTER the first successful connect this session (so a cold boot
+    # before the operator wakes the peripherals doesn't dormant on them).
+    # Reset on any reconnect or any button press / hold.
+    if any_ready:
+        if _session_first_connect_ms == 0:
+            _session_first_connect_ms = now
+        _no_peripherals_since_ms = 0
+    elif _session_first_connect_ms != 0 and len(none_targets) == len(BLE.targets):
+        if len(io.pressed) > 0 or len(io.held) > 0:
+            _no_peripherals_since_ms = 0
+        elif _no_peripherals_since_ms == 0:
+            _no_peripherals_since_ms = now
+        elif time.ticks_diff(now, _no_peripherals_since_ms) > _AUTO_DORMANT_MS:
+            print("[coffee] auto-dormant: 5 min with no peripherals; powering down")
+            _enter_dormant()
+            return
 
 
 def init():

@@ -62,27 +62,24 @@ def draw_dividers():
 
 # ── Value helpers ──────────────────────────────────────────────
 
-def _big_value(font_lg, font_sm, value_str, unit_str, x, y, value_brush):
+def _big_value(font_lg, value_str, x, y, value_brush):
+    """Render the value alone in the large font.  Unit suffix is now part
+    of the label (see `_small_label`)."""
     screen.font = font_lg
     screen.brush = value_brush
     screen.text(value_str, x, y)
-    vw, vh = screen.measure_text(value_str)
-    screen.font = font_sm
-    screen.brush = STONE
-    _, uh = screen.measure_text(unit_str)
-    screen.text(unit_str, x + vw + 2, y + vh - uh)
 
 
-def _med_value(font_sm, value_str, unit_str, x, y, value_brush):
+def _med_value(font_sm, value_str, x, y, value_brush):
+    """Render the value alone in the small font (used for time + flow)."""
     screen.font = font_sm
     screen.brush = value_brush
     screen.text(value_str, x, y)
-    vw, _ = screen.measure_text(value_str)
-    screen.brush = STONE
-    screen.text(unit_str, x + vw + 2, y)
 
 
 def _small_label(font_sm, label, x, y):
+    """Label + unit composite, e.g. 'MASS · g'.  Unit comes in via the
+    caller as part of the label string."""
     screen.font = font_sm
     screen.brush = STONE
     screen.text(label, x, y)
@@ -108,12 +105,11 @@ def redraw_primary(font_lg, font_sm):
 
     digits_brush = PAPER if State.session != "IDLE" else STONE_DIM
 
-    _big_value(font_lg, font_sm, f"{State.mass:.1f}", "g",
-               6, val_y, digits_brush)
-    _small_label(font_sm, "MASS", 6, lab_y)
-    _big_value(font_lg, font_sm, f"{State.pres:.1f}", "bar",
-               COL_W + 5, val_y, pressure_brush(State.pres))
-    _small_label(font_sm, "PRES", COL_W + 5, lab_y)
+    _big_value(font_lg, f"{State.mass:.1f}", 6, val_y, digits_brush)
+    _small_label(font_sm, "MASS \xb7 g", 6, lab_y)
+    _big_value(font_lg, f"{State.pres:.1f}", COL_W + 5, val_y,
+               pressure_brush(State.pres))
+    _small_label(font_sm, "PRES \xb7 bar", COL_W + 5, lab_y)
 
 
 def redraw_secondary(font_sm):
@@ -128,12 +124,10 @@ def redraw_secondary(font_sm):
     digits_brush = PAPER if State.session != "IDLE" else STONE_DIM
     flow_brush = PAPER if State.session == "LIVE" else STONE_DIM
 
-    _med_value(font_sm, f"{State.time:.1f}", "s",
-               6, val_y, digits_brush)
-    _small_label(font_sm, "TIME", 6, lab_y)
-    _med_value(font_sm, f"{State.flow:.1f}", "g/s",
-               COL_W + 5, val_y, flow_brush)
-    _small_label(font_sm, "FLOW", COL_W + 5, lab_y)
+    _med_value(font_sm, f"{State.time:.1f}", 6, val_y, digits_brush)
+    _small_label(font_sm, "TIME \xb7 s", 6, lab_y)
+    _med_value(font_sm, f"{State.flow:.1f}", COL_W + 5, val_y, flow_brush)
+    _small_label(font_sm, "FLOW \xb7 g/s", COL_W + 5, lab_y)
 
 
 def redraw_header(font_sm, frame_counter):
