@@ -96,7 +96,8 @@ def _small_label(font_sm, label, x, y):
 
 def redraw_primary(font_lg, font_sm):
     """Primary row: MASS | PRES (28 px digits, 8 px units, 6 px labels)."""
-    # Clear row
+    # Clear row, then re-paint dividers + content (the partial-redraw
+    # clear wipes the borders, so each row redraws its own grid lines).
     bg = shapes.rectangle(0, PRIM_TOP, WIDTH, PRIM_H)
     screen.brush = BG
     screen.draw(bg)
@@ -112,6 +113,11 @@ def redraw_primary(font_lg, font_sm):
     _big_value(font_lg, font_sm, f"{State.pres:.1f}", "bar",
                COL_W + 5, val_y, pressure_brush(State.pres))
     _small_label(font_sm, "PRES", COL_W + 5, lab_y)
+
+    # Vertical divider at x=80 + bottom border at y=63 (style brief grid).
+    screen.brush = STONE_DIM
+    screen.draw(shapes.rectangle(VDIV_X, PRIM_TOP, 1, PRIM_H))
+    screen.draw(shapes.rectangle(0, PRIM_BOTTOM_Y, WIDTH, 1))
 
 
 def redraw_secondary(font_sm):
@@ -133,6 +139,11 @@ def redraw_secondary(font_sm):
                COL_W + 5, val_y, flow_brush)
     _small_label(font_sm, "FLOW", COL_W + 5, lab_y)
 
+    # Vertical divider at x=80 + bottom border at y=97 (style brief grid).
+    screen.brush = STONE_DIM
+    screen.draw(shapes.rectangle(VDIV_X, SEC_TOP, 1, SEC_H))
+    screen.draw(shapes.rectangle(0, SEC_BOTTOM_Y, WIDTH, 1))
+
 
 def redraw_header(font_sm, frame_counter):
     """Header: links + state dot + battery."""
@@ -146,6 +157,10 @@ def redraw_header(font_sm, frame_counter):
         State.session,
         frame_counter,
     )
+    # Bottom border at y=13.  Re-painted on every header tick so the
+    # row's BG clear above doesn't leave it invisible.
+    screen.brush = STONE_DIM
+    screen.draw(shapes.rectangle(0, HDR_H - 1, WIDTH, 1))
 
 
 def redraw_trend():

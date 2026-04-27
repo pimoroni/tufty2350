@@ -103,8 +103,8 @@ def _battery_cells(pct):
     return max(0, min(4, (pct + 12) // 25))
 
 
-def draw_battery(font, x, y):
-    """Battery widget right-anchored at (x, y) — cells, then numeric or 'chg'."""
+def draw_battery(font, icon_x, text_x, y):
+    """Battery cluster: text at text_x, icon at icon_x, both top-y = y."""
     if is_charging():
         label = "chg"
         pct = get_battery_level()
@@ -113,40 +113,60 @@ def draw_battery(font, x, y):
         label = f"{pct}%"
     cells = _battery_cells(pct)
 
-    _BAT_BORDER.transform = Matrix().translate(x, y + 1)
+    _BAT_BORDER.transform = Matrix().translate(icon_x, y + 1)
     screen.brush = STONE
     screen.draw(_BAT_BORDER)
 
-    _BAT_INNER.transform = Matrix().translate(x + 1, y + 2)
+    _BAT_INNER.transform = Matrix().translate(icon_x + 1, y + 2)
     from .palette import BG
     screen.brush = BG
     screen.draw(_BAT_INNER)
 
     for i in range(cells):
-        _BAT_CELL.transform = Matrix().translate(x + 1 + i * 3, y + 2)
+        _BAT_CELL.transform = Matrix().translate(icon_x + 1 + i * 3, y + 2)
         screen.brush = STONE
         screen.draw(_BAT_CELL)
 
     screen.font = font
-    w, _h = screen.measure_text(label)
     screen.brush = STONE
-    screen.text(label, x - 2 - w, y)
+    screen.text(label, text_x, y)
+
+
+def _battery_text_width(font, pct, charging):
+    """Measure the battery label so the state dot can be positioned left of it."""
+    label = "chg" if charging else f"{pct}%"
+    screen.font = font
+    w, _ = screen.measure_text(label)
+    return int(w)
 
 
 # ── Header composite ───────────────────────────────────────────
 
 def draw_header(font, scale_link, pres_link, session, frame_counter):
-    """Assemble header: links left, state dot + battery right."""
+    """Assemble header: links left; state dot + battery right.
+
+    Brief layout (right-to-left): right-padding(4) | cells(13) |
+    gap(2) | battery-text(var) | gap(4) | state-dot(3) | ...
+
+    Positions computed right-to-left so the state dot doesn't end up
+    overlapping the battery text when '87%' / 'chg' / '100%' rendering
+    widths differ.
+    """
     draw_links(
         font,
         "connected" if scale_link else "disconnected",
         "connected" if pres_link else "disconnected",
     )
 
-    # Right side: battery cluster at far right, state dot just left of it.
-    bat_w = 16  # 13 px border + 1 px gap + 2 px nub padding
-    bat_x = WIDTH - HDR_PAD_R - bat_w
-    draw_battery(font, bat_x, 1)
+    pct = get_battery_level()
+    charging = is_charging()
+    text_w = _battery_text_width(font, pct, charging)
 
-    dot_x = bat_x - 4 - STATE_DOT_W
+    # Right edge of icon bbox, anchored to right padding.
+    icon_w = 13                                  # _BAT_BORDER width
+    icon_x = WIDTH - HDR_PAD_R - icon_w          # 160 - 4 - 13 = 143
+    text_x = icon_x - 2 - text_w                 # 2 px gap left of icon
+    dot_x  = text_x - 4 - STATE_DOT_W            # 4 px gap left of text
+
+    draw_battery(font, icon_x, text_x, 1)
     draw_state_dot(dot_x, 4, session, frame_counter)
