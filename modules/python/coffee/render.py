@@ -11,7 +11,7 @@ avoidance, not bus bandwidth**.  `display.update()` pushes the full
 framebuffer regardless of clip rectangles.  Win is in
 `screen.draw()` cost.
 """
-from badgeware import screen, shapes, Matrix, WIDTH
+from badgeware import screen, shapes, Matrix, WIDTH, get_battery_level, is_charging
 
 from .palette import BG, PAPER, STONE, STONE_DIM
 from .layout import (
@@ -31,6 +31,7 @@ dirty_primary    = True
 dirty_secondary  = True
 dirty_trend      = True
 _force_full      = True   # next tick repaints everything (post-wake / boot)
+_header_sig      = None   # last visible-state signature; redraw only on change
 
 
 def mark_all_dirty():
@@ -98,8 +99,12 @@ def redraw_primary(font_lg, font_sm):
     # font_sm renders 11 px tall; lab_y must keep label fully inside the row
     # (PRIM_TOP..PRIM_TOP+PRIM_H-1) so the secondary's clear rect doesn't
     # clip its descenders.  Leave 1 px breathing room.
+    # Place label directly under the digit row: digit at val_y, height
+    # ~16 px → label sits at val_y + 16 + 1 px gap.  This is ~12 px
+    # above the bottom of the row, intentional dead space below for
+    # the label's descenders + visual breathing room.
     val_y = PRIM_TOP + 4
-    lab_y = PRIM_TOP + PRIM_H - 11 - 1
+    lab_y = val_y + 17
 
     digits_brush = PAPER if State.session != "IDLE" else STONE_DIM
 
@@ -118,7 +123,7 @@ def redraw_secondary(font_sm):
     screen.draw(bg)
 
     val_y = SEC_TOP + 2
-    lab_y = SEC_TOP + SEC_H - 11 - 1
+    lab_y = val_y + 12
 
     digits_brush = PAPER if State.session != "IDLE" else STONE_DIM
     flow_brush = PAPER if State.session == "LIVE" else STONE_DIM
@@ -186,14 +191,21 @@ def tick(font_lg, font_sm, frame_counter):
         _force_full = False
         return
 
-    # Header ticks every 10 frames (battery / link state) OR every
-    # 4 frames during LIVE (state-dot blink).
-    header_tick = (frame_counter % 10) == 0
-    if State.session == "LIVE":
-        header_tick = header_tick or ((frame_counter % 4) == 0)
-
-    if dirty_header or header_tick:
+    # Header redraws only when its visible state has changed (signature
+    # check) — periodic re-paint per frame caused visible flicker on
+    # the bottom row of S/P/chg glyphs.  The signature includes the
+    # blink phase during LIVE so the state-dot still pulses.
+    global _header_sig
+    blink_phase = (frame_counter // 4) if State.session == "LIVE" else 0
+    sig = (
+        State.scale_link, State.pres_link, State.session,
+        State.scale_battery, State.em_battery,
+        get_battery_level(), is_charging(),
+        blink_phase,
+    )
+    if dirty_header or sig != _header_sig:
         redraw_header(font_sm, frame_counter)
+        _header_sig = sig
         dirty_header = False
 
     if dirty_primary:

@@ -99,19 +99,26 @@ font_sm = None
 def _load_fonts():
     global font_lg, font_sm
     if font_lg is None:
-        # Pimoroni stock /rom/fonts/ first; fallback to Mona-OS
-        # /system/assets/fonts/.  Heap is tight (~25 KB free after
-        # coffee import) so gc between loads, and if the second
-        # font won't fit, share the large one — readable but
-        # cramped is acceptable for M6.5 ship gate (M8.5 polishes).
+        # Departure Mono first (style brief §3 — preferred); fall back to
+        # Pimoroni stock absolute/ark if the Departure Mono PPFs aren't
+        # present (e.g. on a firmware that didn't bake them into /rom/).
+        # gc between loads — heap is tight (~25 KB free after coffee
+        # import); on MemoryError on the second load, share the large
+        # font as the small one (readable but cramped).
         import gc
-        for prefix in ("/rom/fonts", "/system/assets/fonts"):
+        candidates = [
+            ("/rom/fonts/departure_28.ppf", "/rom/fonts/departure_10.ppf"),
+            ("/rom/fonts/absolute.ppf",     "/rom/fonts/ark.ppf"),
+            ("/system/assets/fonts/absolute.ppf",
+             "/system/assets/fonts/ark.ppf"),
+        ]
+        for lg_path, sm_path in candidates:
             try:
                 gc.collect()
-                font_lg = PixelFont.load(prefix + "/absolute.ppf")
+                font_lg = PixelFont.load(lg_path)
                 gc.collect()
                 try:
-                    font_sm = PixelFont.load(prefix + "/ark.ppf")
+                    font_sm = PixelFont.load(sm_path)
                 except MemoryError:
                     font_sm = font_lg
                 gc.collect()
