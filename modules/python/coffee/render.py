@@ -131,7 +131,7 @@ def redraw_secondary(font_sm):
 
 
 def redraw_header(font_sm, frame_counter):
-    """Header: links + state dot + battery."""
+    """Header: links + per-peripheral battery + state dot + badge battery."""
     bg = shapes.rectangle(0, 0, WIDTH, HDR_H)
     screen.brush = BG
     screen.draw(bg)
@@ -139,6 +139,8 @@ def redraw_header(font_sm, frame_counter):
         font_sm,
         State.scale_link,
         State.pres_link,
+        State.scale_battery,
+        State.em_battery,
         State.session,
         frame_counter,
     )

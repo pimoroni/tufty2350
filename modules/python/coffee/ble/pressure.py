@@ -21,8 +21,7 @@ def parse_em_extraction(raw):
 
 
 def parse_em_status(raw):
-    f = bookoo.parse_em_status(bytes(raw))
-    if f is None:
-        return
-    State.em_battery = f["battery_pct"]
-    # Status frame carries battery; header redraws on the next periodic tick.
+    # 0x1D status frame is undocumented; validate the link only and
+    # don't decode any of its payload bytes.  EM battery percentage
+    # comes from the 0x1B extraction frame (BYTE7, documented).
+    bookoo.parse_em_status(bytes(raw))

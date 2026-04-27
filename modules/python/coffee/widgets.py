@@ -49,18 +49,26 @@ def _link_dot_brush(state):
     return STONE_DIM
 
 
-def draw_link(font, x, glyph, state):
-    """Draw one S or P link indicator: 3×3 dot at x, 5×7 glyph after."""
+def draw_link(font, x, glyph, state, battery_pct=None):
+    """Draw one S or P link indicator at x.  Returns the rightmost x used
+    so the caller can position the next element.  Layout:
+      [3×3 dot] [1px gap] [glyph] [2px gap] [battery digits]
+    Battery digits are rendered only if state == 'connected' and
+    battery_pct is not None.  Variable-width — caller pads.
+    """
     _draw_pix(x, 4, _link_dot_brush(state), _DOT3)
     screen.font = font
     screen.brush = STONE
-    screen.text(glyph, x + LINK_S_DOT_W + 1, 2)
-
-
-def draw_links(font, scale_state, pres_state):
-    """Draw both S and P link indicators."""
-    draw_link(font, LINK_S_X, "S", scale_state)
-    draw_link(font, LINK_P_X, "P", pres_state)
+    glyph_x = x + LINK_S_DOT_W + 1
+    screen.text(glyph, glyph_x, 2)
+    cursor = glyph_x + LINK_S_GLYPH_W
+    if state == "connected" and battery_pct is not None:
+        cursor += 2
+        s = "%d" % int(battery_pct)
+        screen.text(s, cursor, 2)
+        w, _ = screen.measure_text(s)
+        cursor += int(w)
+    return cursor
 
 
 # ── State dot ──────────────────────────────────────────────────
@@ -142,31 +150,38 @@ def _battery_text_width(font, pct, charging):
 
 # ── Header composite ───────────────────────────────────────────
 
-def draw_header(font, scale_link, pres_link, session, frame_counter):
-    """Assemble header: links left; state dot + battery right.
+def draw_header(font, scale_link, pres_link, scale_battery, em_battery,
+                session, frame_counter):
+    """Assemble header: link/battery groups on the left; state dot +
+    badge battery on the right.
 
-    Brief layout (right-to-left): right-padding(4) | cells(13) |
-    gap(2) | battery-text(var) | gap(4) | state-dot(3) | ...
-
-    Positions computed right-to-left so the state dot doesn't end up
-    overlapping the battery text when '87%' / 'chg' / '100%' rendering
-    widths differ.
+    Left side, left-to-right (variable width):
+      [S dot][S][gap][scale%]  [P dot][P][gap][em%]
+    Right side, right-to-left (anchored to right padding):
+      [badge cells][gap][badge text][gap][state dot]
     """
-    draw_links(
-        font,
+    # Left: S group, then P group with a gap between groups.
+    cursor = HDR_PAD_L
+    cursor = draw_link(
+        font, cursor, "S",
         "connected" if scale_link else "disconnected",
+        scale_battery,
+    )
+    cursor += LINK_GAP
+    draw_link(
+        font, cursor, "P",
         "connected" if pres_link else "disconnected",
+        em_battery,
     )
 
+    # Right: badge battery anchored to right edge, state dot left of text.
     pct = get_battery_level()
     charging = is_charging()
     text_w = _battery_text_width(font, pct, charging)
-
-    # Right edge of icon bbox, anchored to right padding.
     icon_w = 13                                  # _BAT_BORDER width
-    icon_x = WIDTH - HDR_PAD_R - icon_w          # 160 - 4 - 13 = 143
-    text_x = icon_x - 2 - text_w                 # 2 px gap left of icon
-    dot_x  = text_x - 4 - STATE_DOT_W            # 4 px gap left of text
+    icon_x = WIDTH - HDR_PAD_R - icon_w
+    text_x = icon_x - 2 - text_w
+    dot_x  = text_x - 4 - STATE_DOT_W
 
     draw_battery(font, icon_x, text_x, 1)
     draw_state_dot(dot_x, 4, session, frame_counter)

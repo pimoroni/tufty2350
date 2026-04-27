@@ -105,16 +105,22 @@ def parse_em_extraction(b):
 
 
 def parse_em_status(b):
-    """Parse a 10-byte 0x1D heartbeat frame from char 0xFF03 (undocumented)."""
+    """Validate a 10-byte 0x1D heartbeat frame from char 0xFF03.
+
+    The 0x1D frame is NOT in the official protocols.md — it's only
+    observed empirically.  We validate the magic + checksum to confirm
+    the link is live and the radio is producing well-formed traffic,
+    but we do NOT decode the payload (any meaning we'd assign to bytes
+    2..8 would be inference, not the documented protocol).  Returns
+    `{}` on success, `None` on any validation failure.
+    """
     if len(b) != EM_FRAME_LEN:
         return None
     if b[0] != EM_HDR1 or b[1] != EM_TYPE_STATUS:
         return None
     if _xor_checksum(b, 9) != b[9]:
         return None
-    return {
-        "battery_pct":  b[4],
-    }
+    return {}
 
 
 # ── Command encoders ─────────────────────────────────────────────
