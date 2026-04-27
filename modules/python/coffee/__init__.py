@@ -571,25 +571,26 @@ def update():
     elif _backlight_on and time.ticks_diff(now, _idle_since_ms) > IDLE_BACKLIGHT_TIMEOUT_MS:
         _set_backlight(False)
 
-    # M9.2: clear stale State.pres if no 0x1B extraction frame in the
-    # last 2 s. Without this, State.pres latches at the final reading
-    # of the most recent shot (e.g. 9 bar) because the 0x1D heartbeat
-    # parser doesn't decode any payload bytes — so pres_active stays
-    # True forever, session locks to LIVE, and auto-dormant never fires
-    # while the EM is connected post-shot.
+    # Clear stale State.pres if no 0x1B extraction frame in the last 2 s.
+    # The 0x1D heartbeat doesn't decode any payload bytes, so without this
+    # the PRES digit latches at the final reading of the most recent shot
+    # (e.g. 9 bar) until the next pull. Cosmetic-only after M9.3 — pres no
+    # longer drives session — but kept so the digit reads correctly.
     _PRES_STALE_MS = 2000
     if State.pres != 0.0 and time.ticks_diff(now, State._pres_last_change_ms) > _PRES_STALE_MS:
         State.pres = 0.0
 
-    # Derive session pill: combine scale-timer activity with EM pressure
-    # presence (extraction → pres > 0.5 bar).
+    # M9.3: scale is the only signal of brewing intent. The scale is the
+    # active interaction surface (operator taps tare/start/stop); the EM
+    # is a passive sensor and must not drive engagement state — otherwise
+    # an idle EM at non-zero pressure (boiler steam) keeps the badge
+    # awake forever. See feedback_scale_intent_em_telemetry.md.
     timer_running = (
         State.time != 0.0
         and time.ticks_diff(now, State._timer_last_change_ms) <= 1500
     )
-    pres_active = State.pres > 0.5
     new_session = "IDLE"
-    if timer_running or pres_active:
+    if timer_running:
         new_session = "LIVE"
     elif State.time != 0.0:
         new_session = "STOPPED"
