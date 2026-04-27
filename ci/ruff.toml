@@ -113,3 +113,18 @@ lint.ignore = [
     "COM812",
     "ICN001"
 ]
+
+# Per-path exemptions for the frozen `coffee` MicroPython package.
+#
+# BLE001 (broad except): defensive coding on a microcontroller — IRQ handlers
+# and best-effort init paths swallow ANY error to keep the run loop alive.
+# Narrowing exception types in this context risks the badge wedging on an
+# unanticipated exception.
+#
+# SLF001 (private member access): `coffee.state.State` uses underscore-prefixed
+# fields (e.g. `_timer_last_change_ms`) for internal tracking; they're
+# accessed by sibling modules in the same package. MicroPython has no
+# protected concept; the underscore is naming convention only.
+[lint.per-file-ignores]
+"modules/python/coffee/**.py" = ["BLE001", "SLF001"]
+"modules/python/mona_shim.py" = ["BLE001"]

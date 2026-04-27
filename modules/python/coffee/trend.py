@@ -13,7 +13,7 @@ from badgeware import screen, shapes, Matrix
 
 from .palette import PAPER, STONE, STONE_DIM
 from .layout import (
-    TREND_TOP, TREND_H, TREND_BASELINE_Y, TREND_MID_Y,
+    TREND_TOP, TREND_BASELINE_Y, TREND_MID_Y,
     TREND_TICK_10S_X, TREND_TICK_20S_X,
     TREND_Y_MIN, TREND_Y_MAX, TREND_PRES_RANGE, TREND_FLOW_RANGE,
     TREND_BUFFER_LEN, WIDTH,
@@ -51,14 +51,18 @@ def reset():
 
 
 def _y_for_pres(p):
-    if p < 0: p = 0
-    if p > TREND_PRES_RANGE: p = TREND_PRES_RANGE
+    if p < 0:
+        p = 0
+    if p > TREND_PRES_RANGE:
+        p = TREND_PRES_RANGE
     return int(TREND_Y_MAX - (p / TREND_PRES_RANGE) * (TREND_Y_MAX - TREND_Y_MIN))
 
 
 def _y_for_flow(f):
-    if f < 0: f = 0
-    if f > TREND_FLOW_RANGE: f = TREND_FLOW_RANGE
+    if f < 0:
+        f = 0
+    if f > TREND_FLOW_RANGE:
+        f = TREND_FLOW_RANGE
     return int(TREND_Y_MAX - (f / TREND_FLOW_RANGE) * (TREND_Y_MAX - TREND_Y_MIN))
 
 

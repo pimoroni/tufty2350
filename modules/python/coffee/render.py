@@ -15,8 +15,7 @@ from badgeware import screen, shapes, Matrix, WIDTH, get_battery_level, is_charg
 
 from .palette import BG, PAPER, STONE, STONE_DIM
 from .layout import (
-    HDR_H, PRIM_TOP, PRIM_H, PRIM_BOTTOM_Y, SEC_TOP, SEC_H, SEC_BOTTOM_Y,
-    TREND_TOP, TREND_H, COL_W, VDIV_X,
+    HDR_H, PRIM_TOP, PRIM_H, SEC_TOP, SEC_H, TREND_TOP, TREND_H, COL_W,
 )
 from .state import State, pressure_brush
 from . import widgets, trend
@@ -57,7 +56,6 @@ def draw_dividers():
     Layout grid is implied by row positions and label placement; no
     visible lines drawn between rows or columns.
     """
-    pass
 
 
 # ── Value helpers ──────────────────────────────────────────────

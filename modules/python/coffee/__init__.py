@@ -19,7 +19,9 @@ Module layout (post-§8.2 split):
 - coffee/ble/pressure.py
 - coffee/__init__.py   — BLE state machine + button dispatch + update/init
 """
-import sys, os, json
+import sys
+import os
+import json
 # Best-effort cwd setup; harmless if /coffee/ doesn't exist on LFS
 # (e.g., when this module is frozen into the firmware build).
 try:
@@ -36,9 +38,7 @@ import time
 import powman
 
 import badgeware
-from badgeware import (
-    screen, io, PixelFont, WIDTH,
-)
+from badgeware import io, PixelFont
 
 from . import bookoo
 from .state import State

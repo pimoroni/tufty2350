@@ -16,7 +16,6 @@ Inject in /main.py BEFORE `import coffee`:
     coffee.init()
     mona_shim.run(coffee.update)
 """
-import sys
 import time
 import machine
 import picovector
