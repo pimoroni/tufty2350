@@ -9,8 +9,16 @@ Architecture:
   is enabled by the M6.5 custom firmware (btstack MAX_NR_HCI_CONNECTIONS=3).
 """
 import sys, os, json
-sys.path.insert(0, "/coffee")
-os.chdir("/coffee")
+# Best-effort cwd setup; harmless if /coffee/ doesn't exist on LFS
+# (e.g., when this module is frozen into the firmware build).
+try:
+    sys.path.insert(0, "/coffee")
+except Exception:
+    pass
+try:
+    os.chdir("/coffee")
+except Exception:
+    pass
 
 import bluetooth
 import time
@@ -24,7 +32,7 @@ from badgeware import (
     WIDTH, HEIGHT,
 )
 
-import bookoo
+from . import bookoo
 
 # ── BLE constants (MicroPython bluetooth IRQ event codes) ─────────
 _IRQ_SCAN_RESULT                = 5
