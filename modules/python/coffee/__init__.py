@@ -77,9 +77,6 @@ _BACKOFF_MAX_MS         = 30_000
 IDLE_BACKLIGHT_TIMEOUT_MS = 60_000
 _BL_SMOOTH_VAL_ON         = 1.0
 _BL_SMOOTH_VAL_OFF        = 0.0
-# `powman.goto_dormant_for` takes a single positional float in
-# **seconds** (probed 2026-04-26).  86 400 s = 24 h.
-_DORMANT_DURATION_S       = 86_400.0
 
 UUID_SVC_SCALE    = bluetooth.UUID(bookoo.SCALE_UUID_SERVICE)
 UUID_CHAR_WEIGHT  = bluetooth.UUID(bookoo.SCALE_UUID_WEIGHT)
@@ -346,6 +343,11 @@ def _ble_irq(event, data):
                             ble.gap_disconnect(em.conn_handle)
                         except Exception:
                             pass
+                    # M9.4: arm the auto-dormant grace timer. Run loop
+                    # picks this up at top of update() and either cancels
+                    # (if scale reconnects) or fires _enter_dormant().
+                    global _dormant_pending_since_ms
+                    _dormant_pending_since_ms = time.ticks_ms()
 
         elif event == _IRQ_GATTC_SERVICE_RESULT:
             conn_handle, start_handle, end_handle, uuid = data
@@ -428,23 +430,18 @@ _frame_counter = 0
 _idle_since_ms = 0
 _backlight_on  = True
 
-# Auto-dormant tracking (M9 power-saver, M9.1 gate correction).
-# Fires after a sustained "no brewing happening" window with no operator
-# input. Specifically: armed + State.session != "LIVE" + no buttons,
-# continuously for `_AUTO_DORMANT_MS`.
+# Auto-dormant trigger (M9.4): scale disconnect with 30 s grace.
+# When the scale BLE link drops, start a 30 s grace timer. If the scale
+# reconnects within the window, cancel. Otherwise dormant.
 #
-# `_session_first_connect_ms` is the arming flag — set the first time any
-# peripheral reaches READY this session. Until armed, the countdown is
-# disabled, so a cold boot before the operator wakes the scale + EM
-# doesn't dormant on them.
+# Set by _IRQ_PERIPHERAL_DISCONNECT for the scale target only — so cold
+# boot with no scale ever connected never sets it, which is the implicit
+# "armed" guard. EM disconnects do not set it (per the scale-as-intent
+# architectural rule, see feedback_scale_intent_em_telemetry.md).
 #
-# Why session-state, not link-state: the original M9 gate required every
-# target in NONE, which missed the "wedged peripheral" case (e.g. EM
-# stays connected at 0 bar while the operator walks away). LIVE-vs-not
-# is the actual signal for "is brewing happening".
-_session_first_connect_ms = 0
-_dormant_idle_since_ms    = 0
-_AUTO_DORMANT_MS          = 5 * 60 * 1000  # 5 min
+# Grace window absorbs transient BLE glitches without false-dormanting.
+_dormant_pending_since_ms = 0
+_DORMANT_GRACE_MS         = 30_000  # 30 s
 
 
 def _set_backlight(on):
@@ -459,10 +456,14 @@ def _set_backlight(on):
 
 
 def _enter_dormant():
+    # M9.4: powman.shipping_mode() = powman_off() = hardware off (not
+    # dormant clock-gating). Works with USB attached because the SoC
+    # actually powers down rather than fighting USB for clock; goto_dormant_for
+    # would hard_assert → mp_pico_panic with USB attached.
     print("[coffee] entering dormant; press RESET to wake")
     _shutdown()
     try:
-        powman.goto_dormant_for(_DORMANT_DURATION_S)
+        powman.shipping_mode()
     except Exception as e:
         print("[coffee] dormant err: %r" % e)
 
@@ -543,7 +544,7 @@ def _dispatch_buttons():
 def update():
     """Called by badgeware.run().  Service the BLE state machine + render."""
     global _idle_since_ms, _backlight_on, _frame_counter
-    global _session_first_connect_ms, _dormant_idle_since_ms
+    global _dormant_pending_since_ms
     now = time.ticks_ms()
     _frame_counter += 1
 
@@ -605,7 +606,6 @@ def update():
 
     # State-machine watchdog: kick a scan whenever any target is unconnected.
     none_targets = [t for t in BLE.targets if t.state == Target.NONE]
-    any_ready    = any(t.state == Target.READY for t in BLE.targets)
     if none_targets and not BLE.scanning:
         min_delay = min(t.rescan_delay_ms for t in none_targets)
         if time.ticks_diff(now, BLE.last_scan_kick_ms) > min_delay:
@@ -617,26 +617,18 @@ def update():
             pass
         BLE.scanning = False
 
-    # Auto-dormant: after 5 min in any non-LIVE session with no button
-    # input — but only AFTER the first successful connect this session
-    # (so a cold boot before the operator wakes the peripherals doesn't
-    # dormant on them).
-    if any_ready and _session_first_connect_ms == 0:
-        _session_first_connect_ms = now
-
-    armed        = _session_first_connect_ms != 0
-    not_live     = State.session != "LIVE"
-    input_active = len(io.pressed) > 0 or len(io.held) > 0
-
-    if armed and not_live and not input_active:
-        if _dormant_idle_since_ms == 0:
-            _dormant_idle_since_ms = now
-        elif time.ticks_diff(now, _dormant_idle_since_ms) > _AUTO_DORMANT_MS:
-            print("[coffee] auto-dormant: 5 min idle; powering down")
+    # Auto-dormant (M9.4): scale is the operator's intent surface — if
+    # the scale's BLE link drops and stays dropped for the grace window,
+    # the brewing session is over and we power down. Set in IRQ on scale
+    # disconnect; cleared here when scale reconnects.
+    scale = _scale_target()
+    if _dormant_pending_since_ms != 0:
+        if scale is not None and scale.state == Target.READY:
+            _dormant_pending_since_ms = 0
+        elif time.ticks_diff(now, _dormant_pending_since_ms) > _DORMANT_GRACE_MS:
+            print("[coffee] scale gone %d s; powering down" % (_DORMANT_GRACE_MS // 1000))
             _enter_dormant()
             return
-    else:
-        _dormant_idle_since_ms = 0
 
 
 def init():
