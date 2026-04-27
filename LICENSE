@@ -1,0 +1,37 @@
+MIT License
+
+Copyright (c) 2026 Ze Stuart
+
+This licence applies to the Tessera additions in this repository,
+specifically:
+
+  - modules/python/coffee/                (brew-display application)
+  - modules/python/mona_shim.py           (badgeware compatibility shim)
+  - ci/micropython.sh                     (cache-buster modifications)
+  - board/mpconfigboard.h                 (patched-build board name)
+  - README.md, COFFEE_README.md           (project documentation)
+  - The git history of changes by zestuart on top of pimoroni/tufty2350.
+
+Files vendored from upstream (the Pimoroni Tufty 2350 firmware build,
+Pimoroni-authored Python modules under modules/common/, MicroPython,
+btstack, Pico SDK, Departure Mono PPF font assets, and any other
+third-party code) retain their original licences.  See the README for
+attribution and per-component licence pointers.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
