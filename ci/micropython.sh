@@ -1,6 +1,6 @@
 export TERM=${TERM:="xterm-256color"}
 
-# cache buster: 2026-04-27-m6.5-psram
+# cache buster: 2026-04-27-m6.5-psram-v2
 
 MICROPYTHON_FLAVOUR="zestuart"
 MICROPYTHON_VERSION="bw-1.27.0"
