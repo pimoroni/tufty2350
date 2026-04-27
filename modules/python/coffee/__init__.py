@@ -571,6 +571,16 @@ def update():
     elif _backlight_on and time.ticks_diff(now, _idle_since_ms) > IDLE_BACKLIGHT_TIMEOUT_MS:
         _set_backlight(False)
 
+    # M9.2: clear stale State.pres if no 0x1B extraction frame in the
+    # last 2 s. Without this, State.pres latches at the final reading
+    # of the most recent shot (e.g. 9 bar) because the 0x1D heartbeat
+    # parser doesn't decode any payload bytes — so pres_active stays
+    # True forever, session locks to LIVE, and auto-dormant never fires
+    # while the EM is connected post-shot.
+    _PRES_STALE_MS = 2000
+    if State.pres != 0.0 and time.ticks_diff(now, State._pres_last_change_ms) > _PRES_STALE_MS:
+        State.pres = 0.0
+
     # Derive session pill: combine scale-timer activity with EM pressure
     # presence (extraction → pres > 0.5 bar).
     timer_running = (
