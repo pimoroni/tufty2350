@@ -102,6 +102,11 @@ Matrix = picovector.mat3
 class PixelFont:
     @staticmethod
     def load(path):
+        # gc before each PPF load: a 10 KB font fragments the
+        # ~25 KB free heap enough that the next 7-8 KB load can
+        # MemoryError unless we compact first.
+        import gc
+        gc.collect()
         return picovector.pixel_font.load(path)
 
 

@@ -154,15 +154,26 @@ font_sm = None
 def _load_fonts():
     global font_lg, font_sm
     if font_lg is None:
-        # Try Pimoroni stock /rom/fonts/ first; fall back to Mona-OS
-        # /system/assets/fonts/.  Lets the same coffee.py work on
-        # both firmwares.
-        try:
-            font_lg = PixelFont.load("/rom/fonts/absolute.ppf")
-            font_sm = PixelFont.load("/rom/fonts/ark.ppf")
-        except Exception:
-            font_lg = PixelFont.load("/system/assets/fonts/absolute.ppf")
-            font_sm = PixelFont.load("/system/assets/fonts/ark.ppf")
+        # Pimoroni stock /rom/fonts/ first; fallback to Mona-OS
+        # /system/assets/fonts/.  Heap is tight (~25 KB free after
+        # coffee import) so gc between loads, and if the second
+        # font won't fit, share the large one — readable but
+        # cramped is acceptable for M6.5 ship gate (M8.5 polishes).
+        import gc
+        for prefix in ("/rom/fonts", "/system/assets/fonts"):
+            try:
+                gc.collect()
+                font_lg = PixelFont.load(prefix + "/absolute.ppf")
+                gc.collect()
+                try:
+                    font_sm = PixelFont.load(prefix + "/ark.ppf")
+                except MemoryError:
+                    font_sm = font_lg
+                gc.collect()
+                return
+            except Exception:
+                font_lg = font_sm = None
+        raise OSError("no PPF fonts found in /rom/fonts or /system/assets/fonts")
 
 
 # ── Drawing helpers ──────────────────────────────────────────────
