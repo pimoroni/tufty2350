@@ -25,6 +25,9 @@ find_package(PICOVECTOR CONFIG REQUIRED)
 # Build picovector for Tufty 2350
 target_compile_definitions(usermod_picovector INTERFACE TUFTY=1)
 
+# Badgeware input module
+include(modules/c/input/micropython)
+
 # Essential
 include(pimoroni_i2c/micropython)
 
