@@ -80,7 +80,11 @@ function ci_apt_install_build_deps {
 
 function ci_install_build_deps {
     ci_apt_install_build_deps
-    python3 -m pip install littlefs-python==0.12.0
+}
+
+function ci_python_prepare {
+    python3 -m pip install -r "${CI_BUILD_ROOT}/micropython/tools/mpremote/requirements.txt"
+    python3 -m pip install -r "${CI_PROJECT_ROOT}/ci/requirements.txt"
 }
 
 function ci_prepare_all {
@@ -89,6 +93,7 @@ function ci_prepare_all {
     ci_pimoroni_pico_clone
     ci_pimoroni_picovector_clone
     ci_micropython_build_mpy_cross
+    ci_python_prepare
 }
 
 function ci_debug {
