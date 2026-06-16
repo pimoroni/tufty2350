@@ -15,6 +15,8 @@ def update():
     shape.rectangle(-1, -1, 2, 2).stroke(stroke),
     shape.circle(0, 0, 1),
     shape.circle(0, 0, 1).stroke(stroke),
+    shape.ellipse(0, 0, 1, 0.5),
+    shape.ellipse(0, 0, 1, 0.5).stroke(stroke),
     shape.star(0, 0, 5, i, 1),
     shape.star(0, 0, 5, i, 1).stroke(stroke),
     shape.squircle(0, 0, 1),

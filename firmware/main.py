@@ -2,6 +2,7 @@
 badge.poll()
 
 # We expect a launcher menu to be at /system/apps/menu
+# (temporarily auto-launching the world app for rasteriser testing)
 app_to_launch = launch("/system/apps/menu")
 
 # Stopping in Thonny can cause launch("/system/apps/menu") to return None
