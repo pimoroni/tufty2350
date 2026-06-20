@@ -7,6 +7,11 @@
 
 #define MICROPY_OBJ_REPR (MICROPY_OBJ_REPR_C)
 
+#define MICROPY_GC_NO_SCAN   (1)   // big PSRAM GC win; NO_CLEAR benefit comes with it
+#define MICROPY_HW_VM_IN_RAM (1)   // OPTIONAL: ~+20% interp, costs ~6 KB SRAM (.data)
+                                   //  - Tufty's SRAM is nearly full (framebuffer + PicoVector),
+                                   //    so only keep this if the build still links.
+
 // Set up networking.
 #define MICROPY_PY_NETWORK_HOSTNAME_DEFAULT     "Tufty2350"
 
