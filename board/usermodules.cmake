@@ -53,9 +53,6 @@ target_compile_definitions(usermod_sleep INTERFACE TUFTY=1)
 # C++ Magic Memory
 include(cppmem/micropython)
 
-# Disable build-busting C++ exceptions
-include(micropython-disable-exceptions)
-
 # Must call `enable_ulab()` to enable
 include(micropython-common-ulab)
 enable_ulab()
