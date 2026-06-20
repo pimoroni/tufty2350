@@ -162,7 +162,7 @@ function ci_cmake_build {
 
     BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
     ccache --zero-stats || true
-    cmake --build $BUILD_DIR -j 2
+    cmake --build $BUILD_DIR -j 2 || return $?
     ccache --show-stats || true
 
     if [ -z ${CI_RELEASE_FILENAME+x} ]; then
