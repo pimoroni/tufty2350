@@ -7,6 +7,12 @@ set(PICO_NUM_GPIOS 48)
 # Board specific version of the frozen manifest
 set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
 
+if(NOT DEFINED MICROPY_HW_FLASH_STORAGE_BYTES)
+    set(MICROPY_HW_FLASH_STORAGE_BYTES 13631488)  # 16 * 1024 * 1024 - 1MB for ROMFS and 2MB for LittleFS
+endif()
+
+add_compile_options(-fno-math-errno)   # hardware VSQRT on the M33 FPU (safe: MP math uses isnan/isinf, not errno)
+
 set(MICROPY_C_HEAP_SIZE 4096)
 
 # Links micropy_lib_lwip and sets MICROPY_PY_LWIP = 1
