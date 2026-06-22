@@ -19,7 +19,7 @@ os.chdir("/system/apps/bee_amazed")
 import gc
 import random
 from collections import namedtuple
-
+import qwstpad
 
 class GameState:
     INTRO = 1
@@ -83,6 +83,8 @@ level = 0                                       # The current "level" the player
 
 player = None
 builder = None
+gamepad = None
+controls = {}
 
 
 # Classes
@@ -264,28 +266,28 @@ class Player(object):
     def update(self, maze):
 
         if badge.ticks - self.last_move > 20:
-            if badge.held(BUTTON_A) and maze[self.y][self.x - 1] < (1 << WALL_BITSHIFT):
+            if controls["MOVE_LEFT"] and maze[self.y][self.x - 1] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= W
                 self.x -= 1
                 maze[self.y][self.x] |= E
                 self.current_animation = animations["left"]
                 self.last_move = badge.ticks
 
-            elif badge.held(BUTTON_C) and maze[self.y][self.x + 1] < (1 << WALL_BITSHIFT):
+            elif controls["MOVE_RIGHT"] and maze[self.y][self.x + 1] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= E
                 self.x += 1
                 maze[self.y][self.x] |= W
                 self.current_animation = animations["right"]
                 self.last_move = badge.ticks
 
-            elif badge.held(BUTTON_UP) and maze[self.y - 1][self.x] < (1 << WALL_BITSHIFT):
+            elif controls["MOVE_UP"] and maze[self.y - 1][self.x] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= N
                 self.y -= 1
                 maze[self.y][self.x] |= S
                 self.current_animation = animations["up"]
                 self.last_move = badge.ticks
 
-            elif badge.held(BUTTON_DOWN) and maze[self.y + 1][self.x] < (1 << WALL_BITSHIFT):
+            elif controls["MOVE_DOWN"] and maze[self.y + 1][self.x] < (1 << WALL_BITSHIFT):
                 maze[self.y][self.x] |= S
                 self.y += 1
                 maze[self.y][self.x] |= N
@@ -372,7 +374,7 @@ def intro():
         screen.font = font
         center_text("Press B to start", CY + 20)
 
-    if badge.pressed(BUTTON_B):
+    if controls["CONTINUE"]:
         state = GameState.PLAYING
 
 
@@ -388,7 +390,7 @@ def draw_complete_banner():
     center_text(f"Level {level + 1} Complete!", CY - 15)
     center_text("Press B to continue", CY + 5)
 
-    if badge.pressed(BUTTON_B):
+    if controls["CONTINUE"]:
         complete = False
         level += 1
         build_maze()
@@ -397,6 +399,10 @@ def draw_complete_banner():
 
 def init():
     global builder, player
+
+    # Initialise the gamepad if present
+    init_gamepad()
+
     # Create the maze builder and build the first maze and put
     builder = MazeBuilder()
     build_maze()
@@ -404,9 +410,45 @@ def init():
     # Create the player object
     player = Player(*start)
 
+def init_gamepad():
+    global gamepad
+    gamepads = qwstpad.Gamepadhelper()
+    for i in gamepads.pads:
+        if i is not None:
+            gamepad = i
+            return i
+    return None
+
+def parse_controls():
+    global controls, gamepad
+
+    if not gamepad:
+        gamepad = init_gamepad()
+
+    if gamepad:
+        try:
+            gamepad.update_buttons()
+        except OSError:
+            gamepad = init_gamepad()
+
+    if gamepad:
+        controls["MOVE_LEFT"] = badge.held(BUTTON_A) or gamepad.held("L")
+        controls["MOVE_RIGHT"] = badge.held(BUTTON_C) or gamepad.held("R")
+        controls["MOVE_DOWN"] = badge.held(BUTTON_DOWN) or gamepad.held("D")
+        controls["MOVE_UP"] = badge.held(BUTTON_UP) or gamepad.held("U")
+        controls["CONTINUE"] = badge.pressed(BUTTON_B) or gamepad.pressed("B")
+    else:
+        controls["MOVE_LEFT"] = badge.held(BUTTON_A)
+        controls["MOVE_RIGHT"] = badge.held(BUTTON_C)
+        controls["MOVE_DOWN"] = badge.held(BUTTON_DOWN)
+        controls["MOVE_UP"] = badge.held(BUTTON_UP)
+        controls["CONTINUE"] = badge.pressed(BUTTON_B)
+
 
 def update():
     global complete, builder, player, level
+
+    parse_controls()
 
     if state == GameState.INTRO:
         intro()

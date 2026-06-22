@@ -12,12 +12,48 @@ sys.path.insert(0, APP_DIR)
 badge.mode(HIRES)
 
 import ui
+import qwstpad
 
 canvas = image(ui.canvas_area[2], ui.canvas_area[3])
 cursor = (ui.canvas_area[2] / 2, ui.canvas_area[3] / 2)
 
 last_cursor_move = None
 last_cursor = None
+gamepad = None
+controls = {}
+
+
+def init_gamepad():
+    global gamepad
+    gamepads = qwstpad.Gamepadhelper()
+    for i in gamepads.pads:
+        if i is not None:
+            gamepad = i
+            return i
+    return None
+
+def parse_controls():
+    global controls, gamepad
+
+    if not gamepad:
+        gamepad = init_gamepad()
+
+    if gamepad:
+        try:
+            gamepad.update_buttons()
+        except OSError:
+            gamepad = init_gamepad()
+
+    if gamepad:
+        controls["MOVE_LEFT"] = badge.held(BUTTON_A) or gamepad.held("L")
+        controls["MOVE_RIGHT"] = badge.held(BUTTON_C) or gamepad.held("R")
+        controls["MOVE_DOWN"] = badge.held(BUTTON_DOWN) or gamepad.held("D")
+        controls["MOVE_UP"] = badge.held(BUTTON_UP) or gamepad.held("U")
+    else:
+        controls["MOVE_LEFT"] = badge.held(BUTTON_A)
+        controls["MOVE_RIGHT"] = badge.held(BUTTON_C)
+        controls["MOVE_DOWN"] = badge.held(BUTTON_DOWN)
+        controls["MOVE_UP"] = badge.held(BUTTON_UP)
 
 
 def update_cursor():
@@ -27,13 +63,13 @@ def update_cursor():
     # update the cursor position based on user input and shift the dial animation
     if not last_cursor_move or (badge.ticks - last_cursor_move) > 20:
         last_cursor = cursor
-        if badge.held(BUTTON_A):
+        if controls["MOVE_LEFT"]:
             cursor = (cursor[0] - 4, cursor[1])
-        if badge.held(BUTTON_C):
+        if controls["MOVE_RIGHT"]:
             cursor = (cursor[0] + 4, cursor[1])
-        if badge.held(BUTTON_UP):
+        if controls["MOVE_UP"]:
             cursor = (cursor[0], cursor[1] - 4)
-        if badge.held(BUTTON_DOWN):
+        if controls["MOVE_DOWN"]:
             cursor = (cursor[0], cursor[1] + 4)
         last_cursor_move = badge.ticks
 
@@ -60,6 +96,7 @@ def update_cursor():
 
 def update():
 
+    parse_controls()
     update_cursor()
 
     ui.draw_background()
