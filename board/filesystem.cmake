@@ -8,7 +8,7 @@ message("dir2uf2/py_decl: Using Python ${Python_EXECUTABLE}")
 
 # Convert supplies paths to absolute, for a quieter life
 get_filename_component(PIMORONI_ROMFS_DIR ${PIMORONI_ROMFS_DIR} REALPATH)
-get_filename_component(PIMORONI_FATFS_DIR ${PIMORONI_FATFS_DIR} REALPATH)
+get_filename_component(PIMORONI_FS_DIR ${PIMORONI_FS_DIR} REALPATH)
 
 if (EXISTS "${PIMORONI_TOOLS_DIR}/py_decl/py_decl.py")
     add_custom_target("${MICROPY_TARGET}-verify" ALL
@@ -20,18 +20,23 @@ if (EXISTS "${PIMORONI_TOOLS_DIR}/py_decl/py_decl.py")
 endif()
 
 # 4100 sectors (16MB) total
-# 256 sectors (1MB) allocated for LFS filesystem
 # 512 sectors (2MB) allocated for MicroPython
 # 256 sectors (1MB) allocated for ROMFS
-# 3076 sectors (~12MB) for user filesystem
-
-if (EXISTS "${PIMORONI_TOOLS_DIR}/ffsmake/build/ffsmake" AND EXISTS "${PIMORONI_FATFS_DIR}")
-    MESSAGE("ffsmake: Using root ${PIMORONI_FATFS_DIR}.")
-    MESSAGE("ffsmake: Outputting filesystem binary: ${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin")
-    add_custom_target("${MICROPY_TARGET}-fatfs.bin" ALL
-        COMMAND "${PIMORONI_TOOLS_DIR}/ffsmake/build/ffsmake" --label="${PIMORONI_FATFS_LABEL}" --sector-count=3076 --force --directory "${PIMORONI_FATFS_DIR}" --output "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin"
+# ~3332 sectors (~13MB) for a SINGLE unified LittleFS (fatbridge build)
+#
+# fatbridge build: the user filesystem is one big LittleFS mounted at "/", with
+# the badge OS/apps under "/system" (a subdirectory). We stage the firmware
+# content under a "system/" dir and have dir2uf2 build a LittleFS image of it
+# (matching the device's VfsLfs2 params), so the -with-filesystem build flashes a
+# fully-populated, ready-to-run badge in one go.
+set(PIMORONI_FS_STAGE "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fs-stage")
+if (EXISTS "${PIMORONI_FS_DIR}")
+    add_custom_target("${MICROPY_TARGET}-fs-stage" ALL
+        COMMAND ${CMAKE_COMMAND} -E rm -rf "${PIMORONI_FS_STAGE}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${PIMORONI_FS_STAGE}/system"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${PIMORONI_FS_DIR}" "${PIMORONI_FS_STAGE}/system"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "ffsmake: Packing FatFS filesystem to ${MICROPY_TARGET}-fatfs.bin."
+        COMMENT "fatbridge: staging ${PIMORONI_FS_DIR} -> /system for the unified LittleFS."
         DEPENDS ${MICROPY_TARGET}
         DEPENDS "${MICROPY_TARGET}-verify"
     )
@@ -49,7 +54,7 @@ if (EXISTS "${MICROPY_DIR}/tools/mpremote/mpremote.py" AND EXISTS "${PIMORONI_RO
     )
 endif()
 
-if (EXISTS "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" AND EXISTS "${PIMORONI_FATFS_DIR}")
+if (EXISTS "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" AND EXISTS "${PIMORONI_FS_DIR}")
     MESSAGE("dir2uf2: Using ROMFS binary: ${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-romfs.bin")
     add_custom_target("${MICROPY_TARGET}-romfs.uf2" ALL
         COMMAND ${Python_EXECUTABLE} "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" --fs-blockdev ROMFS --sparse --append-to "${MICROPY_TARGET}.uf2" --filename romfs.uf2 "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-romfs.bin"
@@ -62,14 +67,18 @@ if (EXISTS "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" AND EXISTS "${PIMORONI_FATFS_
     )
 endif()
 
-if (EXISTS "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" AND EXISTS "${PIMORONI_FATFS_DIR}")
-    MESSAGE("dir2uf2: Using filesystem binary: ${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin")
+if (EXISTS "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" AND EXISTS "${PIMORONI_FS_DIR}")
+    MESSAGE("dir2uf2: Building unified LittleFS from ${PIMORONI_FS_STAGE} (content under /system).")
+    # Build a LittleFS image of the staged tree and append it to the whole-flash
+    # "MicroPython" block device. Params MUST match the device's VfsLfs2 mount
+    # (rp2.Flash block_size=4096, VfsLfs2 readsize=32, progsize=256) or _boot.py
+    # would fail to mount and silently reformat.
     add_custom_target("${MICROPY_TARGET}-with-filesystem.uf2" ALL
-        COMMAND ${Python_EXECUTABLE} "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" --fs-reserve 1048576 --fs-blockdev MicroPython --sparse --append-to "${MICROPY_TARGET}-romfs.uf2" --filename with-filesystem.uf2 "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin"
+        COMMAND ${Python_EXECUTABLE} "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" --fs-type lfs --fs-blockdev MicroPython --fs-compact --sparse --block-size 4096 --read-size 32 --prog-size 256 --append-to "${MICROPY_TARGET}-romfs.uf2" --filename with-filesystem.uf2 "${PIMORONI_FS_STAGE}"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "dir2uf2: Appending filesystem to ${MICROPY_TARGET}.uf2."
+        COMMENT "dir2uf2: Building + appending unified LittleFS (/system) to ${MICROPY_TARGET}.uf2."
         DEPENDS "${MICROPY_TARGET}-romfs.uf2"
-        DEPENDS "${MICROPY_TARGET}-fatfs.bin"
+        DEPENDS "${MICROPY_TARGET}-fs-stage"
         DEPENDS "${MICROPY_TARGET}-verify"
     )
 endif()

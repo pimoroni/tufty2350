@@ -28,6 +28,9 @@ target_compile_definitions(usermod_picovector INTERFACE TUFTY=1)
 # Badgeware input module
 include(modules/c/input/micropython)
 
+# fatbridge: littlefs-backed USB-MSC drive (synthesised FAT16 over littlefs)
+include(modules/c/fatbridge/micropython)
+
 # Essential
 include(pimoroni_i2c/micropython)
 
