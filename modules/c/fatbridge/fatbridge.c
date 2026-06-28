@@ -103,6 +103,17 @@ static bool classify_name(const char *name, char out83[11], uint8_t *nt_flags) {
     return false;
 }
 
+// Does `name` need LFN entries to round-trip (i.e. it isn't representable as a
+// plain/lower-case 8.3 name)? Used on the host-write path, where the host gives
+// us the 8.3 alias but not this flag - without it a host-written long name is
+// synthesised back to the host as its bare 8.3 alias only. Discards the 8.3/NT
+// outputs (we keep the host-supplied name83/nt byte).
+static bool name_needs_lfn(const char *name) {
+    char throwaway83[11];
+    uint8_t throwaway_nt;
+    return classify_name(name, throwaway83, &throwaway_nt);
+}
+
 // Build a unique "BASE~N.EXT" 8.3 alias for a long name (n = 1-based attempt).
 static void gen_alias(const char *name, int n, char out83[11]) {
     memset(out83, ' ', 11);
@@ -305,7 +316,7 @@ static void fatbridge_enumerate(fatbridge_t *v, int dir_idx, const char *dirpath
         f->present = true;
         f->size = f->is_dir ? 0 : size;
         if (f->is_dir) {
-            char sub[96];
+            char sub[FATBRIDGE_PATH_MAX];
             node_path(v, idx, sub, sizeof(sub));
             fatbridge_enumerate(v, idx, sub, depth + 1);
         }
@@ -382,6 +393,10 @@ int fatbridge_begin(fatbridge_t *v) {
     }
     memset(v->cache_cl, 0, sizeof(v->cache_cl)); // clear the write cache
     v->lfn_active = false;
+    // Reset the hot-path hints (the file table just changed underneath them).
+    v->last_owner = -1;
+    v->alloc_cursor = 0;
+    v->dir_hint_idx = FATBRIDGE_NO_DIR_HINT;
     return 0;
 }
 
@@ -391,7 +406,20 @@ void fatbridge_capacity(const fatbridge_t *v, uint32_t *block_count, uint16_t *b
 }
 
 // Find the file owning data cluster c (>=2); return index or -1, set *is_last.
-static int cluster_owner(const fatbridge_t *v, uint32_t c, bool *is_last) {
+// Reads are sequential, so most lookups land in the same file as the previous
+// one: try the cached owner before the O(n_files) table scan.
+static int cluster_owner(fatbridge_t *v, uint32_t c, bool *is_last) {
+    int h = v->last_owner;
+    if (h >= 0 && h < v->n_files) {
+        const fatbridge_file_t *f = &v->files[h];
+        if (f->present && f->n_clusters &&
+            c >= f->first_cluster && c < f->first_cluster + f->n_clusters) {
+            if (is_last) {
+                *is_last = (c == f->first_cluster + f->n_clusters - 1);
+            }
+            return h;
+        }
+    }
     for (int i = 0; i < v->n_files; i++) {
         const fatbridge_file_t *f = &v->files[i];
         if (!f->present || f->n_clusters == 0) {
@@ -401,6 +429,7 @@ static int cluster_owner(const fatbridge_t *v, uint32_t c, bool *is_last) {
             if (is_last) {
                 *is_last = (c == f->first_cluster + f->n_clusters - 1);
             }
+            v->last_owner = i;
             return i;
         }
     }
@@ -435,7 +464,7 @@ static void synth_boot(const fatbridge_t *v, uint8_t *s) {
     s[511] = 0xAA;
 }
 
-static uint16_t fat_entry(const fatbridge_t *v, uint32_t c) {
+static uint16_t fat_entry(fatbridge_t *v, uint32_t c) {
     if (c == 0) {
         return 0xFFF8;      // media descriptor
     }
@@ -458,7 +487,7 @@ static uint16_t fat_entry(const fatbridge_t *v, uint32_t c) {
     return last ? 0xFFFF : (uint16_t)(c + 1);
 }
 
-static void synth_fat_sector(const fatbridge_t *v, uint32_t idx_in_fat, uint8_t *s) {
+static void synth_fat_sector(fatbridge_t *v, uint32_t idx_in_fat, uint8_t *s) {
     memset(s, 0, SS);
     uint32_t first = idx_in_fat * (SS / 2);   // 256 entries per sector
     for (uint32_t i = 0; i < SS / 2; i++) {
@@ -530,12 +559,25 @@ static void emit_dir_entry(fatbridge_t *v, int dir_idx, uint32_t e, uint8_t *out
         }
         pos = 2;
     }
-    for (int j = 0; j < v->n_files; j++) {
+    // The host reads a directory table sector-by-sector, so successive entries
+    // scan the same child list. Resume from the cached boundary (the start of
+    // the child covering a not-larger entry) instead of restarting from the
+    // first node every call - that restart is what makes a table O(children^2).
+    int j = 0;
+    if (v->dir_hint_idx == dir_idx && v->dir_hint_pos <= e) {
+        j = v->dir_hint_j;
+        pos = v->dir_hint_pos;
+    }
+    for (; j < v->n_files; j++) {
         fatbridge_file_t *c = &v->files[j];
         if (c->parent != dir_idx || !c->present) {
             continue;
         }
         int lfn = lfn_count_of(c);
+        // Record this child's boundary so the next (>=) entry resumes here.
+        v->dir_hint_idx = dir_idx;
+        v->dir_hint_j = j;
+        v->dir_hint_pos = pos;
         if (e < pos + (uint32_t)lfn) {
             int part = (int)(e - pos);
             synth_lfn_entry(c, lfn - part, part == 0, name_checksum(c->name83), out);
@@ -591,7 +633,7 @@ static int synth_data_sector(fatbridge_t *v, uint32_t sector, uint8_t *s) {
             return 0;
         }
     }
-    char path[96];
+    char path[FATBRIDGE_PATH_MAX];
     node_path(v, owner, path, sizeof(path));
     v->be->read(v->be->ctx, path, file_off, s, n);
     return 0;
@@ -656,19 +698,37 @@ static int cache_find(const fatbridge_t *v, uint32_t cl) {
 }
 static int cache_alloc(fatbridge_t *v, uint32_t cl) {
     uint32_t n = cache_capacity(v);
-    for (uint32_t i = 0; i < n; i++) {
+    if (n == 0) {
+        return -1;
+    }
+    // Scan from a rolling cursor (not always slot 0) so a bulk copy that fills
+    // the cache front-to-back is amortised O(1) per alloc, not O(slots).
+    if (v->alloc_cursor >= n) {
+        v->alloc_cursor = 0;
+    }
+    for (uint32_t k = 0; k < n; k++) {
+        uint32_t i = v->alloc_cursor + k;
+        if (i >= n) {
+            i -= n;
+        }
         if (v->cache_cl[i] == 0) {
             v->cache_cl[i] = cl;
             v->cache_clean[i] = 0;
+            v->alloc_cursor = (i + 1 >= n) ? 0 : i + 1;
             return (int)i;
         }
     }
     // No empty slot: evict a committed (clean) cluster - its data is safe in the
     // backend. Dirty (uncommitted) clusters must never be dropped.
-    for (uint32_t i = 0; i < n; i++) {
+    for (uint32_t k = 0; k < n; k++) {
+        uint32_t i = v->alloc_cursor + k;
+        if (i >= n) {
+            i -= n;
+        }
         if (v->cache_clean[i]) {
             v->cache_cl[i] = cl;
             v->cache_clean[i] = 0;
+            v->alloc_cursor = (i + 1 >= n) ? 0 : i + 1;
             return (int)i;
         }
     }
@@ -733,7 +793,7 @@ static bool commit_one_cluster(fatbridge_t *v, int idx) {
     }
     uint32_t cb = cluster_bytes(v);
     uint32_t need = (f->size + cb - 1) / cb;
-    char path[96];
+    char path[FATBRIDGE_PATH_MAX];
     node_path(v, idx, path, sizeof(path));
     // Every cluster must be available before we rewrite the file. A cluster is
     // either cached (host wrote it this session) or - for a partial edit/append -
@@ -741,22 +801,30 @@ static bool commit_one_cluster(fatbridge_t *v, int idx) {
     // any write (the first write truncates). If a cluster is in neither, the data
     // hasn't fully arrived (new file mid-transfer) so we wait. Walk the file's
     // FAT chain (physical clusters), not first_cluster+i, so fragmented files work.
-    uint32_t c = f->first_cluster;
-    for (uint32_t i = 0; i < need; i++) {
-        if (cache_find(v, c) < 0) {
-            int fslot = cache_alloc(v, c);
-            if (fslot < 0) {
-                return false; // cache full; retry after an eviction
+    // This whole-chain scan only has to pass ONCE per (re)dirtied file: once every
+    // cluster is confirmed present, commit_ready latches so the remaining
+    // per-cluster commit calls don't re-walk the chain (that re-walk made commit
+    // O(need^2) in cache scans, dominating large-file commit time).
+    if (!f->commit_ready) {
+        uint32_t c = f->first_cluster;
+        for (uint32_t i = 0; i < need; i++) {
+            if (cache_find(v, c) < 0) {
+                int fslot = cache_alloc(v, c);
+                if (fslot < 0) {
+                    return false; // cache full; retry after an eviction
+                }
+                uint32_t off = i * cb;
+                uint32_t want = (i + 1 == need) ? (f->size - off) : cb;
+                int got = v->be->read(v->be->ctx, path, off, v->wbuf + (uint32_t)fslot * cb, want);
+                if (got < (int)want) {
+                    v->cache_cl[fslot] = 0; // not in backend either -> wait
+                    return false;
+                }
             }
-            uint32_t off = i * cb;
-            uint32_t want = (i + 1 == need) ? (f->size - off) : cb;
-            int got = v->be->read(v->be->ctx, path, off, v->wbuf + (uint32_t)fslot * cb, want);
-            if (got < (int)want) {
-                v->cache_cl[fslot] = 0; // not in backend either -> wait
-                return false;
-            }
+            c = file_next_cluster(v, c);
         }
-        c = file_next_cluster(v, c);
+        f->commit_ready = true; // all clusters cached/pulled; uncommitted ones stay
+                                // dirty (never evicted) so they remain available
     }
     uint32_t k = f->commit_done;
     if (k == 0) {
@@ -769,6 +837,7 @@ static bool commit_one_cluster(fatbridge_t *v, int idx) {
         v->overflow = true;
         f->dirty = false;
         f->commit_done = 0;
+        f->commit_ready = false;
         return true;
     }
     if (slot >= 0) {
@@ -902,6 +971,7 @@ static void parse_dir_sector(fatbridge_t *v, int dir_idx, const uint8_t *s) {
                     memcpy(g->name83, name83, 11);
                     strncpy(g->name, name, sizeof(g->name) - 1);
                     g->name[sizeof(g->name) - 1] = 0;
+                    g->needs_lfn = name_needs_lfn(g->name); // new name may need LFN
                     g->size = size;
                     v->pending = true;
                     fi = k;
@@ -934,6 +1004,7 @@ static void parse_dir_sector(fatbridge_t *v, int dir_idx, const uint8_t *s) {
         strncpy(f->name, name, sizeof(f->name) - 1);
         f->name[sizeof(f->name) - 1] = 0;
         f->nt_flags = e[12];
+        f->needs_lfn = name_needs_lfn(f->name); // synthesise LFN back this session
         if (!f->is_dir) {
             // Only (re)mark dirty when the data actually changed. Directory
             // tables are re-parsed idempotently; without this guard a re-parse
@@ -946,6 +1017,7 @@ static void parse_dir_sector(fatbridge_t *v, int dir_idx, const uint8_t *s) {
             if (changed) {
                 f->dirty = true;
                 f->commit_done = 0;
+                f->commit_ready = false; // data changed -> re-scan availability
             }
         }
         v->pending = true; // commit deferred to fatbridge_flush()
@@ -1009,6 +1081,9 @@ int32_t fatbridge_write(fatbridge_t *v, uint32_t lba, uint32_t offset, const voi
     uint64_t abs = (uint64_t)lba * SS + offset;
     uint8_t sec[SS];
     bool dropped = false;
+    // A write may add/remove/rename children, invalidating the dir-entry resume
+    // hint built during the last read pass.
+    v->dir_hint_idx = FATBRIDGE_NO_DIR_HINT;
     while (consumed < bufsize) {
         uint32_t sector = (uint32_t)(abs / SS);
         uint32_t soff = (uint32_t)(abs % SS);
@@ -1062,7 +1137,7 @@ int32_t fatbridge_write(fatbridge_t *v, uint32_t lba, uint32_t offset, const voi
 // Do one bounded unit of deferred backend work (see header). Call repeatedly,
 // interleaved with tud_task(), so flash never starves the USB task.
 bool fatbridge_flush_step(fatbridge_t *v) {
-    char path[96], opath[96];
+    char path[FATBRIDGE_PATH_MAX], opath[FATBRIDGE_PATH_MAX];
     // (Re)parse subdirectory tables from the cache whenever new data-region
     // sectors have arrived, so every file in every directory is tracked before
     // we commit. Gated so it doesn't re-scan the whole tree on every call.

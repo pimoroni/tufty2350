@@ -51,7 +51,18 @@ static bool readonly_mode = true;
 // one per 2 KB cluster (which is O(n^2) and unusably slow on a 1 MB+ file).
 static lfs2_file_t cm_file;
 static bool cm_open;
-static char cm_path[160];
+static char cm_path[FATBRIDGE_PATH_MAX + 1];
+
+// The file currently being READ is likewise kept open across the host's
+// sector-by-sector reads (the core reads file data 512 bytes at a time). Without
+// this, every sector re-did open+seek+read+close - one full littlefs metadata
+// walk per sector, the same O(n^2) the commit path already avoids. Reads use a
+// separate file cache (read_fcfg) so a host read can run while a commit file is
+// open. Closed lazily when the path changes (rd_close_if on any mutation of the
+// same path, and reset on expose).
+static lfs2_file_t rd_file;
+static bool rd_open;
+static char rd_path[FATBRIDGE_PATH_MAX + 1];
 
 // Core paths are "" (root) or "a/b/c"; lfs2 wants a leading slash.
 static void lfspath(char *out, size_t cap, const char *rel) {
@@ -68,7 +79,7 @@ static bool is_dot(const char *n) {
 }
 static int be_list(void *c, const char *dir, int idx, char *name, size_t cap, uint32_t *size, int *is_dir) {
     be_ctx_t *bc = c;
-    char p[160];
+    char p[FATBRIDGE_PATH_MAX + 1];
     lfspath(p, sizeof(p), dir);
     lfs2_dir_t d;
     if (lfs2_dir_open(bc->lfs, &d, p) < 0) {
@@ -93,18 +104,33 @@ static int be_list(void *c, const char *dir, int idx, char *name, size_t cap, ui
     lfs2_dir_close(bc->lfs, &d);
     return rc;
 }
+// Close the kept-open read handle if it points at lfs path `p` (NULL == always).
+// Call before mutating a file so a stale read handle can't survive the change.
+static void rd_close_if(be_ctx_t *bc, const char *p) {
+    if (rd_open && (p == NULL || strcmp(rd_path, p) == 0)) {
+        lfs2_file_close(bc->lfs, &rd_file);
+        rd_open = false;
+    }
+}
 static int be_read(void *c, const char *path, uint32_t off, void *buf, uint32_t len) {
     be_ctx_t *bc = c;
-    char p[160];
+    char p[FATBRIDGE_PATH_MAX + 1];
     lfspath(p, sizeof(p), path);
-    lfs2_file_t f;
-    if (lfs2_file_opencfg(bc->lfs, &f, p, LFS2_O_RDONLY, &read_fcfg) < 0) {
+    if (rd_open && strcmp(rd_path, p) != 0) {
+        rd_close_if(bc, NULL); // different file -> close the previous read handle
+    }
+    if (!rd_open) {
+        if (lfs2_file_opencfg(bc->lfs, &rd_file, p, LFS2_O_RDONLY, &read_fcfg) < 0) {
+            return -1;
+        }
+        strncpy(rd_path, p, sizeof(rd_path) - 1);
+        rd_path[sizeof(rd_path) - 1] = 0;
+        rd_open = true;
+    }
+    if (lfs2_file_seek(bc->lfs, &rd_file, off, LFS2_SEEK_SET) < 0) {
         return -1;
     }
-    lfs2_file_seek(bc->lfs, &f, off, LFS2_SEEK_SET);
-    int r = lfs2_file_read(bc->lfs, &f, buf, len);
-    lfs2_file_close(bc->lfs, &f);
-    return r;
+    return lfs2_file_read(bc->lfs, &rd_file, buf, len);
 }
 // Stream a cluster into the kept-open commit file (opened on cluster 0, truncating;
 // closed once by be_commit). Writes are sequential (logical offsets) regardless of
@@ -114,8 +140,9 @@ static int be_write(void *c, const char *path, uint32_t off, const void *buf, ui
         return -1;
     }
     be_ctx_t *bc = c;
-    char p[160];
+    char p[FATBRIDGE_PATH_MAX + 1];
     lfspath(p, sizeof(p), path);
+    rd_close_if(bc, p); // a read handle on this file is about to go stale
     if (cm_open && (off == 0 || strcmp(cm_path, p) != 0)) {
         lfs2_file_close(bc->lfs, &cm_file); // restart / different file -> close prev
         cm_open = false;
@@ -131,12 +158,21 @@ static int be_write(void *c, const char *path, uint32_t off, const void *buf, ui
     }
     lfs2_file_seek(bc->lfs, &cm_file, off, LFS2_SEEK_SET);
     int r = lfs2_file_write(bc->lfs, &cm_file, buf, len);
-    return r < 0 ? r : 0;
+    // A short write means the flash filled mid-write (NOSPC). Treat it as failure
+    // and close the half-written file now, rather than leaving cm_file open (the
+    // core's error path doesn't call be_commit, so it would otherwise dangle).
+    if (r < 0 || (uint32_t)r != len) {
+        lfs2_file_close(bc->lfs, &cm_file);
+        cm_open = false;
+        return -1;
+    }
+    return 0;
 }
 static int be_commit(void *c, const char *path, uint32_t size) {
     (void)path; (void)size;
     be_ctx_t *bc = c;
     if (cm_open) {
+        rd_close_if(bc, cm_path); // file content just changed -> drop a stale reader
         int r = lfs2_file_close(bc->lfs, &cm_file); // the single metadata commit
         cm_open = false;
         return r < 0 ? -1 : 0;
@@ -148,8 +184,9 @@ static int be_remove(void *c, const char *path) {
         return -1;
     }
     be_ctx_t *bc = c;
-    char p[160];
+    char p[FATBRIDGE_PATH_MAX + 1];
     lfspath(p, sizeof(p), path);
+    rd_close_if(bc, p);
     return lfs2_remove(bc->lfs, p) < 0 ? -1 : 0;
 }
 static int be_rename(void *c, const char *oldp, const char *newp) {
@@ -157,9 +194,11 @@ static int be_rename(void *c, const char *oldp, const char *newp) {
         return -1;
     }
     be_ctx_t *bc = c;
-    char a[160], b[160];
+    char a[FATBRIDGE_PATH_MAX + 1], b[FATBRIDGE_PATH_MAX + 1];
     lfspath(a, sizeof(a), oldp);
     lfspath(b, sizeof(b), newp);
+    rd_close_if(bc, a);
+    rd_close_if(bc, b);
     return lfs2_rename(bc->lfs, a, b) < 0 ? -1 : 0;
 }
 static int be_mkdir(void *c, const char *path) {
@@ -167,7 +206,7 @@ static int be_mkdir(void *c, const char *path) {
         return -1;
     }
     be_ctx_t *bc = c;
-    char p[160];
+    char p[FATBRIDGE_PATH_MAX + 1];
     lfspath(p, sizeof(p), path);
     int r = lfs2_mkdir(bc->lfs, p);
     return (r < 0 && r != LFS2_ERR_EXIST) ? -1 : 0;
@@ -293,6 +332,7 @@ static void expose_real(bool rw) {
     real_fcfg.buffer = b->filebuf;
     read_fcfg.buffer = b->filebuf_r;
     cm_open = false;
+    rd_open = false; // no read handle carried across a fresh expose
 
     int rc = fatbridge_init(&v, &real_backend, total_bytes, 4,
         (fatbridge_file_t *)b->files, max_files,

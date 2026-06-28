@@ -20,10 +20,22 @@
 #define FATBRIDGE_SECTOR_SIZE 512u
 
 // Max cluster slots in the sparse write cache (effective count is bounded by
-// wbuf_len / cluster_bytes). 512 slots = up to 1 MB of in-flight writes at 2 KB
-// clusters; struct cost is 2 KB. With async back-pressure the host paces itself
-// to our commit rate, so this is the working-set headroom, not the total copy.
-#define FATBRIDGE_CACHE_SLOTS 4096
+// wbuf_len / cluster_bytes). Sized to the shipping 6 MB / 2 KB-cluster cache
+// (6 MB / 2 KB = 3072 slots); a larger wbuf is capped here, a smaller one is
+// bounded by cache_capacity(). Struct cost is 3072*(4+1) ~= 15 KB. With async
+// back-pressure the host paces itself to our commit rate, so this is the
+// working-set headroom, not the total copy.
+#define FATBRIDGE_CACHE_SLOTS 3072
+
+// Max length (incl. NUL) of a "/"-separated backend path the core builds. Must
+// match across the core and the backend so a path is never truncated on one
+// side of the vtable but not the other (a truncated path mutates the wrong
+// file). Covers the ~8-level recursion bound with realistic leaf names.
+#define FATBRIDGE_PATH_MAX 256
+
+// "No directory-entry resume hint" sentinel for fatbridge_t.dir_hint_idx. Must
+// differ from every valid directory index, including the root's -1.
+#define FATBRIDGE_NO_DIR_HINT (-2)
 
 // Backend: how the core sees the underlying file store. All calls are by a
 // stable integer index into a snapshot taken at fatbridge_begin(). Names are short
@@ -72,6 +84,8 @@ typedef struct {
     bool pending_mkdir;     // host created this dir; backend mkdir deferred
     uint16_t commit_done;   // clusters of this file already committed (bounded flush)
     uint32_t commit_cl;     // physical cluster of cluster #commit_done (FAT-chain cursor)
+    bool commit_ready;      // all data clusters confirmed cached/pulled: the commit
+                            // availability scan is done, skip it on later clusters
     char old_name[64];      // old leaf name, for the deferred rename
 } fatbridge_file_t;
 
@@ -141,6 +155,18 @@ typedef struct fatbridge {
     bool    overflow;   // set if a data sector was dropped (cache full) - must
                         // stay false: with async back-pressure the host is paced
                         // so this never trips for a correctly-sized cache.
+
+    // ---- hot-path hints (pure caches; a stale/invalid hint only forces a
+    // ---- full rescan, never a wrong result). Reset in fatbridge_begin().
+    int      last_owner;        // last cluster_owner() result; sequential reads of
+                                // one file's clusters resolve without a table scan
+    uint32_t alloc_cursor;      // rolling start for cache_alloc() so a bulk copy
+                                // doesn't rescan all slots from 0 on every alloc
+    int      dir_hint_idx;      // emit_dir_entry() resume: directory the cached
+                                // child boundary belongs to (root is -1, so the
+                                // "no hint" sentinel is FATBRIDGE_NO_DIR_HINT)
+    int      dir_hint_j;        // child index at that boundary
+    uint32_t dir_hint_pos;      // logical entry number at that boundary
 } fatbridge_t;
 
 // Initialise the synthesised volume. total_bytes is the disk size presented to
