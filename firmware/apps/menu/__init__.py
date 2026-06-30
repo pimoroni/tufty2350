@@ -61,7 +61,7 @@ def update():
 
     if alpha <= MAX_ALPHA:
         screen.pen = color.rgb(0, 0, 0, 255 - alpha)
-        screen.clear()
+        screen.rectangle(screen.clip)
         alpha += 30
 
     return None
