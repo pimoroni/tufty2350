@@ -119,6 +119,7 @@ namespace pimoroni {
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
     void set_max_pio_clock(uint32_t hz);
     void set_vsync(bool sync);
+    uint8_t set_framerate(uint8_t fps);
 
   private:
     void init();
