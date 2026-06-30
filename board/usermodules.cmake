@@ -19,8 +19,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/..")
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 
-# PicoVector and supporting libs
-find_package(PICOVECTOR CONFIG REQUIRED)
+# PicoVector & MicroPython bindings
+find_package(PICOVECTOR_MICROPYTHON CONFIG REQUIRED)
 
 # Build picovector for Tufty 2350
 target_compile_definitions(usermod_picovector INTERFACE TUFTY=1)

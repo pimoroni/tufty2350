@@ -1,6 +1,7 @@
 
 #include "powman.h"
 #include "py/parse.h"
+#include "picovector_working_buffer.h"  // shared scratch pool, reused as the parser arena
 
 static powman_power_state off_state;
 static powman_power_state on_state;
@@ -20,9 +21,6 @@ uint32_t user_button_state = 0;
 
 // This is effectively the sequence order for the swooshy LED effect
 const uint led_gpios[4] = {BW_LED_1, BW_LED_2, BW_LED_3, BW_LED_0};
-
-extern const size_t working_buffer_size;
-extern char PicoVector_working_buffer[];
 
 static inline bool double_tap_flag_is_set(void) {
     return powman_hw->chip_reset & POWMAN_CHIP_RESET_DOUBLE_TAP_BITS;
