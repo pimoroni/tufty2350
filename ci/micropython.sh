@@ -36,8 +36,9 @@ function ci_pimoroni_pico_clone {
 
 function ci_pimoroni_picovector_clone {
     log_inform "Using Pimoroni PicoVector pimoroni/$PIMORONI_PICOVECTOR_VERSION"
-    git clone https://github.com/pimoroni/picovector "$CI_BUILD_ROOT/picovector"
-    git -C "$CI_BUILD_ROOT/picovector" checkout $PIMORONI_PICOVECTOR_VERSION
+    git clone https://github.com/pimoroni/picovector-micropython "$CI_BUILD_ROOT/picovector-micropython"
+    git -C "$CI_BUILD_ROOT/picovector-micropython" checkout $PIMORONI_PICOVECTOR_VERSION
+    git -C "$CI_BUILD_ROOT/picovector-micropython" submodule update --init
 }
 
 function ci_micropython_clone {
@@ -141,7 +142,7 @@ function ci_cmake_configure {
     -DPICO_NO_COPRO_DIS=1 \
     -DPICOTOOL_FETCH_FROM_GIT_PATH="$TOOLS_DIR/picotool" \
     -DPIMORONI_PICO_PATH="$CI_BUILD_ROOT/pimoroni-pico" \
-    -DPICOVECTOR_DIR="$CI_BUILD_ROOT/picovector" \
+    -DPICOVECTOR_MICROPYTHON_DIR="$CI_BUILD_ROOT/picovector-micropython" \
     -DPIMORONI_TOOLS_DIR="$TOOLS_DIR" \
     -DUSER_C_MODULES="$MICROPY_BOARD_DIR/usermodules.cmake" \
     -DMICROPY_BOARD_DIR="$MICROPY_BOARD_DIR" \
