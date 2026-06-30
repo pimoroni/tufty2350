@@ -237,12 +237,12 @@ namespace pimoroni {
         for(int y = 0; y < height; y++) {
           uint32_t src = framebuffer[y * width + x];
           uint16_t pixel = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
-          buf_a[y * 2] = pixel;
-          buf_a[y * 2 + 1] = pixel;
-          // It's slightly faster to prepare to rows, rather than prepare
-          // a single row and copy it twice.
-          buf_a[(height + y) * 2] = pixel;
-          buf_a[(height + y) * 2 + 1] = pixel;
+          // Each source pixel is doubled across two columns (the 240px-tall
+          // a/b halves of the linebuffer). Pack the horizontal pixel-doubling
+          // into a single 32-bit store per column rather than two 16-bit stores.
+          uint32_t doubled = pixel | ((uint32_t)pixel << 16);
+          ((uint32_t *)buf_a)[y] = doubled;
+          ((uint32_t *)buf_a)[height + y] = doubled;
         }
         wait_for_dma();
         start_dma((uint8_t *)buf_a, fullres_height * 2 * 2);
@@ -287,5 +287,35 @@ namespace pimoroni {
 
   void ST7789::set_vsync(bool sync) {
     use_vsync = sync;
+  }
+
+  uint8_t ST7789::set_framerate(uint8_t fps) {
+    // FRCTRL2 (0xC6) RTNA[4:0] selects the normal-mode frame rate. The values
+    // below are the approximate frame rates (Hz) for each RTNA setting with the
+    // default porch configuration, taken from the ST7789 datasheet. The table
+    // is indexed by RTNA value and runs from fastest (0x00) to slowest (0x1F).
+    static const uint8_t rates[32] = {
+      119, 111, 105,  99,  94,  90,  86,  82,
+       78,  75,  72,  69,  67,  64,  62,  60,
+       58,  57,  55,  53,  52,  50,  49,  48,
+       46,  45,  44,  43,  42,  41,  40,  39,
+    };
+
+    // Pick the RTNA value whose frame rate is closest to the request.
+    uint8_t best = 0;
+    int best_err = 256;
+    for(uint8_t i = 0; i < 32; i++) {
+      int err = abs((int)rates[i] - (int)fps);
+      if(err < best_err) {
+        best_err = err;
+        best = i;
+      }
+    }
+
+    // Keep NLA[7:5] = 0 (dot inversion), matching the init-time default of 0x0f.
+    uint8_t frctrl2 = best & 0x1f;
+    command(reg::FRCTRL2, 1, (const char *)&frctrl2);
+
+    return rates[best];
   }
 }
