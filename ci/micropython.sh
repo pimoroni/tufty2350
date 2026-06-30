@@ -53,7 +53,8 @@ function ci_micropython_clone {
     git -C "$CI_BUILD_ROOT/micropython/lib/pico-sdk" apply "$CI_PROJECT_ROOT/ci/pico-sdk-crt0-startup-rosc.patch"
     # fatbridge: route USB-MSC to the littlefs-backed synthesised FAT drive and
     # boot littlefs (not _boot_fat) even with MSC enabled. See modules/c/fatbridge.
-    git -C "$CI_BUILD_ROOT/micropython" apply "$CI_PROJECT_ROOT/ci/patches/fatbridge-msc.patch"
+    # Note: Currently included in the MicroPython fork
+    # git -C "$CI_BUILD_ROOT/micropython" apply "$CI_PROJECT_ROOT/ci/patches/fatbridge-msc.patch"
 }
 
 function ci_tools_clone {
