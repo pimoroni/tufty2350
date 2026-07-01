@@ -45,6 +45,13 @@ segment_multiplier = 2
 num_segs = 6
 default_z_increment = 0.10
 z_increment = 0.10
+# Everything that used to move a fixed amount per frame is now scaled by
+# frame_scale, the real time elapsed relative to the ~15fps the game ran at on
+# the old badge. At 15fps frame_scale is 1.0 and the maths matches the original
+# exactly; at higher framerates it keeps the same real-world pace. z_step is the
+# per-frame forward travel (z_increment scaled for the current frame).
+frame_scale = 1.0
+z_step = default_z_increment
 target_fps = 60
 pixel_doubling = False
 collision_debug = False
@@ -138,7 +145,7 @@ class Segment:
     # Refreshing doesn't actually take any external parameters, they all do the
     # same thing, slowly get bigger over time.
     def refresh(self):
-        self.radius += (self.radius * segment_multiplier * z_increment) / 2
+        self.radius += (self.radius * segment_multiplier * z_step) / 2
         x_focus = screen.width - player.x
         y_focus = screen.height - player.y
 
@@ -225,11 +232,11 @@ class Player:
 
     # Refresh moves the player on the screen according to the controls.
     def refresh(self):
-        self.x_speed += self.x_accel
-        self.y_speed += self.y_accel
+        self.x_speed += self.x_accel * frame_scale
+        self.y_speed += self.y_accel * frame_scale
 
-        self.x += self.x_speed
-        self.y += self.y_speed
+        self.x += self.x_speed * frame_scale
+        self.y += self.y_speed * frame_scale
 
         if self.x > screen.width - 20 or self.x < 20:
             self.x_speed *= -1
@@ -239,10 +246,13 @@ class Player:
             self.y_speed *= -1
             self.y_accel = 0
 
-        self.x_speed /= 2
-        self.y_speed /= 2
-        self.x_accel /= 2
-        self.y_accel /= 2
+        # the original halved speed and accel every frame; express that as a
+        # time-based decay so the damping feels the same at any framerate
+        damping = 0.5 ** frame_scale
+        self.x_speed *= damping
+        self.y_speed *= damping
+        self.x_accel *= damping
+        self.y_accel *= damping
 
         rocket_offset = (self.x - screen_centre.x) * 0.1
         self.x_window = 30 - abs(rocket_offset)
@@ -450,7 +460,7 @@ init_game()
 
 
 def update():
-    global game_state, z_offset, z_increment, include_obstacle, level_start_time, level_segments_passed, final_time, start_screen, fade_counter
+    global game_state, z_offset, z_increment, include_obstacle, level_start_time, level_segments_passed, final_time, start_screen, fade_counter, frame_scale, z_step
 
     # If we're in the intro, just cycle through the intro cutscene with any button press until
     # there's no more pages of it left, then switch the game mode to gameplay.
@@ -469,17 +479,22 @@ def update():
     # If we're playing, advance time each tick and capture inputs.
     elif game_state == GameState.PLAYING:
 
+        # How much real time has passed relative to a 15fps frame. Clamped so a
+        # stutter (or the large first-frame delta) can't fling the player or
+        # skip a whole tunnel segment in one step.
+        frame_scale = min(badge.ticks_delta * 15 / 1000, 3)
+
         # This check disables controls while fading in.
         if check_start():
 
             if badge.held(BUTTON_A) and player.x > 20:
-                player.x_accel -= 2
+                player.x_accel -= 2 * frame_scale
             elif badge.held(BUTTON_C) and player.x < screen.width - 20:
-                player.x_accel += 2
+                player.x_accel += 2 * frame_scale
             if badge.held(BUTTON_DOWN) and player.y < screen.height - 20:
-                player.y_accel += 2
+                player.y_accel += 2 * frame_scale
             if badge.held(BUTTON_UP) and player.y > 20:
-                player.y_accel -= 2
+                player.y_accel -= 2 * frame_scale
             if badge.pressed(BUTTON_B):
                 z_increment *= 2
                 player.boost = True
@@ -487,10 +502,13 @@ def update():
                 z_increment /= 2
                 player.boost = False
 
+        # Forward travel for this frame, using the (possibly boosted) speed.
+        z_step = z_increment * frame_scale
+
         # Refresh the pkayer, draw the main screen and advance time.
         player.refresh()
         render_gameplay()
-        z_offset = z_offset + z_increment
+        z_offset = z_offset + z_step
 
         # If check_collision() comes back true, we've hit something, so cancel our forward motion and go to the game over screen.
         if check_collision() and z_offset >= 0.9:
@@ -550,7 +568,7 @@ def update():
             screen.pen = color.rgb(0, 0, 0, fade_counter)
             screen.rectangle(0, 0, screen.width, screen.height)
             screen.blit(hud, rect(0, 0, screen.width, screen.height))
-            fade_counter -= 16
+            fade_counter -= 16 * frame_scale
             if fade_counter <= 0:
                 level_start_time = time.ticks_ms()
 

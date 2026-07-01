@@ -53,6 +53,10 @@ def reset_state():
     Obstacle.next_spawn_time = badge.ticks + 500
     chicken = Chicken()
 
+    # give the player a moment to react by launching the chicken upwards
+    # instead of letting her drop the instant the game starts
+    chicken.jump()
+
 
 # handle the intro screen of the game, shows the game title and a message to
 # tell the player how to start the game
@@ -155,8 +159,9 @@ def draw_background():
     screen.shape(shape.rectangle(0, 0, 160, 120))
 
     # if we're on the intro screen or chicken is alive then scroll the background
+    # at a framerate-independent 30 pixels/second (was one pixel per frame at 30fps)
     if not chicken or not chicken.is_dead() or state == GameState.INTRO:
-        background_offset += 1
+        background_offset += 30 * (badge.ticks_delta / 1000)
 
     for i in range(3):
         # draw the distance background
