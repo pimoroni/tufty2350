@@ -25,8 +25,8 @@ class GameState:
     WIN_SCREEN = 4
 
 
-# It's a bit quicker to just store the diferent brightnesses for the distance shadow, so we list them here.
-BRIGHTNESSES = (3.1875, 6.375, 9.5625, 12.75, 15.9375, 19.125, 22.3125, 25.5, 28.6875, 31.875, 35.0625, 38.25, 41.4375, 44.625, 47.8125, 51, 54.1875, 57.375, 60.5625, 63.75, 66.9375, 70.125, 73.3125, 76.5, 79.6875, 82.875, 86.0625, 89.25, 92.4375, 95.625, 98.8125, 102, 105.1875, 108.375, 111.5625, 114.75, 117.9375, 121.125, 124.3125, 127.5, 130.6875, 133.875, 137.0625, 140.25, 143.4375, 146.625, 149.8125, 153, 156.1875, 159.375, 162.5625, 165.75, 168.9375, 172.125, 175.3125, 178.5, 181.6875, 184.875, 188.0625, 191.25, 194.4375, 197.625, 200.8125, 204, 207.1875, 210.375, 213.5625, 216.75, 219.9375, 223.125, 226.3125, 229.5, 232.6875, 235.875, 239.0625, 242.25, 245.4375, 248.625, 251.8125, 255, 255, 251.8125, 248.625, 245.4375, 242.25, 239.0625, 235.875, 232.6875, 229.5, 226.3125, 223.125, 219.9375, 216.75, 213.5625, 210.375, 207.1875, 204, 200.8125, 197.625, 194.4375, 191.25, 188.0625, 184.875, 181.6875, 178.5, 175.3125, 172.125, 168.9375, 165.75, 162.5625, 159.375, 156.1875, 153, 149.8125, 146.625, 143.4375, 140.25, 137.0625, 133.875, 130.6875, 127.5, 124.3125, 121.125, 117.9375, 114.75, 111.5625, 108.375, 105.1875, 102, 98.8125, 95.625, 92.4375, 89.25, 86.0625, 82.875, 79.6875, 76.5, 73.3125, 70.125, 66.9375, 63.75, 60.5625, 57.375, 54.1875, 51, 47.8125, 44.625, 41.4375, 38.25, 35.0625, 31.875, 28.6875, 25.5, 22.3125, 19.125, 15.9375, 12.75, 9.5625, 6.375, 3.1875)
+BLACK = color.rgb(0, 0, 0)
+WHITE = color.rgb(255, 255, 255)
 TEXTURE_SIZE = 64
 
 # Here we're setting up texture packs that will be filled in when the game selects a level.
@@ -367,6 +367,7 @@ def create_centre_points():
 # It then also draws a semitransparent black line over it to darken the texture more toward the centre of the screen.
 @micropython.native
 def draw_wall(image, topleft, bottomleft, topright, bottomright, tex):
+    screen.pen = BLACK
     width = topright.x - topleft.x
     tile = wall_tex.sprite(tex, 0)
     for i in range(width):
@@ -375,10 +376,11 @@ def draw_wall(image, topleft, bottomleft, topright, bottomright, tex):
             t = i / width
             toppoint = topleft.y + ((topright.y - topleft.y) * t)
             bottompoint = math.floor(bottomleft.y + ((bottomright.y - bottomleft.y) * t))
+            # Scalar line coords avoid allocating a vec2 pair per column.
             image.blit_vspan(tile, x_pos, toppoint, bottompoint - toppoint, t, 0, t, 1)
-            seg_brightness = BRIGHTNESSES[x_pos]
-            screen.pen = color.rgb(0, 0, 0, seg_brightness)
-            screen.line(vec2(x_pos, toppoint), vec2(x_pos, bottompoint))
+            screen.alpha = min(x_pos, 160 - x_pos) * 255 // 80
+            screen.line(x_pos, toppoint, x_pos, bottompoint)
+    screen.alpha = 255
 
 
 # Just calculates the time since the start of gameplay.
@@ -392,7 +394,7 @@ def calc_time():
 
 # Simple routines to draw the HUD, time and progress along the course onto the screen.
 def draw_hud():
-    screen.blit(hud, rect(0, 0, screen.width, screen.height))
+    screen.blit(hud, vec2(0, 0))
     minute, sec, ms = calc_time()
 
     minute = str(minute)
@@ -419,7 +421,7 @@ def draw_hud():
 # and blit that segment's obstacle, if any, to the screen.
 @micropython.native
 def render_gameplay():
-    screen.blit(background, rect(0, 0, screen.width, screen.height))
+    screen.blit(background, vec2(0, 0))
 
     for segment in segments:
         segment.refresh()
@@ -435,7 +437,7 @@ def render_gameplay():
             draw_wall(screen, inner.ur, inner.lr, outer.ur, outer.lr, inner.texture_r)
 
         if i == 0:
-            screen.pen = color.rgb(0, 0, 0)
+            screen.pen = BLACK
             horizon = shape.custom([inner.ul, inner.ur, inner.lr, inner.ll])
             screen.shape(horizon)
 
@@ -465,9 +467,9 @@ def update():
     # If we're in the intro, just cycle through the intro cutscene with any button press until
     # there's no more pages of it left, then switch the game mode to gameplay.
     if game_state == GameState.INTRO:
-        screen.pen = color.rgb(0, 0, 0)
+        screen.pen = BLACK
         screen.clear()
-        screen.pen = color.rgb(255, 255, 255)
+        screen.pen = WHITE
 
         intro_cutscene.draw()
 
@@ -547,11 +549,11 @@ def update():
         # This just draws the "get ready" screen, until enough segments have passed that we're past any
         # graphical issues caused by startup.
         if start_screen <= num_segs:
-            screen.pen = color.rgb(0, 0, 0)
+            screen.pen = BLACK
             screen.clear()
-            screen.blit(hud, rect(0, 0, screen.width, screen.height))
+            screen.blit(hud, vec2(0, 0))
 
-            screen.pen = color.rgb(255, 255, 255)
+            screen.pen = WHITE
             dist_text = f"{level_segments_total} klicks to"
             w, _ = screen.measure_text(dist_text)
             screen.text(dist_text, vec2((screen.width - w) / 2, 60))
@@ -567,7 +569,7 @@ def update():
         elif fade_counter > 0:
             screen.pen = color.rgb(0, 0, 0, fade_counter)
             screen.rectangle(0, 0, screen.width, screen.height)
-            screen.blit(hud, rect(0, 0, screen.width, screen.height))
+            screen.blit(hud, vec2(0, 0))
             fade_counter -= 16 * frame_scale
             if fade_counter <= 0:
                 level_start_time = time.ticks_ms()
@@ -575,7 +577,7 @@ def update():
     # If we're on game over, just randomly pick one of the five images with static to display, display it and loop until the user presses any button.
     elif game_state == GameState.GAME_OVER:
         static = random.randint(0, 4)
-        screen.blit(game_over.sprite(static, 0), rect(0, 0, screen.width, screen.height))
+        screen.blit(game_over.sprite(static, 0), vec2(0, 0))
 
         if badge.pressed():
             init_game()
@@ -586,7 +588,7 @@ def update():
     # so if you never use boost you should get about the same score every time.
     # The key to a high score is using boost as much as possible while still being able to avoid everything.
     elif game_state == GameState.WIN_SCREEN:
-        screen.blit(win, rect(0, 0, screen.width, screen.height))
+        screen.blit(win, vec2(0, 0))
         w, _ = screen.measure_text(congrat_choice)
         screen.text(congrat_choice, vec2((screen.width - w) / 2, 60))
 
