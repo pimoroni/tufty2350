@@ -5,7 +5,7 @@ skull = image.load("/system/assets/skull.png")
 def magic_sprite(src, pos, scale=1, angle=0):
   w, h = src.width, src.height
   t = mat3().translate(*pos).scale(scale, scale).rotate(angle).translate(-w / 2, -h)
-  screen.pen = brush.image(src, t)
+  screen.pen = brush.image(src)
   rect = shape.rectangle(0, 0, w, h)
   rect.transform = t
   screen.shape(rect)
