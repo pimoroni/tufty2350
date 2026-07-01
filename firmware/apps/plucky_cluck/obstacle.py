@@ -27,8 +27,9 @@ class Obstacle:
         self.passed = False
 
     def update(self):
-        # moves the obstacle to the left by one pixel each frame
-        self.x -= 1
+        # move the obstacle left at a framerate-independent 30 pixels/second
+        # (was one pixel per frame back when the badge ran at 30fps)
+        self.x -= 30 * (badge.ticks_delta / 1000)
 
     def bounds(self):
         # be a little generous with obstacle bounding boxes for collisions
