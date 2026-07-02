@@ -94,7 +94,6 @@ function ci_prepare_all {
     ci_pimoroni_pico_clone
     ci_pimoroni_picovector_clone
     ci_micropython_build_mpy_cross
-    ci_python_prepare
 }
 
 function ci_debug {
