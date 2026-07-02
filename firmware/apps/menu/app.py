@@ -1,6 +1,6 @@
 import os
 import math
-
+import json
 import ui
 
 orange = color.rgb(246, 135, 4)
@@ -30,7 +30,7 @@ shade_brush = color.rgb(0, 0, 0, 50)
 
 
 class App:
-    def __init__(self, collection, name, path, icon):
+    def __init__(self, collection, name, path, icon,custom_color=None|tuple[int,int,int,int],custom_fade_color=None|tuple[int,int,int,int]):
         self.active = False
         self.index = len(collection)
         self.pos = vec2((self.index % 3) * 48 + 32, (math.floor((self.index % 6) / 3)) * 48 + 42)
@@ -38,6 +38,8 @@ class App:
         self.name = name
         self.path = path
         self.spin = False
+        self.custom_color = color.rgb(*custom_color) if custom_color else None
+        self.custom_fade_color = color.rgb(*custom_fade_color) if custom_fade_color else None
         collection.append(self)
 
     def activate(self, active):
@@ -82,9 +84,9 @@ class App:
         # draw the icon body
         squircle.transform = squircle.transform.scale(1, 1)
         if self.active:
-            screen.pen = bold[self.index % 6]
+            screen.pen = bold[self.index % 6] if self.custom_color is None else self.custom_color
         else:
-            screen.pen = faded[self.index % 6]
+            screen.pen = faded[self.index % 6] if self.custom_fade_color is None else self.custom_fade_color
         squircle.transform = squircle.transform.translate(-1, -1)
         screen.shape(squircle)
         squircle.transform = squircle.transform.translate(2, 2)
@@ -114,13 +116,28 @@ class Apps:
             if len(word) <= 1:
                 return word
             return word[0].upper() + word[1:]
-
         for path in sorted(os.listdir(root)):
-            name = " ".join([capitalize(word) for word in path.split("_")])
+            name=None
+            custom_color=None
+            custom_fade_color=None
+            if file_exists(f"{root}/{path}/appmanifest.json"):
+                try:
+                    with open(f"{root}/{path}/appmanifest.json") as f:
+                        data=json.load(f)
+                        name=data.get("title", None)
+                        normal_color=data.get("color",None) # Should be a 4 integer list being passed into normal_color
+                        fade_color=data.get("fade_color",None) # Should be a 4 integer list being passed into fade_color
+                        custom_color=tuple(normal_color) if normal_color else None
+                        custom_fade_color=tuple(fade_color) if fade_color else None
+                except Exception:
+                        pass
+
+            if name is None:
+                name = " ".join([capitalize(word) for word in path.split("_")])
 
             if is_dir(f"{root}/{path}"):
                 if file_exists(f"{root}/{path}/icon.png"):
-                    App(self.apps, name, path, image.load(f"{root}/{path}/icon.png"))
+                    App(self.apps, name, path, image.load(f"{root}/{path}/icon.png"), custom_color, custom_fade_color)
 
     @property
     def active(self):
