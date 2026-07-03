@@ -22,9 +22,9 @@ endif()
 # 4100 sectors (16MB) total
 # 512 sectors (2MB) allocated for MicroPython
 # 256 sectors (1MB) allocated for ROMFS
-# ~3332 sectors (~13MB) for a SINGLE unified LittleFS (fatbridge build)
+# ~3332 sectors (~13MB) for a SINGLE unified LittleFS (fatlfs build)
 #
-# fatbridge build: the user filesystem is one big LittleFS mounted at "/", with
+# fatlfs build: the user filesystem is one big LittleFS mounted at "/", with
 # the badge OS/apps under "/system" (a subdirectory). We stage the firmware
 # content under a "system/" dir and have dir2uf2 build a LittleFS image of it
 # (matching the device's VfsLfs2 params), so the -with-filesystem build flashes a
@@ -36,7 +36,7 @@ if (EXISTS "${PIMORONI_FS_DIR}")
         COMMAND ${CMAKE_COMMAND} -E make_directory "${PIMORONI_FS_STAGE}/system"
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${PIMORONI_FS_DIR}" "${PIMORONI_FS_STAGE}/system"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "fatbridge: staging ${PIMORONI_FS_DIR} -> /system for the unified LittleFS."
+        COMMENT "fatlfs: staging ${PIMORONI_FS_DIR} -> /system for the unified LittleFS."
         DEPENDS ${MICROPY_TARGET}
         DEPENDS "${MICROPY_TARGET}-verify"
     )

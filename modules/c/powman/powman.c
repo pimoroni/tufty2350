@@ -447,6 +447,18 @@ static void __attribute__((constructor)) powman_startup(void) {
     setup_gpio(false);
     latch_inputs();
 
+    // A watchdog/software reboot with the double-tap flag already set is a
+    // deliberate request to enter a double-tap mode (e.g. the mass_storage app
+    // sets the flag then calls machine.reset() to reboot cleanly into USB Mass
+    // Storage mode). Report it as a double-tap so main.py takes the same path as
+    // a physical double-tap. Checked before the early watchdog return below.
+    if (watchdog_caused_reboot() && double_tap_flag_is_set()) {
+        clear_double_tap_flag();
+        powman_wake_with_doubletap = true;
+        setup_system();
+        return;
+    }
+
     // If we haven't reset via a button press we ought not to delay startup
     if (!(powman_hw->chip_reset & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS) || watchdog_caused_reboot()) {
         setup_system();

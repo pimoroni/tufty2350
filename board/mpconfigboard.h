@@ -48,11 +48,11 @@ int mp_hal_is_pin_reserved(int n);
 
 #define MICROPY_HW_USB_MSC                      (1)
 // Single littlefs storage; the host-facing FAT drive is synthesised on demand by
-// the fatbridge module (modules/c/fatbridge). Forces _boot.py (littlefs) instead
+// the fatlfs module (modules/c/fatlfs). Forces _boot.py (littlefs) instead
 // of _boot_fat.py even though MSC is enabled.
-#define MICROPY_FATBRIDGE_STORAGE               (1)
+#define MICROPY_FATLFS_STORAGE               (1)
 // Volume label the host shows for the badge's USB drive (BLINKY/BADGER on others).
-#define MICROPY_HW_FATBRIDGE_LABEL              "TUFTY"
+#define MICROPY_HW_FATLFS_LABEL              "TUFTY"
 #define MICROPY_HW_USB_DESC_STR_MAX             (40)
 #define MICROPY_HW_USB_MANUFACTURER_STRING      "Pimoroni"
 #define MICROPY_HW_USB_PRODUCT_FS_STRING        MICROPY_HW_BOARD_NAME " MicroPython"

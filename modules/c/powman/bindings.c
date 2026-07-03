@@ -48,8 +48,10 @@ void mp_pico_panic(const char *fmt, ...) {
 
 mp_obj_t _sleep_get_wake_reason(void) {
     uint8_t wake_reason = powman_get_wake_reason();
-    if(powman_wake_watchdog())           return MP_ROM_INT(WAKE_WATCHDOG);
+    // Double-tap wins over watchdog: a software reset used to request MSC mode is
+    // a watchdog reboot, but powman flags it as a double-tap (see powman_startup).
     if(wake_reason & POWMAN_DOUBLETAP)   return MP_ROM_INT(WAKE_DOUBLETAP);
+    if(powman_wake_watchdog())           return MP_ROM_INT(WAKE_WATCHDOG);
     if(powman_wake_reset())              return MP_ROM_INT(WAKE_RESET);
     if(wake_reason & POWMAN_WAKE_PWRUP0) return MP_ROM_INT(WAKE_VBUS_DETECT);
     if(wake_reason & POWMAN_WAKE_PWRUP1) return MP_ROM_INT(WAKE_RTC);
