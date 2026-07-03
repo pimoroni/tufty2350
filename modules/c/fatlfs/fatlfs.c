@@ -1123,6 +1123,16 @@ static int encode_dir(fatlfs_t *fs, const char *lpath, uint32_t this_cluster, ui
         e[DIR_Attr] = ATTR_DIRECTORY;
         fat_dirent_set_cluster(e, parent_cluster);
         if ((r = dw_put(&dw, e))) goto out;
+    } else {   // fixed root: emit the volume-label entry so hosts show the drive
+        // name. Windows Explorer reads the label from this ATTR_VOLUME_ID entry,
+        // not from BS_VolLab in the boot sector; without it the drive shows as a
+        // generic "USB Drive". scan_dir_entries skips it, so it never round-trips
+        // back into lfs as a file.
+        uint8_t e[FAT_DIRENT_SIZE];
+        memset(e, 0, sizeof e);
+        memcpy(e, fs->volume_label, 11);   // 11 bytes, space-padded; cluster/size stay 0
+        e[DIR_Attr] = ATTR_VOLUME_ID;
+        if ((r = dw_put(&dw, e))) goto out;
     }
 
     {
