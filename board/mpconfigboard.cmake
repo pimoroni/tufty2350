@@ -15,6 +15,10 @@ add_compile_options(-fno-math-errno)   # hardware VSQRT on the M33 FPU (safe: MP
 
 set(MICROPY_C_HEAP_SIZE 4096)
 
+# Enable PSRAM, should pick up CS and size from
+# the board header file.
+set(MICROPY_HW_ENABLE_PSRAM 1)
+
 # Links micropy_lib_lwip and sets MICROPY_PY_LWIP = 1
 # Picked up and expanded upon in mpconfigboard.h
 set(MICROPY_PY_LWIP ON)

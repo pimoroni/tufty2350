@@ -33,12 +33,8 @@ int mp_hal_is_pin_reserved(int n);
 #define MICROPY_HW_SPI_NO_DEFAULT_PINS          (1)
 #define MICROPY_HW_UART_NO_DEFAULT_PINS         (1)
 
-// Enable PSRAM
-#define MICROPY_HW_ENABLE_PSRAM                 (1)
+// Don't use SRAM for MicroPython heap
 #define MICROPY_GC_SPLIT_HEAP                   (0)
-
-// Alias the chip select pin specified by presto.h
-#define MICROPY_HW_PSRAM_CS_PIN                 BW_PSRAM_CS
 
 #define MICROPY_PY_THREAD                       (0)
 

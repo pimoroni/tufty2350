@@ -1,26 +1,5 @@
-diff --git a/lib/cyw43-driver b/lib/cyw43-driver
-index dd756822..c1075d4b 160000
---- a/lib/cyw43-driver
-+++ b/lib/cyw43-driver
-@@ -1 +1 @@
--Subproject commit dd7568229f3bf7a37737b9e1ef250c26efe75b23
-+Subproject commit c1075d4bc440422cf2b2fd12c64a1f53f77660ee
-diff --git a/lib/lwip b/lib/lwip
-index 77dcd25a..0a0452b2 160000
---- a/lib/lwip
-+++ b/lib/lwip
-@@ -1 +1 @@
--Subproject commit 77dcd25a72509eb83f72b033d219b1d40cd8eb95
-+Subproject commit 0a0452b2c39bdd91e252aef045c115f88f6ca773
-diff --git a/lib/mbedtls b/lib/mbedtls
-index 107ea89d..5a764e55 160000
---- a/lib/mbedtls
-+++ b/lib/mbedtls
-@@ -1 +1 @@
--Subproject commit 107ea89daaefb9867ea9121002fbbdf926780e98
-+Subproject commit 5a764e5555c64337ed17444410269ff21cb617b1
 diff --git a/src/rp2_common/pico_crt0/crt0.S b/src/rp2_common/pico_crt0/crt0.S
-index ea3b99a5..6ae1f8cf 100644
+index 7fda00c9..e748d4a5 100644
 --- a/src/rp2_common/pico_crt0/crt0.S
 +++ b/src/rp2_common/pico_crt0/crt0.S
 @@ -10,6 +10,8 @@
@@ -30,9 +9,9 @@ index ea3b99a5..6ae1f8cf 100644
 +#include "hardware/regs/rosc.h"
 +#include "hardware/regs/powman.h"
  #include "hardware/regs/sio.h"
- #include "pico/binary_info/defs.h"
- #include "boot/picobin.h"
-@@ -475,6 +477,49 @@ _call_xip_setup:
+ #include "hardware/regs/xip.h"
+ #include "hardware/regs/watchdog.h"
+@@ -518,6 +520,49 @@ _call_xip_setup:
      add sp, #256
  #endif
  
@@ -81,4 +60,4 @@ index ea3b99a5..6ae1f8cf 100644
 +
      // In a NO_FLASH binary, don't perform .data etc copy, since it's loaded
      // in-place by the SRAM load. Still need to clear .bss
- #if !PICO_NO_FLASH
+ #if !PICO_CRT0_NO_DATA_COPY
