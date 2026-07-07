@@ -53,6 +53,7 @@ function ci_micropython_clone {
     git -C "$CI_BUILD_ROOT/micropython" submodule update --init lib/tinyusb
     git -C "$CI_BUILD_ROOT/micropython" submodule update --init lib/btstack
     git -C "$CI_BUILD_ROOT/micropython/lib/pico-sdk" apply "$CI_PROJECT_ROOT/ci/pico-sdk-crt0-startup-rosc.patch"
+    git -C "$CI_BUILD_ROOT/micropython/lib/cyw43-driver" apply "$CI_PROJECT_ROOT/ci/cyw43-driver-bounded-auth-retry.patch"
 }
 
 function ci_tools_clone {
