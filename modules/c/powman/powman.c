@@ -375,6 +375,22 @@ void shipping_mode() {
     hard_assert(false); // should never get here!
 }
 
+// Enter USB Mass Storage mode from a *clean* boot rather than running it inline
+// on top of the live badge framework (wifi/bt/display all still holding
+// resources).
+//
+// We do this by faking a double-tap: the double-tap flag lives in powman's
+// always-on CHIP_RESET register and survives a reset. We set it, then trigger a
+// watchdog reboot. On the next boot powman_startup() sees the flag set after a
+// software reset and reports a WAKE_DOUBLETAP wake reason, so main.py takes the
+// exact same path as a physical double-tap and imports _msc.
+void powman_reset_into_msc(void) {
+    set_double_tap_flag();
+    // Matches machine.reset() (watchdog_reboot with a valid stack pointer).
+    watchdog_reboot(0, SRAM_END, 0);
+    while (true) __wfi(); // should never get here!
+}
+
 void long_press_sleep() {
     powman_init();
 
@@ -446,6 +462,18 @@ void handle_long_press() {
 static void __attribute__((constructor)) powman_startup(void) {
     setup_gpio(false);
     latch_inputs();
+
+    // A watchdog/software reboot with the double-tap flag already set is a
+    // deliberate request to enter a double-tap mode (e.g. the mass_storage app
+    // sets the flag then calls machine.reset() to reboot cleanly into USB Mass
+    // Storage mode). Report it as a double-tap so main.py takes the same path as
+    // a physical double-tap. Checked before the early watchdog return below.
+    if (watchdog_caused_reboot() && double_tap_flag_is_set()) {
+        clear_double_tap_flag();
+        powman_wake_with_doubletap = true;
+        setup_system();
+        return;
+    }
 
     // If we haven't reset via a button press we ought not to delay startup
     if (!(powman_hw->chip_reset & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS) || watchdog_caused_reboot()) {
