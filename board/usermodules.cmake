@@ -20,7 +20,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 
 # PicoVector & MicroPython bindings
-# Rasterise on core1 (PV_DUAL_CORE is off by default in picovector-micropython).
+# Rasterise/blur on core1 (PV_DUAL_CORE is off by default in picovector-micropython).
 set(PV_DUAL_CORE ON)
 find_package(PICOVECTOR_MICROPYTHON CONFIG REQUIRED)
 
