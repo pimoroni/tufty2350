@@ -1,6 +1,10 @@
 #include "st7789.hpp"
 
-#include "py/runtime.h"
+// MicroPython's cooperative event pump (services USB, the scheduler, and pending
+// exceptions). Declared with C linkage rather than including py/runtime.h, which
+// isn't C++-safe: its declarations would get C++ linkage and fail to link. st7789
+// needs nothing else from MicroPython.
+extern "C" void mp_event_handle_nowait(void);
 
 namespace pimoroni {
 
@@ -200,9 +204,10 @@ namespace pimoroni {
     // Wait for vsync
     if (use_vsync) {
       while (gpio_get(vsync) == 0) {
-  #ifdef mp_event_handle_nowait
+        // Service USB / the scheduler / pending exceptions while we spin, rather
+        // than busy-looping. (The #ifdef guard this replaces never fired: it
+        // tested for a macro, but mp_event_handle_nowait is a plain function.)
         mp_event_handle_nowait();
-  #endif
       }
     }
 
