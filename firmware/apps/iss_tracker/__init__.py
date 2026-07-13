@@ -314,7 +314,6 @@ def update():
             draw_info()
 
     else:
-        wifi.tick()
         screen.pen = brush.pattern(color.blue, color.grey, 32)
         screen.clear()
         draw_notification(f"Connecting to {secrets.WIFI_SSID}...")

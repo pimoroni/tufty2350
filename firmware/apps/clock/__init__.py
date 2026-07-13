@@ -670,8 +670,6 @@ def update():
 
     global state, clock_state
 
-    wifi.tick()
-
     # First we check if it's the first time of running, and if so show the intro screen.
     # Any face button press will move it into the regular running mode.
     if clock_state == ClockState.FirstRun:
