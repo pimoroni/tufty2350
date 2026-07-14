@@ -1,6 +1,6 @@
 from obstacle import Obstacle
 
-sprites = image.load("assets/chicken.png", cols=7, rows=2)
+sprites = image.load("assets/chicken.png").spritesheet(7, 2)
 ALIVE_FRAMES = 7  # row 0
 DEAD_FRAMES = 5   # row 1
 

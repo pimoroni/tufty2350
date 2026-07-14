@@ -11,7 +11,7 @@ import time
 
 hud = image.load("assets/hud.png")
 win = image.load("assets/win.png")
-game_over = image.load("assets/game_over.png", cols=5, rows=1)
+game_over = image.load("assets/game_over.png").spritesheet(5, 1)
 
 ark_font = rom_font.ark
 screen.font = ark_font
@@ -34,7 +34,7 @@ background = None
 wall_tex = None
 obst_tex = None
 wall_variation = 0
-player_sprites = image.load("assets/player.png", cols=9, rows=1)
+player_sprites = image.load("assets/player.png").spritesheet(9, 1)
 
 # Setting up lots of variables that persist frame to frame.
 movement_offset = 0
@@ -85,8 +85,8 @@ def init_game():
     level_seed = random.randint(0, len(levels) - 1)
     current_level = levels[level_seed]
     background = image.load(f"assets/{current_level.texture_pack}_bg.png")
-    wall_tex = image.load(f"assets/{current_level.texture_pack}_wall.png", cols=8, rows=1)
-    obst_tex = image.load(f"assets/{current_level.texture_pack}_obst.png", cols=5, rows=7)
+    wall_tex = image.load(f"assets/{current_level.texture_pack}_wall.png").spritesheet(8, 1)
+    obst_tex = image.load(f"assets/{current_level.texture_pack}_obst.png").spritesheet(5, 7)
     start_screen = True
     fade_counter = 255
     wall_variation = current_level.wall_variation

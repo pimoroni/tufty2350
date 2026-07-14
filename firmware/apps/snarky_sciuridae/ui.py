@@ -1,11 +1,11 @@
 
 # load user interface sprites
-icons = image.load("assets/ui/icons.png", cols=4, rows=1)
+icons = image.load("assets/ui/icons.png").spritesheet(4, 1)
 background_day = image.load("assets/background/background_day.png")
 background_dusk = image.load("assets/background/background_dusk.png")
 background_night = image.load("assets/background/background_night.png")
 surround = image.load("assets/ui/tufty_frame_beige.png")
-buttons = image.load("assets/ui/buttons_48x14.png", cols=4, rows=2)
+buttons = image.load("assets/ui/buttons_48x14.png").spritesheet(4, 2)
 scanlines = image.load("assets/ui/overlay_scanlines.png")
 
 # load in the font - font sheet generated from

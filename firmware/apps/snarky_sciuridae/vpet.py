@@ -187,7 +187,7 @@ animations = {
 
 # load the spritesheets for pets animations
 for name, frame_count in animations.items():
-  Pet._animations[name] = image.load(f"assets/squirrel-sprites/{name}.png", cols=frame_count, rows=1)  # noqa: SLF001
+  Pet._animations[name] = image.load(f"assets/squirrel-sprites/{name}.png").spritesheet(frame_count, 1)  # noqa: SLF001
 print("done")
 
 Pet._moods = list(Pet._animations.keys())  # noqa: SLF001

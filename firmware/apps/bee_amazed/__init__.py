@@ -29,7 +29,7 @@ class GameState:
 
 state = GameState.INTRO
 
-hedge = image.load("assets/hedge.png", cols=2, rows=16)
+hedge = image.load("assets/hedge.png").spritesheet(2, 16)
 
 # Setup for the display
 font = pixel_font.load("/system/assets/fonts/nope.ppf")
@@ -47,7 +47,7 @@ animations = {
 }
 
 for dir in animations.keys():
-    animations[dir] = image.load(f"assets/bee-{dir}.png", cols=BEE_FRAMES, rows=1)
+    animations[dir] = image.load(f"assets/bee-{dir}.png").spritesheet(BEE_FRAMES, 1)
 
 # Colour Constants
 BLACK = color.rgb(0, 0, 0)

@@ -10,7 +10,7 @@ very_small_font = rom_font.sins
 
 screen.antialias = image.X2
 
-sqirl = image.load("assets/sqirl.png", cols=20, rows=1)
+sqirl = image.load("assets/sqirl.png").spritesheet(20, 1)
 acorn10 = image.load("assets/acorn10.png")
 acorn15 = image.load("assets/acorn15.png")
 acorn_multi = image.load("assets/acorn_multi.png")
