@@ -1,8 +1,8 @@
 from obstacle import Obstacle
 
 sprites = image.load("assets/chicken.png", cols=7, rows=2)
-alive = AnimatedSprite(sprites, 0, 0, 7)
-dead = AnimatedSprite(sprites, 0, 1, 5)
+ALIVE_FRAMES = 7  # row 0
+DEAD_FRAMES = 5   # row 1
 
 
 class Chicken:
@@ -98,11 +98,11 @@ class Chicken:
             # chickens animation frames are ordered from flying to falling, so scale the
             # clamped velocity to the 0...7 sprites that represent her
             frame = int(frame * 2)
-            sprite = alive.frame(int(frame))
+            sprite = sprites.sprite(frame % ALIVE_FRAMES, 0)
             screen.blit(sprite, vec2(self.pos[0], self.pos[1]))
         else:
             # if chicken is dying then play the death animation
             frame = (badge.ticks - self.died_at) / 100
-            if frame < dead.count():
-                sprite = dead.frame(frame)
+            if frame < DEAD_FRAMES:
+                sprite = sprites.sprite(int(frame) % DEAD_FRAMES, 1)
                 screen.blit(sprite, vec2(self.pos[0], self.pos[1]))

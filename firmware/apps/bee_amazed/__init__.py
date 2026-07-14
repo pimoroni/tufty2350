@@ -37,6 +37,8 @@ large_font = pixel_font.load("/system/assets/fonts/ziplock.ppf")
 screen.font = font
 screen.antialias = image.X4
 
+BEE_FRAMES = 4
+
 animations = {
     "up": None,
     "down": None,
@@ -45,8 +47,7 @@ animations = {
 }
 
 for dir in animations.keys():
-    sprites = image.load(f"assets/bee-{dir}.png", cols=4, rows=1)
-    animations[dir] = AnimatedSprite(sprites, count=4)
+    animations[dir] = image.load(f"assets/bee-{dir}.png", cols=BEE_FRAMES, rows=1)
 
 # Colour Constants
 BLACK = color.rgb(0, 0, 0)
@@ -293,7 +294,7 @@ class Player(object):
                 self.last_move = badge.ticks
 
     def draw(self):
-        image = self.current_animation.frame(round(badge.ticks / 100))
+        image = self.current_animation.sprite(round(badge.ticks / 100) % BEE_FRAMES, 0)
 
         screen.blit(image, rect(self.x * wall_separation + offset_x,
                           self.y * wall_separation + offset_y,
@@ -359,7 +360,7 @@ def center_text(text, y):
 def intro():
     global state
 
-    image = animations["down"].frame(round(badge.ticks / 100))
+    image = animations["down"].sprite(round(badge.ticks / 100) % BEE_FRAMES, 0)
 
     screen.blit(BACKGROUND, vec2(0, 0))
     screen.blit(image, rect((screen.width / 2) - 16, CY - 50, 32, 32))

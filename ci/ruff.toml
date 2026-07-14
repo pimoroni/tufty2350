@@ -37,8 +37,6 @@ builtins = [
     "load_font",
     "text",
 
-# sprite.py
-    "AnimatedSprite",
 
 # filesystem.py
     "file_exists",
