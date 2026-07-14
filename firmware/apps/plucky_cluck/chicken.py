@@ -1,8 +1,8 @@
 from obstacle import Obstacle
 
-sprites = SpriteSheet("assets/chicken.png", 7, 2)
-alive = sprites.animation(0, 0, 7)
-dead = sprites.animation(0, 1, 5)
+sprites = image.load("assets/chicken.png", cols=7, rows=2)
+alive = AnimatedSprite(sprites, 0, 0, 7)
+dead = AnimatedSprite(sprites, 0, 1, 5)
 
 
 class Chicken:
