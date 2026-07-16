@@ -42,7 +42,7 @@ def update():
     apps.activate(active)
 
     if badge.pressed(BUTTON_B):
-        return f"/system/apps/{apps.active.path}"
+        return apps.active.path
 
     ui.draw_background()
 
