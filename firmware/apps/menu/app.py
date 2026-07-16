@@ -7,6 +7,7 @@ DEFAULT_ICON = image.load("default_icon.png")
 
 # bright icon colours
 COLORS = [color.orange, color.blue, color.red, color.green, color.yellow, color.grape]
+HIGHLIGHT = ((0.0, color.rgb(255, 255, 255, 64)), (1.0, color.rgb(255, 255, 255, 0)))
 
 # icon shape
 squircle = shape.squircle(0, 0, 20, 4)
@@ -60,11 +61,9 @@ class App:
 
         # draw the icon shading
         screen.pen = shade_brush
-        squircle.transform = squircle.transform.scale(1, 1)
         screen.shape(squircle)
 
         # draw the icon body
-        squircle.transform = squircle.transform.scale(1, 1)
         screen.pen = COLORS[self.index % 6]
         screen.alpha = 255 if self.active else 128
 
@@ -72,6 +71,9 @@ class App:
         screen.shape(squircle)
         squircle.transform = squircle.transform.translate(2, 2)
         screen.pen = shade_brush
+        screen.shape(squircle)
+        squircle.transform = squircle.transform.translate(-1, -1)
+        screen.pen = brush.gradient(brush.RADIAL, -20, -20, 0, 30, HIGHLIGHT)
         screen.shape(squircle)
 
         screen.alpha = 255
