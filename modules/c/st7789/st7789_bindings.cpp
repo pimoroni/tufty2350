@@ -39,7 +39,7 @@ mp_obj_t st7789_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 mp_obj_t st7789___del__(mp_obj_t self_in) {
     display_refcount--;
     if(display_refcount == 0) {
-        m_del_class(ST7789, display);
+        display->~ST7789();
         display = nullptr;
     }
     return mp_const_none;
