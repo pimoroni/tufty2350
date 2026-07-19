@@ -24,8 +24,8 @@ SHADOW = color.rgb(0, 0, 0, 100)
 
 screen.antialias = screen.X4
 
-small_font = rom_font.winds
-large_font = rom_font.ignore
+small_font = font.winds
+large_font = font.ignore
 screen.font = small_font
 
 

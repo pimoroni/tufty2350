@@ -60,9 +60,9 @@ else:
     clock_state = ClockState.Running
 
 # Loading all the assets.
-textclock_font = rom_font.smart
-dots_font = rom_font.hungry
-nixie_font = rom_font.sins
+textclock_font = font.smart
+dots_font = font.hungry
+nixie_font = font.sins
 
 palette = {
     1: (color.rgb(44, 44, 44), color.rgb(44, 44, 44, 100), color.rgb(255, 255, 255), color.rgb(255, 255, 255, 100)),

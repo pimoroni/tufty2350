@@ -13,7 +13,7 @@ hud = image.load("assets/hud.png")
 win = image.load("assets/win.png")
 game_over = image.load("assets/game_over.png").spritesheet(5, 1)
 
-ark_font = rom_font.ark
+ark_font = font.ark
 screen.font = ark_font
 screen.antialias = image.OFF
 

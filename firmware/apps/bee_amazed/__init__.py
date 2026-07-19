@@ -32,9 +32,9 @@ state = GameState.INTRO
 hedge = image.load("assets/hedge.png").spritesheet(2, 16)
 
 # Setup for the display
-font = rom_font.nope
-large_font = rom_font.ziplock
-screen.font = font
+small_font = font.nope
+large_font = font.ziplock
+screen.font = small_font
 screen.antialias = image.X4
 
 BEE_FRAMES = 4
@@ -370,7 +370,7 @@ def intro():
     center_text("Bee a-maze'd!", CY - 10)
     # blink button message
     if int(badge.ticks / 500) % 2:
-        screen.font = font
+        screen.font = small_font
         center_text("Press B to start", CY + 20)
 
     if badge.pressed(BUTTON_B):
@@ -384,7 +384,7 @@ def draw_complete_banner():
     screen.shape(shape.rounded_rectangle(10, CY - 24, screen.width - 20, 50, 5))
 
     # Draw text
-    screen.font = font
+    screen.font = small_font
     screen.pen = WHITE
     center_text(f"Level {level + 1} Complete!", CY - 15)
     center_text("Press B to continue", CY + 5)

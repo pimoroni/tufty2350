@@ -38,8 +38,8 @@ flip_start = 0
 rear_view = False
 card_pos = (10, 10)
 
-small_font = rom_font.winds
-large_font = rom_font.nope
+small_font = font.winds
+large_font = font.nope
 
 
 def draw_background():

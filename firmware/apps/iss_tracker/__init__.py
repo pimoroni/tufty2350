@@ -16,7 +16,7 @@ sys.path.insert(0, "/system/apps/iss_tracker")
 
 badge.mode(HIRES)
 screen.antialias = image.X4
-screen.font = rom_font.sins
+screen.font = font.sins
 
 CX, CY = screen.width / 2, screen.height / 2
 

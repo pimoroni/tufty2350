@@ -37,8 +37,8 @@ white = color.white
 faded = color.rgb(235, 245, 255, 200)
 
 try:
-    small_font = rom_font.ark
-    large_font = rom_font.absolute
+    small_font = font.ark
+    large_font = font.absolute
 except OSError:
     small_font = None
     large_font = None

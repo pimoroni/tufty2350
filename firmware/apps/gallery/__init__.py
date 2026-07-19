@@ -7,7 +7,7 @@ os.chdir("/system/apps/gallery")
 
 badge.mode(HIRES | VSYNC)
 
-screen.font = rom_font.nope
+screen.font = font.nope
 screen.antialias = image.X2
 
 ui_hidden = False

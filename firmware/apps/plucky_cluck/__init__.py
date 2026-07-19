@@ -11,8 +11,8 @@ from obstacle import Obstacle
 background = image.load("assets/background.png")
 grass = image.load("assets/grass.png")
 cloud = image.load("assets/cloud.png")
-large_font = rom_font.ziplock
-small_font = rom_font.nope
+large_font = font.ziplock
+small_font = font.nope
 chicken = None
 
 score = {

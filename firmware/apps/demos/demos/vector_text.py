@@ -1,6 +1,7 @@
 import math
 
 skull = image.load("/system/assets/skull.png")
+register_sprite("skull", skull)
 mona_sans = font.load("/system/assets/fonts/DynaPuff-Medium.af")
 size = 24
 
@@ -16,9 +17,9 @@ def update():
   size = (math.sin(badge.ticks / 1000) * 5) + 15
   message = """[pen:180,150,120]Upon the mast I gleam and grin, A sentinel of bone and sin. Wind and thunder, night and hull— None fear the sea like a [pen:230,220,200]pirate skull[pen:180,150,120].
 
-Once I roared with breath and [pen:255,100,80]flame[pen:180,150,120], Now legend is my only name. But still I guard the [pen:255,200,80]plundered gold[pen:180,150,120], Grinning wide, forever bold.
+[sprite:skull]
 
-[skull]
+Once I roared with breath and [pen:255,100,80]flame[pen:180,150,120], Now legend is my only name. But still I guard the [pen:255,200,80]plundered gold[pen:180,150,120], Grinning wide, forever bold.
 """
 
   screen.pen = color.rgb(100, 255, 100, 150)
@@ -40,34 +41,17 @@ Once I roared with breath and [pen:255,100,80]flame[pen:180,150,120], Now legend
 
 
 
-def pen_glyph_renderer(image, parameters, _cursor, measure):
-  if measure:
-    return 0
-
-  r = int(parameters[0])
-  g = int(parameters[1])
-  b = int(parameters[2])
-  image.pen = color.rgb(r, g, b)
-  return None
-
-
-def skull_glyph_renderer(image, _parameters, cursor, measure):
-  if measure:
-    return 24
-  image.blit(skull, cursor)
-  return None
-
-
-def circle_glyph_renderer(image, _parameters, cursor, measure):
+# [pen:r,g,b] and [sprite:skull] use the built-in renderers; only the custom
+# [circle] renderer needs registering. A renderer is fn(image, params, measure):
+# it returns its advance width when measuring, else draws at image.cursor.
+def circle_glyph_renderer(image, _parameters, measure):
   if measure:
     return 12
 
-  image.shape(shape.circle(cursor.x + 6, cursor.y + 7, 6))
+  image.shape(shape.circle(image.cursor.x + 6, image.cursor.y + 7, 6))
   return None
 
 
 glyph_renderers = {
-  "skull": skull_glyph_renderer,
-  "pen": pen_glyph_renderer,
   "circle": circle_glyph_renderer
 }

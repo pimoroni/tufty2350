@@ -4,7 +4,7 @@ screen.antialias = image.X4
 
 canvas_area = (10, 15, screen.width - 20, screen.height - 35)
 
-font = rom_font.vest
+ui_font = font.vest
 
 
 def draw_background():
@@ -13,7 +13,7 @@ def draw_background():
     screen.rectangle(0, 0, screen.width, screen.height)
 
     # draw the embossed gold logo
-    screen.font = font
+    screen.font = ui_font
     w, _ = screen.measure_text("Sketchy Sketch")
     screen.pen = color.rgb(240, 210, 160)
     screen.text("Sketchy Sketch", (screen.width / 2) - (w / 2) - 1, -1)

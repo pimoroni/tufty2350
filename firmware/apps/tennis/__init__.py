@@ -21,7 +21,7 @@ badge.mode(HIRES)
 CX, CY = screen.width / 2, screen.height / 2
 
 # load in our large font
-large_font = rom_font.ignore
+large_font = font.ignore
 
 
 class GameState:

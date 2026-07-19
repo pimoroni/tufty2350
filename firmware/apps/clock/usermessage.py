@@ -2,8 +2,8 @@
 
 black = color.rgb(0, 0, 0)
 white = color.rgb(235, 245, 255)
-small_font = rom_font.ark
-large_font = rom_font.absolute
+small_font = font.ark
+large_font = font.absolute
 
 
 def center_text(text, y):

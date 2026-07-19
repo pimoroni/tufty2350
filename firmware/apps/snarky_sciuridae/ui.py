@@ -9,7 +9,7 @@ buttons = image.load("assets/ui/buttons_48x14.png").spritesheet(4, 2)
 scanlines = image.load("assets/ui/overlay_scanlines.png")
 
 # load in the font - font sheet generated from
-screen.font = rom_font.ark
+screen.font = font.ark
 
 # brushes to match pets stats
 stats_brushes = {

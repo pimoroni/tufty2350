@@ -1,41 +1,25 @@
 import math
 
 skull = image.load("/system/assets/skull.png")
-screen.font = rom_font.compass
+register_sprite("skull", skull)
+screen.font = font.compass
 
 
-def pen_glyph_renderer(_image, parameters, _cursor, measure):
-  if measure:
-    return 0
-
-  r = int(parameters[0])
-  g = int(parameters[1])
-  b = int(parameters[2])
-  screen.pen = color.rgb(r, g, b)
-  return None
-
-
-def skull_glyph_renderer(image, _parameters, cursor, measure):
-  if measure:
-    return 24
-  image.blit(skull, cursor)
-  return None
-
-
-def circle_glyph_renderer(image, _parameters, cursor, measure):
+# [pen:r,g,b] and [sprite:skull] use the built-in renderers; only the custom
+# [circle] renderer needs registering. A renderer is fn(image, params, measure):
+# it returns its advance width when measuring, else draws at image.cursor.
+def circle_glyph_renderer(image, _parameters, measure):
   if measure:
     return 12
 
-  image.shape(shape.circle(cursor.x + 6, cursor.y + 7, 6))
+  image.shape(shape.circle(image.cursor.x + 6, image.cursor.y + 7, 6))
   return None
 
 
-nope = rom_font.nope
+nope = font.nope
 
 
 glyph_renderers = {
-  "skull": skull_glyph_renderer,
-  "pen": pen_glyph_renderer,
   "circle": circle_glyph_renderer
 }
 
@@ -44,7 +28,7 @@ def update():
   i = round(badge.ticks / 200)
   i %= 10
 
-  message = """[pen:180,150,120]Upon the mast I gleam and grin, A sentinel of bone and sin. Wind and thunder, night and hull- None fear the sea like a [pen:230,220,200]pirate skull[pen:180,150,120][skull].
+  message = """[pen:180,150,120]Upon the mast I gleam and grin, A sentinel of bone and sin. Wind and thunder, night and hull- None fear the sea like a [pen:230,220,200]pirate skull[pen:180,150,120][sprite:skull].
 """
 
   screen.pen = color.rgb(100, 255, 100, 150)

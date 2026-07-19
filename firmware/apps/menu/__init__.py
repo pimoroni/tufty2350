@@ -9,8 +9,8 @@ import ui
 
 from app import Apps
 
-title_font = rom_font.ark
-label_font = rom_font.sins
+title_font = font.ark
+label_font = font.sins
 
 
 # find installed apps and create apps
