@@ -55,6 +55,12 @@ class _text:
             while start < length:
                 # inline [code] / [code:a,b] markup at the cursor
                 if line[start] == "[":
+                    # "[[" is an escaped literal "["
+                    if start + 1 < length and line[start + 1] == "[":
+                        width, _ = image.measure_text("[", size)
+                        tokens.append((WORD, width, "["))
+                        start += 2
+                        continue
                     glyph_end = line.find("]", start)
                     if glyph_end != -1:
                         body = line[start + 1:glyph_end]
@@ -96,8 +102,16 @@ class _text:
         return tokens
 
     @staticmethod
-    def draw(image, text, bounds=None, line_spacing=1, word_spacing=1, size=0):
-        WORD = 1
+    def draw(image, text, bounds=None, line_spacing=1, word_spacing=1, size=0,
+             align="left", valign="top", ellipsis=False):
+        """Lay word-wrapped, optionally aligned text into `bounds`.
+
+        align: "left"/"center"/"right" (or an x offset in pixels) for horizontal
+        alignment of each line. valign: "top"/"middle"/"bottom" (or a y offset)
+        for vertical alignment of the block. ellipsis: when True, text that
+        overflows `bounds` vertically is truncated with a trailing "...".
+        Returns the drawn bounding box as a rect.
+        """
         SPACE = 2
         LINE_BREAK = 3
 
@@ -111,54 +125,113 @@ class _text:
         else:
             tokens = text
 
-        old_clip = image.clip
-        image.clip = bounds
-
         # Line height: vector fonts use the point size (12 by default); pixel
         # fonts use their glyph height times the integer scale (1 by default).
         if isinstance(image.font, vector_font):
             font_height = size or 12
         else:
             font_height = image.font.height * (size or 1)
+        line_advance = font_height * line_spacing
 
-        c = vec2(bounds.x, bounds.y)
-        b = rect(bounds.x, bounds.y, 0, 0)
+        # Real space advance for the current font (fall back to a fraction of
+        # the line height when a font has no space glyph).
+        space_width = image.measure_text(" ", size)[0] or (font_height / 3)
+        space_width *= word_spacing
+
+        # Phase 1: wrap the token stream into lines. Each item is
+        # (data, x_in_line, width); data is the word string, "..."/"[" literal,
+        # or a (renderer_fn, params) pair. lines is [(items, line_width), ...].
+        right = bounds.w
+        lines = []
+        items = []
+        x = 0.0
+        pending = 0.0
+        started = False
+
         for token in tokens:
-            if token[0] == WORD:
-                if c.x + token[1] > bounds.x + bounds.w:
-                    c.x = bounds.x
-                    c.y += font_height * line_spacing
-                image.text(token[2], c.x, c.y, size)
-                c.x += token[1]
-            elif token[0] == SPACE:
-                c.x += (font_height / 3) * word_spacing
-            elif token[0] == LINE_BREAK:
-                c.x = bounds.x
-                c.y += font_height * line_spacing
+            kind = token[0]
+            if kind == SPACE:
+                pending += space_width
+            elif kind == LINE_BREAK:
+                lines.append((items, x))
+                items, x, pending, started = [], 0.0, 0.0, False
             else:
-                if c.x + token[1] > bounds.x + bounds.w:
-                    c.x = bounds.x
-                    c.y += font_height * line_spacing
+                w = token[1]
+                data = token[2] if kind == 1 else (kind, token[2])  # 1 == WORD
+                if started and x + pending + w > right:
+                    lines.append((items, x))
+                    items = [(data, 0.0, w)]
+                    x = w
+                else:
+                    ix = x + (pending if started else 0.0)
+                    items.append((data, ix, w))
+                    x = ix + w
+                pending = 0.0
+                started = True
+        if items:
+            lines.append((items, x))
 
-                image.cursor = c
-                token[0](image, token[2], False)
-                c.x += token[1]
+        # Phase 2: vertical placement + optional ellipsis truncation.
+        n = len(lines)
+        total_h = ((n - 1) * line_advance + font_height) if n else 0.0
 
-            if token[0] != SPACE:
-                b.w = max(b.w, c.x - b.x)
+        if ellipsis and line_advance > 0 and total_h > bounds.h:
+            fit = int((bounds.h - font_height) / line_advance) + 1
+            if fit < 1:
+                fit = 1
+            if n > fit:
+                lines = lines[:fit]
+                ew, _ = image.measure_text("...", size)
+                litems, lw = lines[-1]
+                lines[-1] = (litems + [("...", lw, ew)], lw + ew)
+                n = len(lines)
+                total_h = (n - 1) * line_advance + font_height
 
-            b.h = max(b.h, c.y - b.y)
+        if valign == "middle":
+            y = bounds.y + (bounds.h - total_h) / 2
+        elif valign == "bottom":
+            y = bounds.y + bounds.h - total_h
+        elif isinstance(valign, (int, float)):
+            y = bounds.y + valign
+        else:
+            y = bounds.y
+        y0 = y
 
-        # c.y is the top of the last line; include its height in the bounds.
-        b.h += font_height
-
+        # Phase 3: draw each line at its aligned x.
+        old_clip = image.clip
+        image.clip = bounds
+        min_x = bounds.x + bounds.w
+        max_x = bounds.x
+        for litems, lw in lines:
+            if align == "center":
+                ox = bounds.x + (bounds.w - lw) / 2
+            elif align == "right":
+                ox = bounds.x + bounds.w - lw
+            elif isinstance(align, (int, float)):
+                ox = bounds.x + align
+            else:
+                ox = bounds.x
+            min_x = min(min_x, ox)
+            max_x = max(max_x, ox + lw)
+            for data, ix, w in litems:
+                px = ox + ix
+                if isinstance(data, str):
+                    image.text(data, px, y, size)
+                else:
+                    fn, params = data
+                    image.cursor = vec2(px, y)
+                    fn(image, params, False)
+            y += line_advance
         image.clip = old_clip
-        return b
+
+        if not lines:
+            return rect(bounds.x, bounds.y, 0, 0)
+        return rect(min_x, y0, max(0.0, max_x - min_x), total_h)
 
     # Draw scrolling text into a given window
     @staticmethod
     def scroll(text, font_face=None, font_size=None, target=None, speed=25, gap=None, align="middle"):
-        font_face = font_face or rom_font.sins
+        font_face = font_face or font.sins
 
         is_vector_font = isinstance(font_face, vector_font)
 

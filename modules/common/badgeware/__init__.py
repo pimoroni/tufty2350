@@ -215,7 +215,7 @@ __import__(".frozen/badgeware/memory")
 __import__(".frozen/badgeware/rtc")
 State = __import__(".frozen/badgeware/state").State
 
-DEFAULT_FONT = rom_font.sins
+DEFAULT_FONT = font.sins
 
 badge.mode(LORES | VSYNC)
 badge.default_pen = color.white
