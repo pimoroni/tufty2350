@@ -24,8 +24,6 @@ def framed(b):
 
 def update():
     screen.font = font.sins
-    screen.pen = color.rgb(10, 12, 16)
-    screen.clear()
 
     w, h = screen.width, screen.height
     pad = 4
