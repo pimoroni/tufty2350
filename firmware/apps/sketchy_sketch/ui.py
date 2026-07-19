@@ -4,7 +4,7 @@ screen.antialias = image.X4
 
 canvas_area = (10, 15, screen.width - 20, screen.height - 35)
 
-font = pixel_font.load("/system/assets/fonts/vest.ppf")
+font = rom_font.vest
 
 
 def draw_background():

@@ -26,7 +26,7 @@ GREEN = color.rgb(0, 150, 0)
 
 screen.antialias = image.X4
 
-large_font = pixel_font.load("/system/assets/fonts/smart.ppf")
+large_font = rom_font.smart
 screen.font = large_font
 
 graph_max = math.degrees(math.pi * 2)

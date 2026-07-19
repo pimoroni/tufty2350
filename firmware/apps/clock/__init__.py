@@ -60,9 +60,9 @@ else:
     clock_state = ClockState.Running
 
 # Loading all the assets.
-textclock_font = pixel_font.load("/system/assets/fonts/smart.ppf")
-dots_font = pixel_font.load("/system/assets/fonts/hungry.ppf")
-nixie_font = pixel_font.load("/system/assets/fonts/sins.ppf")
+textclock_font = rom_font.smart
+dots_font = rom_font.hungry
+nixie_font = rom_font.sins
 
 palette = {
     1: (color.rgb(44, 44, 44), color.rgb(44, 44, 44, 100), color.rgb(255, 255, 255), color.rgb(255, 255, 255, 100)),

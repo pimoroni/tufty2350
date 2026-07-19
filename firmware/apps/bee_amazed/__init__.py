@@ -32,8 +32,8 @@ state = GameState.INTRO
 hedge = image.load("assets/hedge.png").spritesheet(2, 16)
 
 # Setup for the display
-font = pixel_font.load("/system/assets/fonts/nope.ppf")
-large_font = pixel_font.load("/system/assets/fonts/ziplock.ppf")
+font = rom_font.nope
+large_font = rom_font.ziplock
 screen.font = font
 screen.antialias = image.X4
 

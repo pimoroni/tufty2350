@@ -24,8 +24,8 @@ SHADOW = color.rgb(0, 0, 0, 100)
 
 screen.antialias = screen.X4
 
-small_font = pixel_font.load("/system/assets/fonts/winds.ppf")
-large_font = pixel_font.load("/system/assets/fonts/ignore.ppf")
+small_font = rom_font.winds
+large_font = rom_font.ignore
 screen.font = small_font
 
 

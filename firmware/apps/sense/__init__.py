@@ -21,9 +21,9 @@ from machine import I2C
 
 BACKGROUND = brush.pattern(color.rgb(255, 255, 255), color.rgb(188, 211, 224), 26)
 
-font_absolute = pixel_font.load("/system/assets/fonts/absolute.ppf")
-font_fear = pixel_font.load("/system/assets/fonts/fear.ppf")
-font_winds = pixel_font.load("/system/assets/fonts/winds.ppf")
+font_absolute = rom_font.absolute
+font_fear = rom_font.fear
+font_winds = rom_font.winds
 
 screen.antialias = image.X2
 

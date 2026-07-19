@@ -1,7 +1,7 @@
 import math
 
 skull = image.load("/system/assets/skull.png")
-screen.font = pixel_font.load("/system/assets/fonts/compass.ppf")
+screen.font = rom_font.compass
 
 
 def pen_glyph_renderer(_image, parameters, _cursor, measure):
@@ -30,7 +30,7 @@ def circle_glyph_renderer(image, _parameters, cursor, measure):
   return None
 
 
-nope = pixel_font.load("/system/assets/fonts/nope.ppf")
+nope = rom_font.nope
 
 
 glyph_renderers = {
