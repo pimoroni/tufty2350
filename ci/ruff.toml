@@ -27,6 +27,7 @@ builtins = [
     "loop",
     "reset",
     "fatal_error",
+    "wait_for_button_or_alarm",
 
 # math.py
     "clamp",
@@ -37,7 +38,8 @@ builtins = [
     "rom_font",
     "load_font",
     "text",
-
+    "register_glyph_renderer",
+    "register_sprite",
 
 # filesystem.py
     "file_exists",
@@ -57,6 +59,7 @@ builtins = [
     "FAST_UPDATE",
     "FULL_UPDATE",
     "MEDIUM_UPDATE",
+    "NON_BLOCKING",
     "DITHER",
     "BUTTON_A",
     "BUTTON_B",
