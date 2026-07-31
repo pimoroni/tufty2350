@@ -106,7 +106,7 @@ class Apps:
             name = " ".join([capitalize(word) for word in path.split("_")])
 
             if is_dir(f"{root}/{path}"):
-                if file_exists(f"{root}/{path}/__init__.py") and path != "menu":
+                if path != "menu" and (file_exists(f"{root}/{path}/__init__.py") or file_exists(f"{root}/{path}/__init__.mpy")):
                     App(self.apps, name, f"{root}/{path}")
 
     @property
