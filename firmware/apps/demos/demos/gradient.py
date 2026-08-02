@@ -14,37 +14,43 @@ ORB = [
   (1.0, color.rgb(18, 28, 84)),
 ]
 
+W, H = screen.width, screen.height
+
+# --- linear gradient filling a rounded rectangle ---------------------------
+RX, RY = W * 0.06, H * 0.08
+RW, RH = W * 0.88, H * 0.40
+# map the 0..1 unit square onto the rectangle
+RECT_M = mat3().translate(RX, RY).scale(RW, RH)
+
+# --- radial gradient filling a circle --------------------------------------
+CX, CY = W * 0.5, H * 0.74
+RAD = min(W, H) * 0.22
+# map the 0..1 square onto the circle's bounding box. centre the bright stop
+# toward the top-left (0.35, 0.35) and reach the last stop at the far corner
+# (1, 1) so it reads like a lit sphere.
+ORB_M = mat3().translate(CX - RAD, CY - RAD).scale(RAD * 2, RAD * 2)
+
+# Both brushes are built once. What construction costs is the 256-entry lookup
+# table, and that depends only on the stops, so the animated one is repositioned
+# with geometry() each frame instead of being rebuilt.
+sunset_brush = brush.gradient(brush.LINEAR, 0.0, 0.5, 1.0, 0.5, SUNSET, RECT_M)
+orb_brush = brush.gradient(brush.RADIAL, 0.35, 0.35, 1.0, 1.0, ORB, ORB_M)
+
 
 def update():
   screen.antialias = image.X4
-
-  w = screen.width
-  h = screen.height
-
-  # --- linear gradient filling a rounded rectangle -------------------------
-  rx, ry = w * 0.06, h * 0.08
-  rw, rh = w * 0.88, h * 0.40
 
   # the gradient axis lives in 0..1 space; rotate it about the centre over time
   ang = badge.ticks / 1200
   dx, dy = math.cos(ang) * 0.5, math.sin(ang) * 0.5
 
-  # map the 0..1 unit square onto the rectangle
-  m = mat3().translate(rx, ry).scale(rw, rh)
-  screen.pen = brush.gradient(brush.LINEAR, 0.5 - dx, 0.5 - dy, 0.5 + dx, 0.5 + dy, SUNSET, m)
-  screen.shape(shape.rounded_rectangle(rx, ry, rw, rh, h * 0.05))
+  sunset_brush.geometry(0.5 - dx, 0.5 - dy, 0.5 + dx, 0.5 + dy, RECT_M)
+  screen.pen = sunset_brush
+  screen.shape(shape.rounded_rectangle(RX, RY, RW, RH, H * 0.05))
 
-  # --- radial gradient filling a circle ------------------------------------
-  cx, cy = w * 0.5, h * 0.74
-  rad = min(w, h) * 0.22
-
-  # map the 0..1 square onto the circle's bounding box. centre the bright stop
-  # toward the top-left (0.35, 0.35) and reach the last stop at the far corner
-  # (1, 1) so it reads like a lit sphere.
-  m2 = mat3().translate(cx - rad, cy - rad).scale(rad * 2, rad * 2)
-  screen.pen = brush.gradient(brush.RADIAL, 0.35, 0.35, 1.0, 1.0, ORB, m2)
-  screen.shape(shape.circle(cx, cy, rad))
+  screen.pen = orb_brush
+  screen.shape(shape.circle(CX, CY, RAD))
 
   screen.pen = color.rgb(255, 255, 255)
-  screen.text("linear", rx, ry + rh + 3)
-  screen.text("radial", cx - 18, cy + rad + 4)
+  screen.text("linear", RX, RY + RH + 3)
+  screen.text("radial", CX - 18, CY + RAD + 4)
