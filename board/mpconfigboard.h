@@ -15,7 +15,7 @@
 // ~31k table bytes per 2-block allocation, and ~10x the cost of a 1-block one. 32 bytes
 // brings rect, 3-element tuples and the 6-float mat3 into a single block. It costs
 // internal fragmentation, which 8MB of PSRAM can afford, and shortens the consecutive
-// run search for large allocations. Unix port: collect pause down a fifth to a quarter.
+// run search for large allocations.
 #define MICROPY_BYTES_PER_GC_BLOCK (32)
 
 #define MICROPY_HW_VM_IN_RAM (1)   // OPTIONAL: ~+20% interp, costs ~6 KB SRAM (.data)
