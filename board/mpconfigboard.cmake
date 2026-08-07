@@ -7,7 +7,31 @@ set(PICO_NUM_GPIOS 48)
 # Board specific version of the frozen manifest
 set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
 
-set(MICROPY_C_HEAP_SIZE 4096)
+if(NOT DEFINED MICROPY_HW_ROMFS_BYTES)
+    # set(MICROPY_HW_ROMFS_BYTES 1048576)  # 1 * 1024 * 1024
+    math(EXPR MICROPY_HW_ROMFS_BYTES "1 * 1024 * 1024")
+endif()
+
+if(NOT DEFINED MICROPY_HW_FLASH_STORAGE_BYTES)
+    # set(MICROPY_HW_FLASH_STORAGE_BYTES 13631488)  # 16 * 1024 * 1024 - 1MB for ROMFS and 2MB for firmware
+    math(EXPR MICROPY_HW_FLASH_STORAGE_BYTES "(14 * 1024 * 1024) - ${MICROPY_HW_ROMFS_BYTES}")
+endif()
+
+add_compile_options(-fno-math-errno)   # hardware VSQRT on the M33 FPU (safe: MP math uses isnan/isinf, not errno)
+
+# The C heap runs from __bss_end__ to __bss_end__ + this, and the only thing in
+# it is libstdc++'s emergency exception pool, allocated before main() by a static
+# constructor in eh_alloc.o. That wants 1088 bytes, but newlib's malloc then pads
+# the break up to the next 4K page - so one page of heap only fits when
+# __bss_end__ happens to land in the first ~2984 bytes of a page, and the board
+# panics out of memory before USB comes up when it doesn't. Two pages fit
+# whatever the alignment. The spare is not otherwise spent: the MicroPython heap
+# is in PSRAM.
+set(MICROPY_C_HEAP_SIZE 8192)
+
+# Enable PSRAM, should pick up CS and size from
+# the board header file.
+set(MICROPY_HW_ENABLE_PSRAM 1)
 
 # Links micropy_lib_lwip and sets MICROPY_PY_LWIP = 1
 # Picked up and expanded upon in mpconfigboard.h
@@ -39,4 +63,5 @@ set(MICROPY_PY_BLUETOOTH_CYW43 ON)
 set(PIMORONI_FATFS_DIR ${CMAKE_CURRENT_LIST_DIR}/../firmware)
 set(PIMORONI_FATFS_LABEL "TUFTY")
 set(PIMORONI_ROMFS_DIR ${CMAKE_CURRENT_LIST_DIR}/../romfs)
+math(EXPR PIMORONI_LFS_RESERVED "1 * 1024 * 1024")  # Reserve 1MB for LittleFS
 include(${CMAKE_CURRENT_LIST_DIR}/filesystem.cmake)

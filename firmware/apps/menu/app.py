@@ -3,38 +3,28 @@ import math
 
 import ui
 
-orange = color.rgb(246, 135, 4)
-blue = color.rgb(28, 181, 202)
-red = color.rgb(230, 60, 46)
-green = color.rgb(9, 183, 117)
-yellow = color.rgb(246, 167, 4)
-purple = color.rgb(188, 96, 208)
+DEFAULT_ICON = image.load("default_icon.png")
 
 # bright icon colours
-bold = [orange, blue, red, green, yellow, purple]
-
-# create faded out variants for inactive icons
-fade = 1.8
-faded = [
-    color.rgb(246, 135, 4, 120),
-    color.rgb(28, 181, 202, 120),
-    color.rgb(230, 60, 46, 120),
-    color.rgb(9, 183, 117, 120),
-    color.rgb(246, 167, 4, 120),
-    color.rgb(188, 96, 208, 120),
-]
+COLORS = [color.orange, color.blue, color.red, color.green, color.yellow, color.grape]
+HIGHLIGHT = ((0.0, color.rgb(255, 255, 255, 64)), (1.0, color.rgb(255, 255, 255, 0)))
 
 # icon shape
 squircle = shape.squircle(0, 0, 20, 4)
 shade_brush = color.rgb(0, 0, 0, 50)
+# Built once: the geometry is fixed and each icon's position comes from the
+# shape's transform, which the brush folds in at render time. Constructing it per
+# icon per frame rebuilt an identical 256-entry lookup table six times a frame,
+# about 2.6ms.
+highlight_brush = brush.gradient(brush.RADIAL, -20, -20, 0, 30, HIGHLIGHT)
 
 
 class App:
-    def __init__(self, collection, name, path, icon):
+    def __init__(self, collection, name, path):
         self.active = False
         self.index = len(collection)
         self.pos = vec2((self.index % 3) * 48 + 32, (math.floor((self.index % 6) / 3)) * 48 + 42)
-        self.icon = icon
+        self.icon = image.load(f"{path}/icon.png") if file_exists(f"{path}/icon.png") else DEFAULT_ICON
         self.name = name
         self.path = path
         self.spin = False
@@ -76,20 +66,22 @@ class App:
 
         # draw the icon shading
         screen.pen = shade_brush
-        squircle.transform = squircle.transform.scale(1, 1)
         screen.shape(squircle)
 
         # draw the icon body
-        squircle.transform = squircle.transform.scale(1, 1)
-        if self.active:
-            screen.pen = bold[self.index % 6]
-        else:
-            screen.pen = faded[self.index % 6]
+        screen.pen = COLORS[self.index % 6]
+        screen.alpha = 255 if self.active else 128
+
         squircle.transform = squircle.transform.translate(-1, -1)
         screen.shape(squircle)
         squircle.transform = squircle.transform.translate(2, 2)
         screen.pen = shade_brush
         screen.shape(squircle)
+        squircle.transform = squircle.transform.translate(-1, -1)
+        screen.pen = highlight_brush
+        screen.shape(squircle)
+
+        screen.alpha = 255
 
         # draw the icon sprite
         if sprite_width > 0:
@@ -119,8 +111,8 @@ class Apps:
             name = " ".join([capitalize(word) for word in path.split("_")])
 
             if is_dir(f"{root}/{path}"):
-                if file_exists(f"{root}/{path}/icon.png"):
-                    App(self.apps, name, path, image.load(f"{root}/{path}/icon.png"))
+                if path != "menu" and (file_exists(f"{root}/{path}/__init__.py") or file_exists(f"{root}/{path}/__init__.mpy")):
+                    App(self.apps, name, f"{root}/{path}")
 
     @property
     def active(self):

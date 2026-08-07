@@ -11,9 +11,9 @@ import time
 
 hud = image.load("assets/hud.png")
 win = image.load("assets/win.png")
-game_over = SpriteSheet("assets/game_over.png", 5, 1)
+game_over = image.load("assets/game_over.png").spritesheet(5, 1)
 
-ark_font = rom_font.ark
+ark_font = font.ark
 screen.font = ark_font
 screen.antialias = image.OFF
 
@@ -25,8 +25,8 @@ class GameState:
     WIN_SCREEN = 4
 
 
-# It's a bit quicker to just store the diferent brightnesses for the distance shadow, so we list them here.
-BRIGHTNESSES = (3.1875, 6.375, 9.5625, 12.75, 15.9375, 19.125, 22.3125, 25.5, 28.6875, 31.875, 35.0625, 38.25, 41.4375, 44.625, 47.8125, 51, 54.1875, 57.375, 60.5625, 63.75, 66.9375, 70.125, 73.3125, 76.5, 79.6875, 82.875, 86.0625, 89.25, 92.4375, 95.625, 98.8125, 102, 105.1875, 108.375, 111.5625, 114.75, 117.9375, 121.125, 124.3125, 127.5, 130.6875, 133.875, 137.0625, 140.25, 143.4375, 146.625, 149.8125, 153, 156.1875, 159.375, 162.5625, 165.75, 168.9375, 172.125, 175.3125, 178.5, 181.6875, 184.875, 188.0625, 191.25, 194.4375, 197.625, 200.8125, 204, 207.1875, 210.375, 213.5625, 216.75, 219.9375, 223.125, 226.3125, 229.5, 232.6875, 235.875, 239.0625, 242.25, 245.4375, 248.625, 251.8125, 255, 255, 251.8125, 248.625, 245.4375, 242.25, 239.0625, 235.875, 232.6875, 229.5, 226.3125, 223.125, 219.9375, 216.75, 213.5625, 210.375, 207.1875, 204, 200.8125, 197.625, 194.4375, 191.25, 188.0625, 184.875, 181.6875, 178.5, 175.3125, 172.125, 168.9375, 165.75, 162.5625, 159.375, 156.1875, 153, 149.8125, 146.625, 143.4375, 140.25, 137.0625, 133.875, 130.6875, 127.5, 124.3125, 121.125, 117.9375, 114.75, 111.5625, 108.375, 105.1875, 102, 98.8125, 95.625, 92.4375, 89.25, 86.0625, 82.875, 79.6875, 76.5, 73.3125, 70.125, 66.9375, 63.75, 60.5625, 57.375, 54.1875, 51, 47.8125, 44.625, 41.4375, 38.25, 35.0625, 31.875, 28.6875, 25.5, 22.3125, 19.125, 15.9375, 12.75, 9.5625, 6.375, 3.1875)
+BLACK = color.rgb(0, 0, 0)
+WHITE = color.rgb(255, 255, 255)
 TEXTURE_SIZE = 64
 
 # Here we're setting up texture packs that will be filled in when the game selects a level.
@@ -34,7 +34,7 @@ background = None
 wall_tex = None
 obst_tex = None
 wall_variation = 0
-player_sprites = SpriteSheet("assets/player.png", 9, 1)
+player_sprites = image.load("assets/player.png").spritesheet(9, 1)
 
 # Setting up lots of variables that persist frame to frame.
 movement_offset = 0
@@ -45,6 +45,13 @@ segment_multiplier = 2
 num_segs = 6
 default_z_increment = 0.10
 z_increment = 0.10
+# Everything that used to move a fixed amount per frame is now scaled by
+# frame_scale, the real time elapsed relative to the ~15fps the game ran at on
+# the old badge. At 15fps frame_scale is 1.0 and the maths matches the original
+# exactly; at higher framerates it keeps the same real-world pace. z_step is the
+# per-frame forward travel (z_increment scaled for the current frame).
+frame_scale = 1.0
+z_step = default_z_increment
 target_fps = 60
 pixel_doubling = False
 collision_debug = False
@@ -78,8 +85,8 @@ def init_game():
     level_seed = random.randint(0, len(levels) - 1)
     current_level = levels[level_seed]
     background = image.load(f"assets/{current_level.texture_pack}_bg.png")
-    wall_tex = SpriteSheet(f"assets/{current_level.texture_pack}_wall.png", 8, 1)
-    obst_tex = SpriteSheet(f"assets/{current_level.texture_pack}_obst.png", 5, 7)
+    wall_tex = image.load(f"assets/{current_level.texture_pack}_wall.png").spritesheet(8, 1)
+    obst_tex = image.load(f"assets/{current_level.texture_pack}_obst.png").spritesheet(5, 7)
     start_screen = True
     fade_counter = 255
     wall_variation = current_level.wall_variation
@@ -138,7 +145,7 @@ class Segment:
     # Refreshing doesn't actually take any external parameters, they all do the
     # same thing, slowly get bigger over time.
     def refresh(self):
-        self.radius += (self.radius * segment_multiplier * z_increment) / 2
+        self.radius += (self.radius * segment_multiplier * z_step) / 2
         x_focus = screen.width - player.x
         y_focus = screen.height - player.y
 
@@ -225,11 +232,11 @@ class Player:
 
     # Refresh moves the player on the screen according to the controls.
     def refresh(self):
-        self.x_speed += self.x_accel
-        self.y_speed += self.y_accel
+        self.x_speed += self.x_accel * frame_scale
+        self.y_speed += self.y_accel * frame_scale
 
-        self.x += self.x_speed
-        self.y += self.y_speed
+        self.x += self.x_speed * frame_scale
+        self.y += self.y_speed * frame_scale
 
         if self.x > screen.width - 20 or self.x < 20:
             self.x_speed *= -1
@@ -239,10 +246,13 @@ class Player:
             self.y_speed *= -1
             self.y_accel = 0
 
-        self.x_speed /= 2
-        self.y_speed /= 2
-        self.x_accel /= 2
-        self.y_accel /= 2
+        # the original halved speed and accel every frame; express that as a
+        # time-based decay so the damping feels the same at any framerate
+        damping = 0.5 ** frame_scale
+        self.x_speed *= damping
+        self.y_speed *= damping
+        self.x_accel *= damping
+        self.y_accel *= damping
 
         rocket_offset = (self.x - screen_centre.x) * 0.1
         self.x_window = 30 - abs(rocket_offset)
@@ -357,6 +367,7 @@ def create_centre_points():
 # It then also draws a semitransparent black line over it to darken the texture more toward the centre of the screen.
 @micropython.native
 def draw_wall(image, topleft, bottomleft, topright, bottomright, tex):
+    screen.pen = BLACK
     width = topright.x - topleft.x
     tile = wall_tex.sprite(tex, 0)
     for i in range(width):
@@ -365,10 +376,11 @@ def draw_wall(image, topleft, bottomleft, topright, bottomright, tex):
             t = i / width
             toppoint = topleft.y + ((topright.y - topleft.y) * t)
             bottompoint = math.floor(bottomleft.y + ((bottomright.y - bottomleft.y) * t))
+            # Scalar line coords avoid allocating a vec2 pair per column.
             image.blit_vspan(tile, x_pos, toppoint, bottompoint - toppoint, t, 0, t, 1)
-            seg_brightness = BRIGHTNESSES[x_pos]
-            screen.pen = color.rgb(0, 0, 0, seg_brightness)
-            screen.line(vec2(x_pos, toppoint), vec2(x_pos, bottompoint))
+            screen.alpha = min(x_pos, 160 - x_pos) * 255 // 80
+            screen.line(x_pos, toppoint, x_pos, bottompoint)
+    screen.alpha = 255
 
 
 # Just calculates the time since the start of gameplay.
@@ -382,7 +394,7 @@ def calc_time():
 
 # Simple routines to draw the HUD, time and progress along the course onto the screen.
 def draw_hud():
-    screen.blit(hud, rect(0, 0, screen.width, screen.height))
+    screen.blit(hud, vec2(0, 0))
     minute, sec, ms = calc_time()
 
     minute = str(minute)
@@ -409,7 +421,7 @@ def draw_hud():
 # and blit that segment's obstacle, if any, to the screen.
 @micropython.native
 def render_gameplay():
-    screen.blit(background, rect(0, 0, screen.width, screen.height))
+    screen.blit(background, vec2(0, 0))
 
     for segment in segments:
         segment.refresh()
@@ -425,7 +437,7 @@ def render_gameplay():
             draw_wall(screen, inner.ur, inner.lr, outer.ur, outer.lr, inner.texture_r)
 
         if i == 0:
-            screen.pen = color.rgb(0, 0, 0)
+            screen.pen = BLACK
             horizon = shape.custom([inner.ul, inner.ur, inner.lr, inner.ll])
             screen.shape(horizon)
 
@@ -450,14 +462,14 @@ init_game()
 
 
 def update():
-    global game_state, z_offset, z_increment, include_obstacle, level_start_time, level_segments_passed, final_time, start_screen, fade_counter
+    global game_state, z_offset, z_increment, include_obstacle, level_start_time, level_segments_passed, final_time, start_screen, fade_counter, frame_scale, z_step
 
     # If we're in the intro, just cycle through the intro cutscene with any button press until
     # there's no more pages of it left, then switch the game mode to gameplay.
     if game_state == GameState.INTRO:
-        screen.pen = color.rgb(0, 0, 0)
+        screen.pen = BLACK
         screen.clear()
-        screen.pen = color.rgb(255, 255, 255)
+        screen.pen = WHITE
 
         intro_cutscene.draw()
 
@@ -469,17 +481,22 @@ def update():
     # If we're playing, advance time each tick and capture inputs.
     elif game_state == GameState.PLAYING:
 
+        # How much real time has passed relative to a 15fps frame. Clamped so a
+        # stutter (or the large first-frame delta) can't fling the player or
+        # skip a whole tunnel segment in one step.
+        frame_scale = min(badge.ticks_delta * 15 / 1000, 3)
+
         # This check disables controls while fading in.
         if check_start():
 
             if badge.held(BUTTON_A) and player.x > 20:
-                player.x_accel -= 2
+                player.x_accel -= 2 * frame_scale
             elif badge.held(BUTTON_C) and player.x < screen.width - 20:
-                player.x_accel += 2
+                player.x_accel += 2 * frame_scale
             if badge.held(BUTTON_DOWN) and player.y < screen.height - 20:
-                player.y_accel += 2
+                player.y_accel += 2 * frame_scale
             if badge.held(BUTTON_UP) and player.y > 20:
-                player.y_accel -= 2
+                player.y_accel -= 2 * frame_scale
             if badge.pressed(BUTTON_B):
                 z_increment *= 2
                 player.boost = True
@@ -487,10 +504,13 @@ def update():
                 z_increment /= 2
                 player.boost = False
 
+        # Forward travel for this frame, using the (possibly boosted) speed.
+        z_step = z_increment * frame_scale
+
         # Refresh the pkayer, draw the main screen and advance time.
         player.refresh()
         render_gameplay()
-        z_offset = z_offset + z_increment
+        z_offset = z_offset + z_step
 
         # If check_collision() comes back true, we've hit something, so cancel our forward motion and go to the game over screen.
         if check_collision() and z_offset >= 0.9:
@@ -529,11 +549,11 @@ def update():
         # This just draws the "get ready" screen, until enough segments have passed that we're past any
         # graphical issues caused by startup.
         if start_screen <= num_segs:
-            screen.pen = color.rgb(0, 0, 0)
+            screen.pen = BLACK
             screen.clear()
-            screen.blit(hud, rect(0, 0, screen.width, screen.height))
+            screen.blit(hud, vec2(0, 0))
 
-            screen.pen = color.rgb(255, 255, 255)
+            screen.pen = WHITE
             dist_text = f"{level_segments_total} klicks to"
             w, _ = screen.measure_text(dist_text)
             screen.text(dist_text, vec2((screen.width - w) / 2, 60))
@@ -549,15 +569,15 @@ def update():
         elif fade_counter > 0:
             screen.pen = color.rgb(0, 0, 0, fade_counter)
             screen.rectangle(0, 0, screen.width, screen.height)
-            screen.blit(hud, rect(0, 0, screen.width, screen.height))
-            fade_counter -= 16
+            screen.blit(hud, vec2(0, 0))
+            fade_counter -= 16 * frame_scale
             if fade_counter <= 0:
                 level_start_time = time.ticks_ms()
 
     # If we're on game over, just randomly pick one of the five images with static to display, display it and loop until the user presses any button.
     elif game_state == GameState.GAME_OVER:
         static = random.randint(0, 4)
-        screen.blit(game_over.sprite(static, 0), rect(0, 0, screen.width, screen.height))
+        screen.blit(game_over.sprite(static, 0), vec2(0, 0))
 
         if badge.pressed():
             init_game()
@@ -568,7 +588,7 @@ def update():
     # so if you never use boost you should get about the same score every time.
     # The key to a high score is using boost as much as possible while still being able to avoid everything.
     elif game_state == GameState.WIN_SCREEN:
-        screen.blit(win, rect(0, 0, screen.width, screen.height))
+        screen.blit(win, vec2(0, 0))
         w, _ = screen.measure_text(congrat_choice)
         screen.text(congrat_choice, vec2((screen.width - w) / 2, 60))
 

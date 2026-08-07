@@ -55,14 +55,14 @@ State.load("clock", state)
 
 if state["first_run"]:
     clock_state = ClockState.FirstRun
-    icons = SpriteSheet("assets/icons.png", 5, 1)
+    icons = image.load("assets/icons.png").spritesheet(5, 1)
 else:
     clock_state = ClockState.Running
 
 # Loading all the assets.
-textclock_font = pixel_font.load("/system/assets/fonts/smart.ppf")
-dots_font = pixel_font.load("/system/assets/fonts/hungry.ppf")
-nixie_font = pixel_font.load("/system/assets/fonts/sins.ppf")
+textclock_font = font.smart
+dots_font = font.hungry
+nixie_font = font.sins
 
 palette = {
     1: (color.rgb(44, 44, 44), color.rgb(44, 44, 44, 100), color.rgb(255, 255, 255), color.rgb(255, 255, 255, 100)),
@@ -85,17 +85,17 @@ else:
     drawing_brush = palette[state["colour_scheme"]][0]
 
 if state["clock_style"] == DisplayType.nixie:
-    numerals = SpriteSheet("assets/nixie_num.png", 10, 1)
+    numerals = image.load("assets/nixie_num.png").spritesheet(10, 1)
     background = image.load("assets/nixie_bg.png")
     foreground = image.load("assets/nixie_fg.png")
     clock_dots = None
 elif state["clock_style"] == DisplayType.sevenseg:
     if state["dark_mode"]:
-        numerals = SpriteSheet("assets/digital_num.png", 10, 1)
-        clock_dots = SpriteSheet("assets/digital_dots.png", 2, 1)
+        numerals = image.load("assets/digital_num.png").spritesheet(10, 1)
+        clock_dots = image.load("assets/digital_dots.png").spritesheet(2, 1)
     else:
-        numerals = SpriteSheet("assets/digital_num_invert.png", 10, 1)
-        clock_dots = SpriteSheet("assets/digital_dots_invert.png", 2, 1)
+        numerals = image.load("assets/digital_num_invert.png").spritesheet(10, 1)
+        clock_dots = image.load("assets/digital_dots_invert.png").spritesheet(2, 1)
     background = None
     foreground = None
 
@@ -189,7 +189,7 @@ def display_time():
     # For the nixie and seven segment displays, we're reusing the same variables
     # for numerals, dots etc and just loading different files into them to save memory.
     elif state["clock_style"] == DisplayType.nixie:
-        numerals = SpriteSheet("assets/nixie_num.png", 10, 1)
+        numerals = image.load("assets/nixie_num.png").spritesheet(10, 1)
         background = image.load("assets/nixie_bg.png")
         foreground = image.load("assets/nixie_fg.png")
         clock_dots = None
@@ -198,11 +198,11 @@ def display_time():
 
     elif state["clock_style"] == DisplayType.sevenseg:
         if state["dark_mode"]:
-            numerals = SpriteSheet("assets/digital_num.png", 10, 1)
-            clock_dots = SpriteSheet("assets/digital_dots.png", 2, 1)
+            numerals = image.load("assets/digital_num.png").spritesheet(10, 1)
+            clock_dots = image.load("assets/digital_dots.png").spritesheet(2, 1)
         else:
-            numerals = SpriteSheet("assets/digital_num_invert.png", 10, 1)
-            clock_dots = SpriteSheet("assets/digital_dots_invert.png", 2, 1)
+            numerals = image.load("assets/digital_num_invert.png").spritesheet(10, 1)
+            clock_dots = image.load("assets/digital_dots_invert.png").spritesheet(2, 1)
         background = None
         foreground = None
         draw_sevenseg_clock(currenttime)
@@ -669,8 +669,6 @@ def update():
     # Main update loop.
 
     global state, clock_state
-
-    wifi.tick()
 
     # First we check if it's the first time of running, and if so show the intro screen.
     # Any face button press will move it into the regular running mode.

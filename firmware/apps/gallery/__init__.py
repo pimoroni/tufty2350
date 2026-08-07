@@ -7,13 +7,19 @@ os.chdir("/system/apps/gallery")
 
 badge.mode(HIRES | VSYNC)
 
-screen.font = rom_font.nope
+screen.font = font.nope
 screen.antialias = image.X2
 
 ui_hidden = False
 
 files = []
-total_files = len(os.listdir("images"))
+
+# list the png images, skipping macOS sidecar files and dotfiles like the demos app
+image_files = [
+    file for file in os.listdir("images")
+    if not file.startswith(("__", ".")) and file.endswith(".png")
+]
+total_files = len(image_files)
 
 if total_files == 0:
     fatal_error("No images found!", "Enter disk mode and copy your PNGs to /apps/gallery/images")
@@ -29,7 +35,7 @@ def center_text(text, y):
 
 
 # create a dictionary of all the images in the images directory
-for i, file in enumerate(os.listdir("images")):
+for i, file in enumerate(image_files):
     screen.pen = color.black
     screen.clear()
     screen.pen = color.white
@@ -39,14 +45,12 @@ for i, file in enumerate(os.listdir("images")):
     screen.shape(shape.rectangle(bar_x, (screen.height // 2) - 15, bar_width, 30).stroke(2))
     screen.shape(shape.rectangle((bar_x - segment_width) + segment_width, (screen.height // 2) - 15, segment_width * i, 30))
 
-    file = file.rsplit("/", 1)[-1]
-    name, ext = file.rsplit(".", 1)
-    if ext == "png":
-        files.append({
-            "name": file,
-            "title": name.replace("-", " "),
-            "image": image.load(f"images/{name}.png")
-        })
+    name = file.rsplit(".", 1)[0]
+    files.append({
+        "name": file,
+        "title": name.replace("-", " "),
+        "image": image.load(f"images/{name}.png")
+    })
 
     center_text(f"{name}", 155)
     display.update()

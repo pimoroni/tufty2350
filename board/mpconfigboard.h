@@ -1,10 +1,26 @@
 // Board and hardware specific configuration
 #define MICROPY_HW_BOARD_NAME                   "Pimoroni Tufty 2350"
 
-#define MICROPY_HW_ROMFS_BYTES                  (1 * 1024 * 1024)
-#define MICROPY_HW_FLASH_STORAGE_BYTES          (PICO_FLASH_SIZE_BYTES - (2 * 1024 * 1024) - MICROPY_HW_ROMFS_BYTES)
+// Replaced in CMake
+// #define MICROPY_HW_ROMFS_BYTES                  (1 * 1024 * 1024)
+// #define MICROPY_HW_FLASH_STORAGE_BYTES          (PICO_FLASH_SIZE_BYTES - (2 * 1024 * 1024) - MICROPY_HW_ROMFS_BYTES)
 
 #define MICROPY_OBJ_REPR (MICROPY_OBJ_REPR_C)
+
+#define MICROPY_GC_NO_SCAN   (1)   // big PSRAM GC win; NO_CLEAR benefit comes with it
+
+// Default is 4 * MP_BYTES_PER_OBJ_WORD, ie. 16 bytes here. Only single-block
+// allocations advance the collector's free-block hint (py/gc.c, n_free == 1), so on a
+// heap this size every multi-block allocation rescans the allocation table: measured at
+// ~31k table bytes per 2-block allocation, and ~10x the cost of a 1-block one. 32 bytes
+// brings rect, 3-element tuples and the 6-float mat3 into a single block. It costs
+// internal fragmentation, which 8MB of PSRAM can afford, and shortens the consecutive
+// run search for large allocations.
+#define MICROPY_BYTES_PER_GC_BLOCK (32)
+
+#define MICROPY_HW_VM_IN_RAM (1)   // OPTIONAL: ~+20% interp, costs ~6 KB SRAM (.data)
+                                   //  - Tufty's SRAM is nearly full (framebuffer + PicoVector),
+                                   //    so only keep this if the build still links.
 
 // Set up networking.
 #define MICROPY_PY_NETWORK_HOSTNAME_DEFAULT     "Tufty2350"
@@ -27,12 +43,8 @@ int mp_hal_is_pin_reserved(int n);
 #define MICROPY_HW_SPI_NO_DEFAULT_PINS          (1)
 #define MICROPY_HW_UART_NO_DEFAULT_PINS         (1)
 
-// Enable PSRAM
-#define MICROPY_HW_ENABLE_PSRAM                 (1)
+// Don't use SRAM for MicroPython heap
 #define MICROPY_GC_SPLIT_HEAP                   (0)
-
-// Alias the chip select pin specified by presto.h
-#define MICROPY_HW_PSRAM_CS_PIN                 BW_PSRAM_CS
 
 #define MICROPY_PY_THREAD                       (0)
 

@@ -39,7 +39,7 @@ mp_obj_t st7789_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 mp_obj_t st7789___del__(mp_obj_t self_in) {
     display_refcount--;
     if(display_refcount == 0) {
-        m_del_class(ST7789, display);
+        display->~ST7789();
         display = nullptr;
     }
     return mp_const_none;
@@ -91,6 +91,13 @@ mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in) {
     (void)self_in;
     display->set_vsync(mp_obj_is_true(sync_in));
     return mp_const_none;
+}
+
+mp_obj_t st7789_set_framerate(mp_obj_t self_in, mp_obj_t fps_in) {
+    (void)self_in;
+    // Returns the actual frame rate selected, which is the closest the panel
+    // can get to the requested value.
+    return mp_obj_new_int(display->set_framerate((uint8_t)mp_obj_get_int(fps_in)));
 }
 
 

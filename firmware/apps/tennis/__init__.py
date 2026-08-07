@@ -21,7 +21,7 @@ badge.mode(HIRES)
 CX, CY = screen.width / 2, screen.height / 2
 
 # load in our large font
-large_font = pixel_font.load("/system/assets/fonts/ignore.ppf")
+large_font = font.ignore
 
 
 class GameState:

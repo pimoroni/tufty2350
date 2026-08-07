@@ -50,12 +50,12 @@ class Pet:
     # select sprite for current animation frame
     if self._action:
       action_time = (badge.ticks / 1000) - self._action_changed_at
-      image = Pet._animations[self._action].frame(round(action_time * 10))
+      image = Pet._animations[self._action].sprite(round(action_time * 10) % animations[self._action], 0)
     else:
-      image = Pet._animations[self._mood].frame(round(badge.ticks / 100))
+      image = Pet._animations[self._mood].sprite(round(badge.ticks / 100) % animations[self._mood], 0)
 
     if self._notify:
-      notify_image = Pet._animations["notify"].frame(round(badge.ticks / 4))
+      notify_image = Pet._animations["notify"].sprite(round(badge.ticks / 4) % animations["notify"], 0)
     else:
       notify_image = None
 
@@ -187,8 +187,7 @@ animations = {
 
 # load the spritesheets for pets animations
 for name, frame_count in animations.items():
-  sprites = SpriteSheet(f"assets/squirrel-sprites/{name}.png", frame_count, 1)
-  Pet._animations[name] = sprites.animation()  # noqa: SLF001
+  Pet._animations[name] = image.load(f"assets/squirrel-sprites/{name}.png").spritesheet(frame_count, 1)  # noqa: SLF001
 print("done")
 
 Pet._moods = list(Pet._animations.keys())  # noqa: SLF001

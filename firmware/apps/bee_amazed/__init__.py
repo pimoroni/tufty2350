@@ -29,13 +29,15 @@ class GameState:
 
 state = GameState.INTRO
 
-hedge = SpriteSheet("assets/hedge.png", 2, 16)
+hedge = image.load("assets/hedge.png").spritesheet(2, 16)
 
 # Setup for the display
-font = pixel_font.load("/system/assets/fonts/nope.ppf")
-large_font = pixel_font.load("/system/assets/fonts/ziplock.ppf")
-screen.font = font
+small_font = font.nope
+large_font = font.ziplock
+screen.font = small_font
 screen.antialias = image.X4
+
+BEE_FRAMES = 4
 
 animations = {
     "up": None,
@@ -45,8 +47,7 @@ animations = {
 }
 
 for dir in animations.keys():
-    sprites = SpriteSheet(f"assets/bee-{dir}.png", 4, 1)
-    animations[dir] = sprites.animation()
+    animations[dir] = image.load(f"assets/bee-{dir}.png").spritesheet(BEE_FRAMES, 1)
 
 # Colour Constants
 BLACK = color.rgb(0, 0, 0)
@@ -293,7 +294,7 @@ class Player(object):
                 self.last_move = badge.ticks
 
     def draw(self):
-        image = self.current_animation.frame(round(badge.ticks / 100))
+        image = self.current_animation.sprite(round(badge.ticks / 100) % BEE_FRAMES, 0)
 
         screen.blit(image, rect(self.x * wall_separation + offset_x,
                           self.y * wall_separation + offset_y,
@@ -359,7 +360,7 @@ def center_text(text, y):
 def intro():
     global state
 
-    image = animations["down"].frame(round(badge.ticks / 100))
+    image = animations["down"].sprite(round(badge.ticks / 100) % BEE_FRAMES, 0)
 
     screen.blit(BACKGROUND, vec2(0, 0))
     screen.blit(image, rect((screen.width / 2) - 16, CY - 50, 32, 32))
@@ -369,7 +370,7 @@ def intro():
     center_text("Bee a-maze'd!", CY - 10)
     # blink button message
     if int(badge.ticks / 500) % 2:
-        screen.font = font
+        screen.font = small_font
         center_text("Press B to start", CY + 20)
 
     if badge.pressed(BUTTON_B):
@@ -383,7 +384,7 @@ def draw_complete_banner():
     screen.shape(shape.rounded_rectangle(10, CY - 24, screen.width - 20, 50, 5))
 
     # Draw text
-    screen.font = font
+    screen.font = small_font
     screen.pen = WHITE
     center_text(f"Level {level + 1} Complete!", CY - 15)
     center_text("Press B to continue", CY + 5)

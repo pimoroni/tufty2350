@@ -2,8 +2,8 @@
 
 black = color.rgb(0, 0, 0)
 white = color.rgb(235, 245, 255)
-small_font = pixel_font.load("/system/assets/fonts/ark.ppf")
-large_font = pixel_font.load("/system/assets/fonts/absolute.ppf")
+small_font = font.ark
+large_font = font.absolute
 
 
 def center_text(text, y):

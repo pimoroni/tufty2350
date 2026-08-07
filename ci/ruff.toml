@@ -14,10 +14,20 @@ builtins = [
     "mat3",
     "pen",
     "pixel_font",
+    "vector_font",
     "vec2",
     "rect",
     "shape",
     "screen",
+# image text align / overflow constants (hoisted in badgeware.py)
+    "LEFT",
+    "CENTER",
+    "RIGHT",
+    "TOP",
+    "MIDDLE",
+    "BOTTOM",
+    "CLIP",
+    "ELLIPSES",
 
 # badgeware.py
     "display",
@@ -26,6 +36,7 @@ builtins = [
     "loop",
     "reset",
     "fatal_error",
+    "wait_for_button_or_alarm",
 
 # math.py
     "clamp",
@@ -33,13 +44,9 @@ builtins = [
     "frnd",
 
 # text.py
-    "rom_font",
-    "load_font",
     "text",
-
-# sprite.py
-    "SpriteSheet",
-    "AnimatedSprite",
+    "add_glyph",
+    "add_sprite",
 
 # filesystem.py
     "file_exists",
@@ -59,6 +66,7 @@ builtins = [
     "FAST_UPDATE",
     "FULL_UPDATE",
     "MEDIUM_UPDATE",
+    "NON_BLOCKING",
     "DITHER",
     "BUTTON_A",
     "BUTTON_B",

@@ -19,17 +19,17 @@ if (EXISTS "${PIMORONI_TOOLS_DIR}/py_decl/py_decl.py")
     )
 endif()
 
-# 4100 sectors (16MB) total
-# 256 sectors (1MB) allocated for LFS filesystem
-# 512 sectors (2MB) allocated for MicroPython
+# 4096 sectors (16MB) total
+# 512 sectors (2MB) allocated for MicroPython firmware
 # 256 sectors (1MB) allocated for ROMFS
-# 3076 sectors (~12MB) for user filesystem
+# 3072 sectors (12MB) for user (FAT) filesystem
+# 256 sectors (1MB) reserved for LittleFS (via dir2uf2 --fs-reserve below)
 
 if (EXISTS "${PIMORONI_TOOLS_DIR}/ffsmake/build/ffsmake" AND EXISTS "${PIMORONI_FATFS_DIR}")
     MESSAGE("ffsmake: Using root ${PIMORONI_FATFS_DIR}.")
     MESSAGE("ffsmake: Outputting filesystem binary: ${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin")
     add_custom_target("${MICROPY_TARGET}-fatfs.bin" ALL
-        COMMAND "${PIMORONI_TOOLS_DIR}/ffsmake/build/ffsmake" --label="${PIMORONI_FATFS_LABEL}" --sector-count=3076 --force --directory "${PIMORONI_FATFS_DIR}" --output "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin"
+        COMMAND "${PIMORONI_TOOLS_DIR}/ffsmake/build/ffsmake" --label="${PIMORONI_FATFS_LABEL}" --sector-count=3072 --force --directory "${PIMORONI_FATFS_DIR}" --output "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "ffsmake: Packing FatFS filesystem to ${MICROPY_TARGET}-fatfs.bin."
         DEPENDS ${MICROPY_TARGET}
@@ -65,7 +65,7 @@ endif()
 if (EXISTS "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" AND EXISTS "${PIMORONI_FATFS_DIR}")
     MESSAGE("dir2uf2: Using filesystem binary: ${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin")
     add_custom_target("${MICROPY_TARGET}-with-filesystem.uf2" ALL
-        COMMAND ${Python_EXECUTABLE} "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" --fs-reserve 1048576 --fs-blockdev MicroPython --sparse --append-to "${MICROPY_TARGET}-romfs.uf2" --filename with-filesystem.uf2 "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin"
+        COMMAND ${Python_EXECUTABLE} "${PIMORONI_TOOLS_DIR}/dir2uf2/dir2uf2" --fs-reserve ${PIMORONI_LFS_RESERVED} --fs-blockdev MicroPython --sparse --append-to "${MICROPY_TARGET}-romfs.uf2" --filename with-filesystem.uf2 "${CMAKE_BINARY_DIR}/${MICROPY_TARGET}-fatfs.bin"
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "dir2uf2: Appending filesystem to ${MICROPY_TARGET}.uf2."
         DEPENDS "${MICROPY_TARGET}-romfs.uf2"

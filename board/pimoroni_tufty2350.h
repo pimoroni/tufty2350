@@ -15,6 +15,7 @@
 #ifndef _BOARDS_PICO2_W_H
 #define _BOARDS_PICO2_W_H
 
+pico_board_cmake_set(PICO_PLATFORM, rp2350)
 
 #define PICO_PANIC_FUNCTION mp_pico_panic
 
@@ -55,23 +56,47 @@
 #define BW_SWITCH_INT    (15) // Pull up, active low
 #define BW_SWITCH_MASK   ((1 << BW_SWITCH_A) | (1 << BW_SWITCH_B) | (1 << BW_SWITCH_C) | (1 << BW_SWITCH_UP) | (1 << BW_SWITCH_DOWN))
 
+// 399 MHz - TUFTY GO BRRRRRR!
+// ./build/micropython/lib/pico-sdk/src/rp2_common/hardware_clocks/scripts/vcocalc.py --cmake 399
+/*
+#define PLL_SYS_REFDIV   (1)
+#define PLL_SYS_VCO_FREQ_HZ (1596000000)
+#define PLL_SYS_POSTDIV1 (4)
+#define PLL_SYS_POSTDIV2 (1)
+#define SYS_CLK_HZ       (399000000)
+#define BW_VREG_VOLTAGE  (0b01111)  // 1.30V
+*/
+
+// 266 MHz - Absolute maximum before a drop in PSRAM freq.
+// ./build/micropython/lib/pico-sdk/src/rp2_common/hardware_clocks/scripts/vcocalc.py --cmake 266
+/*
+#define PLL_SYS_REFDIV   (1)
+#define PLL_SYS_VCO_FREQ_HZ (1596000000)
+#define PLL_SYS_POSTDIV1 (6)
+#define PLL_SYS_POSTDIV2 (1)
+#define SYS_CLK_HZ       (266000000)
+#define BW_VREG_VOLTAGE  (0b01101)  // 1.20V
+*/
+
 // 250 MHz - Working, but not tested on enough boards to fully verify.
 // ./build/micropython/lib/pico-sdk/src/rp2_common/hardware_clocks/scripts/vcocalc.py --cmake 250
-/*
 #define PLL_SYS_REFDIV   (1)
 #define PLL_SYS_VCO_FREQ_HZ (1500000000)
 #define PLL_SYS_POSTDIV1 (6)
 #define PLL_SYS_POSTDIV2 (1)
 #define SYS_CLK_HZ       (250000000)
-*/
+#define BW_VREG_VOLTAGE  (0b01101)  // 1.20V
 
 // 200 MHz - Most of our testing was done at 200MHz.
 // ./build/micropython/lib/pico-sdk/src/rp2_common/hardware_clocks/scripts/vcocalc.py --cmake 200
+/*
 #define PLL_SYS_REFDIV   (1)
 #define PLL_SYS_VCO_FREQ_HZ (1200000000)
 #define PLL_SYS_POSTDIV1 (6)
 #define PLL_SYS_POSTDIV2 (1)
 #define SYS_CLK_HZ       (200000000)
+#define BW_VREG_VOLTAGE  (0b01011)  // 1.10V
+*/
 
 // Support 250MHz if user manually overclocks
 #define CYW43_PIO_CLOCK_DIV_INT 3
@@ -114,9 +139,20 @@
 #define PICO_FLASH_SPI_CLKDIV 2
 #endif
 
-// pico_cmake_set_default PICO_FLASH_SIZE_BYTES = (16 * 1024 * 1024)
+pico_board_cmake_set_default(PICO_FLASH_SIZE_BYTES, (16 * 1024 * 1024))
 #ifndef PICO_FLASH_SIZE_BYTES
 #define PICO_FLASH_SIZE_BYTES (16 * 1024 * 1024)
+#endif
+
+// --- PSRAM ---
+
+#ifndef PICO_PSRAM_CS_PIN
+#define PICO_PSRAM_CS_PIN (BW_PSRAM_CS)
+#endif
+
+pico_board_cmake_set_default(PICO_PSRAM_SIZE_BYTES, (8 * 1024 * 1024))
+#ifndef PICO_PSRAM_SIZE_BYTES
+#define PICO_PSRAM_SIZE_BYTES (8 * 1024 * 1024)
 #endif
 
 // --- CYW43 ---
@@ -125,7 +161,7 @@
 #define CYW43_WL_GPIO_COUNT 3
 #endif
 
-// pico_cmake_set_default PICO_RP2350_A2_SUPPORTED = 1
+pico_board_cmake_set_default(PICO_RP2350_A2_SUPPORTED, 1)
 #ifndef PICO_RP2350_A2_SUPPORTED
 #define PICO_RP2350_A2_SUPPORTED 1
 #endif

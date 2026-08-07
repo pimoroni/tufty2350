@@ -13,10 +13,10 @@ def draw_background():
     # draw over the corners in black ready for the rounded rectangle that makes
     # up most of the background
     screen.pen = black
-    screen.shape(shape.rectangle(0, 0, 10, 10))
-    screen.shape(shape.rectangle(150, 0, 10, 10))
-    screen.shape(shape.rectangle(0, 110, 10, 10))
-    screen.shape(shape.rectangle(150, 110, 10, 10))
+    screen.rectangle(0, 0, 10, 10)
+    screen.rectangle(150, 0, 10, 10)
+    screen.rectangle(0, 110, 10, 10)
+    screen.rectangle(150, 110, 10, 10)
 
     # draw the faux crt shape background area
     screen.pen = background

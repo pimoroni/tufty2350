@@ -1,9 +1,9 @@
 export TERM=${TERM:="xterm-256color"}
 
-# cache buster: 2025-10-08
+# cache buster: 2026-08-07
 
 MICROPYTHON_FLAVOUR="pimoroni"
-MICROPYTHON_VERSION="bw-1.27.0"
+MICROPYTHON_VERSION="bw-1.28.0-3"
 
 PIMORONI_PICO_FLAVOUR="pimoroni"
 PIMORONI_PICO_VERSION="37a1b6500f77924b2a3287009734bb24d4809bf1"
@@ -36,8 +36,9 @@ function ci_pimoroni_pico_clone {
 
 function ci_pimoroni_picovector_clone {
     log_inform "Using Pimoroni PicoVector pimoroni/$PIMORONI_PICOVECTOR_VERSION"
-    git clone https://github.com/pimoroni/picovector "$CI_BUILD_ROOT/picovector"
-    git -C "$CI_BUILD_ROOT/picovector" checkout $PIMORONI_PICOVECTOR_VERSION
+    git clone https://github.com/pimoroni/picovector-micropython "$CI_BUILD_ROOT/picovector-micropython"
+    git -C "$CI_BUILD_ROOT/picovector-micropython" checkout $PIMORONI_PICOVECTOR_VERSION
+    git -C "$CI_BUILD_ROOT/picovector-micropython" submodule update --init
 }
 
 function ci_micropython_clone {
@@ -52,6 +53,7 @@ function ci_micropython_clone {
     git -C "$CI_BUILD_ROOT/micropython" submodule update --init lib/tinyusb
     git -C "$CI_BUILD_ROOT/micropython" submodule update --init lib/btstack
     git -C "$CI_BUILD_ROOT/micropython/lib/pico-sdk" apply "$CI_PROJECT_ROOT/ci/pico-sdk-crt0-startup-rosc.patch"
+    git -C "$CI_BUILD_ROOT/micropython/lib/cyw43-driver" apply "$CI_PROJECT_ROOT/ci/cyw43-driver-bounded-auth-retry.patch"
 }
 
 function ci_tools_clone {
@@ -93,7 +95,6 @@ function ci_prepare_all {
     ci_pimoroni_pico_clone
     ci_pimoroni_picovector_clone
     ci_micropython_build_mpy_cross
-    ci_python_prepare
 }
 
 function ci_debug {
@@ -141,7 +142,7 @@ function ci_cmake_configure {
     -DPICO_NO_COPRO_DIS=1 \
     -DPICOTOOL_FETCH_FROM_GIT_PATH="$TOOLS_DIR/picotool" \
     -DPIMORONI_PICO_PATH="$CI_BUILD_ROOT/pimoroni-pico" \
-    -DPICOVECTOR_DIR="$CI_BUILD_ROOT/picovector" \
+    -DPICOVECTOR_MICROPYTHON_DIR="$CI_BUILD_ROOT/picovector-micropython" \
     -DPIMORONI_TOOLS_DIR="$TOOLS_DIR" \
     -DUSER_C_MODULES="$MICROPY_BOARD_DIR/usermodules.cmake" \
     -DMICROPY_BOARD_DIR="$MICROPY_BOARD_DIR" \
@@ -162,7 +163,7 @@ function ci_cmake_build {
 
     BUILD_DIR="$CI_BUILD_ROOT/build-$BOARD"
     ccache --zero-stats || true
-    cmake --build $BUILD_DIR -j 2
+    cmake --build $BUILD_DIR -j 2 || return $?
     ccache --show-stats || true
 
     if [ -z ${CI_RELEASE_FILENAME+x} ]; then

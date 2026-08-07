@@ -9,8 +9,8 @@ import ui
 
 from app import Apps
 
-title_font = rom_font.ark
-label_font = rom_font.sins
+title_font = font.ark
+label_font = font.sins
 
 
 # find installed apps and create apps
@@ -42,7 +42,7 @@ def update():
     apps.activate(active)
 
     if badge.pressed(BUTTON_B):
-        return f"/system/apps/{apps.active.path}"
+        return apps.active.path
 
     ui.draw_background()
 
@@ -61,7 +61,7 @@ def update():
 
     if alpha <= MAX_ALPHA:
         screen.pen = color.rgb(0, 0, 0, 255 - alpha)
-        screen.clear()
+        screen.rectangle(screen.clip)
         alpha += 30
 
     return None

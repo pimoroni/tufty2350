@@ -1,16 +1,20 @@
 from obstacle import Obstacle
 
-sprites = SpriteSheet("assets/chicken.png", 7, 2)
-alive = sprites.animation(0, 0, 7)
-dead = sprites.animation(0, 1, 5)
+sprites = image.load("assets/chicken.png").spritesheet(7, 2)
+ALIVE_FRAMES = 7  # row 0
+DEAD_FRAMES = 5   # row 1
 
 
 class Chicken:
     def __init__(self):
         self.pos = (10, 50)
         self.score = 0
+        # velocity is in pixels/second and gravity in pixels/second^2 so the
+        # game plays the same however fast the display refreshes. these values
+        # reproduce the original feel from when the badge ran at 30fps
+        # (-4px/frame jump, +9px/frame/s gravity).
         self.velocity = 0
-        self.gravity = 9
+        self.gravity = 270
         self.last_update = None
         self.died_at = None
         self.done_dying = False
@@ -25,8 +29,8 @@ class Chicken:
             time_delta = (badge.ticks - self.last_update) / 1000
             self.velocity = self.velocity + (self.gravity * time_delta)
 
-            # move chicken based on their current velocity
-            self.pos = (self.pos[0], self.pos[1] + self.velocity)
+            # move chicken based on their current velocity and the elapsed time
+            self.pos = (self.pos[0], self.pos[1] + self.velocity * time_delta)
 
             # if chicken falls off the bottom of the screen it's GAME OVER
             if self.pos[1] > 92:
@@ -76,8 +80,8 @@ class Chicken:
             self.died_at = badge.ticks
 
     def jump(self):
-        # up, up, up, and away!
-        self.velocity = -4
+        # up, up, up, and away! (pixels/second)
+        self.velocity = -120
 
     def bounds(self):
         # be a little generous with chickens bounding box for collisions
@@ -87,17 +91,18 @@ class Chicken:
         if not self.is_dead():
             # this is a bit gnarly but basically we want to convert chicken's current
             # velocity into the correct animation frame for her motion.
-            # clamp velocity to between 0 and 3
-            frame = max(-1, min(self.velocity, 2)) + 1
+            # velocity is now in pixels/second, so scale it back to the per-frame
+            # range (-1..2) the animation frames were authored against.
+            frame = max(-1, min(self.velocity / 30, 2)) + 1
 
             # chickens animation frames are ordered from flying to falling, so scale the
             # clamped velocity to the 0...7 sprites that represent her
             frame = int(frame * 2)
-            sprite = alive.frame(int(frame))
+            sprite = sprites.sprite(frame % ALIVE_FRAMES, 0)
             screen.blit(sprite, vec2(self.pos[0], self.pos[1]))
         else:
             # if chicken is dying then play the death animation
             frame = (badge.ticks - self.died_at) / 100
-            if frame < dead.count():
-                sprite = dead.frame(frame)
+            if frame < DEAD_FRAMES:
+                sprite = sprites.sprite(int(frame) % DEAD_FRAMES, 1)
                 screen.blit(sprite, vec2(self.pos[0], self.pos[1]))

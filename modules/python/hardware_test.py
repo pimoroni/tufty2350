@@ -59,8 +59,7 @@ home = Pin.board.BUTTON_HOME
 power = Pin.board.POWER_EN
 LIGHT_SENSOR = ADC(Pin.board.LIGHT_SENSE)
 
-font_ignore = pixel_font.load("/system/assets/fonts/ignore.ppf")
-screen.font = font_ignore
+screen.font = font.ignore
 
 TEXT_SIZE = 12
 screen.antialias = image.X4

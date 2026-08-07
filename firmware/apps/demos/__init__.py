@@ -12,8 +12,6 @@ badge.mode(LORES | VSYNC)
 import gc
 import sys
 
-sins = rom_font.sins
-
 from demos import demos
 names = sorted(demos.keys())
 
@@ -51,13 +49,13 @@ def update():
     load_demo(selected - 1)
 
   # make sure a font is loaded by default in case the example wishes to use it
-  screen.font = sins
+  screen.font = font.sins
 
   # call example update function
   demo.update()
 
   # restore font for our use in case demo overrode it
-  screen.font = sins
+  screen.font = font.sins
 
   if menu_index < selected:
     menu_index += (selected - menu_index) / 20
