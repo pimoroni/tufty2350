@@ -269,10 +269,17 @@ namespace pimoroni {
   }
 
   void ST7789::set_backlight(uint8_t brightness) {
-    // gamma correct the provided 0-255 brightness value onto a
-    // 0-65535 range for the pwm counter
+    // The backlight driver does not light below roughly 11% duty, and the
+    // exact threshold varies between boards, so gamma correct the provided
+    // 1-255 brightness value onto backlight_min-65535 for the pwm counter.
+    // 0 is off.
     float gamma = 2.8;
-    uint16_t value = (uint16_t)(pow((float)(brightness) / 255.0f, gamma) * 65535.0f + 0.5f);
+    if(brightness == 0) {
+      pwm_set_gpio_level(bl, 0);
+      return;
+    }
+    float level = pow((float)(brightness) / 255.0f, gamma);
+    uint16_t value = backlight_min + (uint16_t)(level * (65535.0f - backlight_min) + 0.5f);
     pwm_set_gpio_level(bl, value);
   }
 
