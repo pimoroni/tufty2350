@@ -40,6 +40,9 @@ namespace pimoroni {
     uint bl = 26;
     uint vsync = 21;
 
+    // lowest pwm level at which the backlight lights on all boards
+    static constexpr uint16_t backlight_min = 8192;
+
     // pio stuff
     PIO parallel_pio = pio1;
     uint32_t startup_hz = 0;
