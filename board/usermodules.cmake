@@ -52,6 +52,9 @@ include(adcfft/micropython)
 include(modules/c/powman/micropython)
 target_compile_definitions(usermod_sleep INTERFACE TUFTY=1)
 
+# Drop the C++ demangler from the uncaught-exception path
+include(cxx_terminate/micropython)
+
 # C++ Magic Memory
 include(cppmem/micropython)
 
