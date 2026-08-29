@@ -36,8 +36,6 @@ include(pimoroni_i2c/micropython)
 # Tufty display driver
 include(modules/c/st7789/micropython)
 
-# QR Code Module
-include(qrcode/micropython/micropython)
 
 # Sensors & Breakouts
 include(micropython-common-breakouts)
