@@ -1,106 +1,180 @@
 import os
 import math
+import random
+
+import svg
 
 import ui
 
-DEFAULT_ICON = image.load("default_icon.png")
+ICON_DIR = "assets/icons"
+ICON_SIZE = 34
 
-# bright icon colours
-COLORS = [color.orange, color.blue, color.red, color.green, color.yellow, color.grape]
-HIGHLIGHT = ((0.0, color.rgb(255, 255, 255, 64)), (1.0, color.rgb(255, 255, 255, 0)))
+# The Arm icons are shared out across the apps at random for now, so each is
+# parsed and rasterised once and the sprite handed to whichever apps draw it.
+# Rasterising into a square box letterboxes each icon rather than stretching
+# it — the viewBoxes range from 53x32 to 72x72.
+ICONS = [
+    svg.load(f"{ICON_DIR}/{name}").rasterize(ICON_SIZE, ICON_SIZE)
+    for name in sorted(os.listdir(ICON_DIR)) if name.endswith(".svg")
+]
 
-# icon shape
-squircle = shape.squircle(0, 0, 20, 4)
-shade_brush = color.rgb(0, 0, 0, 50)
-# Built once: the geometry is fixed and each icon's position comes from the
-# shape's transform, which the brush folds in at render time. Constructing it per
-# icon per frame rebuilt an identical 256-entry lookup table six times a frame,
-# about 2.6ms.
-highlight_brush = brush.gradient(brush.RADIAL, -20, -20, 0, 30, HIGHLIGHT)
+# Apps carry no description of their own unless the module opens with a
+# docstring, so anything without one falls back to this.
+FALLBACK_DESCRIPTION = "No description provided by this app."
+
+# Proportions follow the site's cards: much wider than tall, a small icon at
+# roughly an eighth of the card width, and a text column taking the rest. The
+# card is narrow enough to leave a healthy slice of its neighbours showing.
+CARD_W, CARD_H = 232, 104
+CARD_RADIUS = 14
+CARD_GAP = 12
+CARD_PITCH = CARD_W + CARD_GAP
+CARD_TOP = 78
+OUTLINE = 1.5
+PADDING_X = 14
+PADDING_Y = 13
+ICON_GAP = 14
+
+TITLE_SIZE = 16
+TITLE_LEADING = 3
+DESC_SIZE = 11
+DESC_LEADING = 2
+BLOCK_GAP = 5
+
+# the band the carousel is clipped to, keeping cards clear of the header
+BAND_TOP = 62
+BAND_HEIGHT = 136
+
+# how quickly the carousel catches up to the selected card, in milliseconds
+SCROLL_SETTLE = 90
+
+# Card geometry is built once at the origin and each card's position comes from
+# the shape's transform.
+#
+# stroke() consumes the shape it is called on, so the outline is taken from its
+# own instance; sharing one would leave the fill drawing nothing. A positive
+# thickness insets the stroke, keeping the card exactly CARD_W across.
+card = shape.rounded_rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H, CARD_RADIUS)
+outline = shape.rounded_rectangle(
+    -CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H, CARD_RADIUS
+).stroke(OUTLINE)
+
+# State lives in the border and title colour; the panel stays black either way.
+# The idle border sits well back from the selected one — just enough to read as
+# an edge against black.
+idle_outline = color.rgb(14, 38, 62)
+body_text = color.rgb(201, 203, 206)
+
+
+def read_description(path):
+    """The app's module docstring, if it opens with one."""
+    try:
+        with open(f"{path}/__init__.py", "r") as handle:
+            head = handle.read(600)
+    except OSError:
+        return FALLBACK_DESCRIPTION
+
+    head = head.lstrip()
+    for quote in ('"""', "'''"):
+        if head.startswith(quote):
+            end = head.find(quote, 3)
+            if end > 0:
+                return " ".join(head[3:end].split())
+    return FALLBACK_DESCRIPTION
+
+
+def wrap(text, size, width):
+    """Break text into lines that fit within width."""
+    lines = []
+    line = ""
+    for word in text.split():
+        candidate = word if not line else line + " " + word
+        if not line or screen.measure_text(candidate, size)[0] <= width:
+            line = candidate
+        else:
+            lines.append(line)
+            line = word
+    if line:
+        lines.append(line)
+    return lines
 
 
 class App:
     def __init__(self, collection, name, path):
         self.active = False
         self.index = len(collection)
-        self.pos = vec2((self.index % 3) * 48 + 32, (math.floor((self.index % 6) / 3)) * 48 + 42)
-        self.icon = image.load(f"{path}/icon.png") if file_exists(f"{path}/icon.png") else DEFAULT_ICON
+        self.icon = random.choice(ICONS)
         self.name = name
         self.path = path
-        self.spin = False
+        self.description = read_description(path)
+        self.lines = None       # wrapped lazily, once the font is set
+
         collection.append(self)
 
     def activate(self, active):
-        # if this icon wasn't already activated then flag it for the spin animation
-        if not self.active and active:
-            self.spin = True
-            self.spin_start = badge.ticks
         self.active = active
 
-    def draw(self):
-        width = 1
-        sprite_width = self.icon.width
-        sprite_offset = sprite_width / 2
+    def layout(self, width):
+        title = wrap(self.name, TITLE_SIZE, width)
+        body = wrap(self.description, DESC_SIZE, width)
 
-        if self.spin:
-            # create a spin animation that runs over 100ms
-            speed = 100
-            frame = badge.ticks - self.spin_start
+        # keep the card from overflowing when an app is especially wordy
+        room = CARD_H - 2 * PADDING_Y
+        used = len(title) * (TITLE_SIZE + TITLE_LEADING) + BLOCK_GAP
+        allowed = max(1, int((room - used) // (DESC_SIZE + DESC_LEADING)))
+        if len(body) > allowed:
+            body = body[:allowed]
+            body[-1] = body[-1] + "..."
 
-            # calculate the width of the tile during this part of the animation
-            width = round(math.cos(frame / speed) * 3) / 3
+        self.lines = (title, body)
+        return self.lines
 
-            # ensure the width never reduces to zero or the icon disappears
-            width = max(0.1, width) if width > 0 else min(-0.1, width)
+    def draw(self, scroll):
+        cx = ui.WIDTH / 2 + self.index * CARD_PITCH - scroll
+        if cx + CARD_W / 2 < 0 or cx - CARD_W / 2 > ui.WIDTH:
+            return
 
-            # determine how to offset and scale the sprite to match the tile width
-            sprite_width = width * self.icon.width
-            sprite_offset = abs(sprite_width) / 2
+        cy = CARD_TOP + CARD_H / 2
+        transform = mat3().translate(cx, cy)
+        card.transform = transform
+        outline.transform = transform
 
-            # once the animation has completed unset the spin flag
-            if frame > (speed * 6):
-                self.spin = False
+        screen.pen = ui.black
+        screen.shape(card)
+        screen.pen = ui.green if self.active else idle_outline
+        screen.shape(outline)
 
-        # transform to the icon position (TODO: Fix need to fudge position by .5 pixels for smoother squircle)
-        squircle.transform = mat3().translate(self.pos.x + 0.5, self.pos.y + 0.5).scale(width, 1)
+        text_x = cx - CARD_W / 2 + PADDING_X + ICON_SIZE + ICON_GAP
+        text_width = (cx + CARD_W / 2 - PADDING_X) - text_x
 
-        # draw the icon shading
-        screen.pen = shade_brush
-        screen.shape(squircle)
+        title, body = self.lines or self.layout(text_width)
 
-        # draw the icon body
-        screen.pen = COLORS[self.index % 6]
-        screen.alpha = 255 if self.active else 128
+        # every card hangs its content from the top, so a short description
+        # leaves the slack at the bottom rather than recentring the block
+        y = CARD_TOP + PADDING_Y
 
-        squircle.transform = squircle.transform.translate(-1, -1)
-        screen.shape(squircle)
-        squircle.transform = squircle.transform.translate(2, 2)
-        screen.pen = shade_brush
-        screen.shape(squircle)
-        squircle.transform = squircle.transform.translate(-1, -1)
-        screen.pen = highlight_brush
-        screen.shape(squircle)
+        screen.blit(
+            self.icon,
+            rect(cx - CARD_W / 2 + PADDING_X, y, self.icon.width, self.icon.height),
+        )
 
-        screen.alpha = 255
+        screen.pen = ui.green if self.active else ui.cyan
+        for line in title:
+            screen.text(line, text_x, y, TITLE_SIZE)
+            y += TITLE_SIZE + TITLE_LEADING
 
-        # draw the icon sprite
-        if sprite_width > 0:
-            self.icon.alpha = 255 if self.active else 100
-            screen.blit(
-                self.icon,
-                rect(
-                    self.pos.x - sprite_offset - 1,
-                    self.pos.y - 13,
-                    sprite_width,
-                    24
-                )
-            )
+        y += BLOCK_GAP
+        screen.pen = body_text
+        for line in body:
+            screen.text(line, text_x, y, DESC_SIZE)
+            y += DESC_SIZE + DESC_LEADING
 
 
 class Apps:
     def __init__(self, root):
         self.apps = []
         self.active_index = 0
+        self.scroll = 0.0
 
         def capitalize(word):
             if len(word) <= 1:
@@ -123,33 +197,33 @@ class Apps:
         for app in self.apps:
             app.activate(app.index == index)
 
-    def draw_icons(self):
-        offset = (self.active_index // 6) * 6
-        for app in self.apps[offset:offset + 6]:
-            app.draw()
+    def draw_cards(self):
+        # slide the selected card to the middle, easing rather than jumping
+        target = self.active_index * CARD_PITCH
+        step = min(1.0, badge.ticks_delta / SCROLL_SETTLE)
+        self.scroll += (target - self.scroll) * step
+        if abs(target - self.scroll) < 0.5:
+            self.scroll = target
 
-    def draw_label(self):
-        label = self.active.name
-        w, _ = screen.measure_text(label)
-        screen.pen = ui.phosphor
-        screen.shape(shape.rounded_rectangle(80 - (w / 2) - 4, 100, w + 8, 15, 4))
-        screen.pen = color.rgb(20, 40, 60)
-        screen.text(label, 80 - (w / 2), 101)
+        previous = screen.clip
+        screen.clip = rect(0, BAND_TOP, ui.WIDTH, BAND_HEIGHT)
+        for app in self.apps:
+            app.draw(self.scroll)
+        screen.clip = previous
 
-    def draw_pagination(self, x=150, y=65):
-        pages = math.ceil(len(self.apps) / 6)
-        selected_page = self.active_index // 6
-        y -= (pages * 7) / 2
+    def draw_progress(self, y=222, height=3):
+        """How far through the carousel we are."""
+        if len(self.apps) < 2:
+            return
 
-        for page in range(pages):
-            offset = page * 6
-            pips = len(self.apps[offset:offset + 6])
-            for pip in range(pips):
-                if self.active_index - (page * 6) == pip:
-                    screen.pen = color.rgb(255, 255, 255, 200)
-                else:
-                    screen.pen = color.rgb(255, 255, 255, 100) if page == selected_page else color.rgb(255, 255, 255, 50)
-                screen.put(x + (pip % 3) * 2, y + (page * 7) + (pip // 3) * 2)
+        track = ui.WIDTH - 2 * PADDING_X
+        width = max(20, track / len(self.apps))
+        offset = (track - width) * (self.scroll / ((len(self.apps) - 1) * CARD_PITCH))
+
+        screen.pen = color.rgb(24, 44, 66)
+        screen.shape(shape.rounded_rectangle(PADDING_X, y, track, height, height / 2))
+        screen.pen = ui.green
+        screen.shape(shape.rounded_rectangle(PADDING_X + offset, y, width, height, height / 2))
 
     def __len__(self):
         return len(self.apps)

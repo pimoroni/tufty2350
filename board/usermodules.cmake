@@ -30,6 +30,9 @@ target_compile_definitions(usermod_picovector INTERFACE TUFTY=1)
 # Badgeware input module
 include(modules/c/input/micropython)
 
+# Native call-overhead benchmarking module
+include(modules/c/bench/micropython)
+
 # Essential
 include(pimoroni_i2c/micropython)
 
