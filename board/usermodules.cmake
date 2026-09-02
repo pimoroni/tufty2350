@@ -36,8 +36,6 @@ include(pimoroni_i2c/micropython)
 # Tufty display driver
 include(modules/c/st7789/micropython)
 
-# QR Code Module
-include(qrcode/micropython/micropython)
 
 # Sensors & Breakouts
 include(micropython-common-breakouts)
@@ -51,6 +49,9 @@ include(adcfft/micropython)
 # Sleep / Wake Reason
 include(modules/c/powman/micropython)
 target_compile_definitions(usermod_sleep INTERFACE TUFTY=1)
+
+# Drop the C++ demangler from the uncaught-exception path
+include(cxx_terminate/micropython)
 
 # C++ Magic Memory
 include(cppmem/micropython)
