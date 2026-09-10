@@ -2,13 +2,10 @@ import time
 
 import network
 import powman
-import st7789
 from machine import ADC, I2C, Pin, Timer
 from pcf85063a import PCF85063A
 import gc
 import os
-
-display = st7789.ST7789()
 
 """
 Hardware Error Codes:
@@ -40,15 +37,11 @@ DARK_RED = color.rgb(150, 0, 0)
 
 WIDTH, HEIGHT = 160, 120
 
-CL = [Pin(0, Pin.OUT), Pin(1, Pin.OUT),
-      Pin(2, Pin.OUT), Pin(3, Pin.OUT)]
-
 charge_stat = Pin.board.CHARGE_STAT
 charge_stat.init(mode=Pin.IN)
 vbus_detect = Pin.board.VBUS_DETECT
 sw_int = Pin.board.BUTTON_INT
 rtc_alarm = Pin.board.RTC_ALARM
-vbat = ADC(Pin.board.VBAT_SENSE)
 
 up = Pin.board.BUTTON_UP
 down = Pin.board.BUTTON_DOWN
@@ -61,48 +54,12 @@ LIGHT_SENSOR = ADC(Pin.board.LIGHT_SENSE)
 
 screen.font = font.ignore
 
-TEXT_SIZE = 12
+TEXT_SIZE = 1
 screen.antialias = image.X4
 
 
 def get_light():
     return LIGHT_SENSOR.read_u16()
-
-
-def wrap_and_measure(image, text, size, max_width):
-    result = []
-
-    for line in text.splitlines():
-        # if max_width is specified then perform word wrapping
-        if max_width:
-            # setup a start and end cursor to traverse the text
-            start, end = 0, 0
-            while True:
-                # search for the next space
-                end = line.find(" ", end)
-                if end == -1:
-                    end = len(line)
-
-                # measure the text up to the space
-                width, _ = image.measure_text(line[start:end], size)
-                if width > max_width:
-                    # line exceeded max length
-                    end = line.rfind(" ", start, end)
-                    result.append((line[start:end], width))
-                    start = end + 1
-                elif end == len(line):
-                    # reached the end of the string
-                    result.append((line[start:end], width))
-                    break
-
-                # step past the last space
-                end += 1
-        else:
-            # no wrapping needed, just return the original line with its width
-            width, _ = image.measure_text(line, size)
-            result.append((line, width))
-
-    return result
 
 
 class Tests:
@@ -122,6 +79,7 @@ class Tests:
         self.rtc_start = time.time()
 
         # Toggle the case lights once every second
+        self.cl_state = 0
         self.cl_timer = Timer()
         self.cl_timer.init(mode=Timer.PERIODIC, period=1000, callback=self.cl_toggle)
 
@@ -162,10 +120,8 @@ class Tests:
         screen.pen = DARK_RED
         screen.clear()
 
-        tw, th = screen.measure_text(str(error))
-
         screen.pen = WHITE
-        screen.text(str(error), WIDTH / 2 - (tw / 2), HEIGHT / 2 - th / 2)
+        screen.text(str(error), rect(0, 0, WIDTH, HEIGHT), TEXT_SIZE, align=(CENTER, MIDDLE))
         display.update()
 
     def test_buttons(self):
@@ -186,7 +142,7 @@ class Tests:
             raise Exception("E2")
 
     def test_vbat(self):
-        voltage = vbat.read_u16() * (3.3 / 65536) * 2
+        voltage = badge.battery_voltage()
         print(voltage)
         if voltage > 4.2 or voltage < 3.6:
             raise Exception("E7")
@@ -204,9 +160,8 @@ class Tests:
 
     # Toggle the case lights on the back of the badge
     def cl_toggle(self, _t):
-        for led in CL:
-            led.toggle()
-        time.sleep(0.2)
+        self.cl_state = 0 if self.cl_state else 1
+        badge.caselights(self.cl_state)
 
     def clear_flag(self):
         # Now the test has complete, we can remove the flag.
@@ -214,16 +169,6 @@ class Tests:
             os.remove("hardware_test.txt")
         except OSError:
             pass
-
-    # Handle the user exiting the test
-    # This is only enabled once the function tests have passed
-    def exit_handler(self, _pin):
-        # The test has passed so we can clear the flag.
-        self.clear_flag()
-
-        # Time to sleep now!
-        # This mode disables all front buttons to stop the unit waking in transit.
-        powman.shipping_mode()
 
     def run(self):
 
@@ -296,24 +241,13 @@ class Tests:
             screen.pen = DARK_GREEN
             screen.clear()
             screen.pen = WHITE
-            t = "Pass!"
-            tw, _ = screen.measure_text(t)
-            screen.text(t, 80 - (tw / 2), 5)
-            text_lines = wrap_and_measure(screen, "Press B to sleep", TEXT_SIZE - 1, 150)
-            y = 40
-            for line, _width in text_lines:
-                screen.text(line, 5, y, TEXT_SIZE - 1)
-                y += 22
+            screen.text("Pass!", rect(0, 5, WIDTH, 28), TEXT_SIZE, align=(CENTER, TOP))
+            screen.text("Press B to sleep", rect(5, 40, 150, HEIGHT - 45), TEXT_SIZE)
             display.update()
 
             if badge.pressed(BUTTON_B):
-                # Now the test has complete, we can remove the flag.
-                try:
-                    os.remove("hardware_test.txt")
-                except OSError as e:
-                    print(e)
+                self.clear_flag()
                 powman.shipping_mode()
-
 
     # Interrupt based button testing checks the button gpio
     # and that each button is able to trigger sw_int
@@ -346,11 +280,7 @@ class Tests:
             screen.pen = DARK_BLUE
             screen.clear()
             screen.pen = WHITE
-            text_lines = wrap_and_measure(screen, "< Remove USB to continue.", TEXT_SIZE, 150)
-            y = 40
-            for line, _width in text_lines:
-                screen.text(line, 5, y, TEXT_SIZE)
-                y += 15
+            screen.text("< Remove USB to continue.", rect(5, 40, 150, HEIGHT - 45), TEXT_SIZE)
             display.update()
             # Time out to catch the user not removing the USB
             # Or to end the test if there's a failure on VBUS_DETECT
@@ -372,11 +302,7 @@ class Tests:
         screen.clear()
         screen.pen = WHITE
 
-        text_lines = wrap_and_measure(screen, "Press all face buttons + HOME", TEXT_SIZE, 150)
-        y = 25
-        for line, _width in text_lines:
-            screen.text(line, 5, y)
-            y += 20
+        screen.text("Press all face buttons + HOME", rect(5, 20, 142, 84), TEXT_SIZE)
 
         # Draw button presses
         for button in sorted(self.buttons):
