@@ -50,6 +50,7 @@ b = Pin.board.BUTTON_B
 c = Pin.board.BUTTON_C
 home = Pin.board.BUTTON_HOME
 power = Pin.board.POWER_EN
+vbat = ADC(Pin.board.VBAT_SENSE)
 LIGHT_SENSOR = ADC(Pin.board.LIGHT_SENSE)
 
 screen.font = font.ignore
@@ -142,7 +143,7 @@ class Tests:
             raise Exception("E2")
 
     def test_vbat(self):
-        voltage = badge.battery_voltage()
+        voltage = vbat.read_u16() * (3.3 / 65536) * 2
         print(voltage)
         if voltage > 4.2 or voltage < 3.6:
             raise Exception("E7")
