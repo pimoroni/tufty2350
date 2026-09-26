@@ -8,6 +8,7 @@ import math
 import random
 import cutscene
 import time
+import gc
 
 hud = image.load("assets/hud.png")
 win = image.load("assets/win.png")
@@ -82,6 +83,7 @@ levels = [
 # This resets everythiong back to its starting conditions, including loading in level textures and picking the random values for the cargo, level and distance.
 def init_game():
     global z_increment, z_offset, player, background, wall_tex, obst_tex, wall_variation, intro_cutscene, level_segments_passed, level_segments_total, congrat_choice, start_screen, fade_counter
+    gc.collect()
     level_seed = random.randint(0, len(levels) - 1)
     current_level = levels[level_seed]
     background = image.load(f"assets/{current_level.texture_pack}_bg.png")
