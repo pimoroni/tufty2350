@@ -8,6 +8,7 @@ import math
 import random
 import cutscene
 import time
+import qwstpad
 
 hud = image.load("assets/hud.png")
 win = image.load("assets/win.png")
@@ -456,13 +457,57 @@ def check_start():
     return fade_counter <= 0 and start_screen > num_segs
 
 
+def init_gamepad():
+    global gamepad
+    gamepads = qwstpad.Gamepadhelper()
+    for i in gamepads.pads:
+        if i is not None:
+            gamepad = i
+            return i
+    return None
+
+
+def parse_controls():
+    global gamepad
+
+    if gamepad:
+        try:
+            gamepad.update_buttons()
+        except OSError:
+            gamepad = init_gamepad()
+    else:
+        gamepad = init_gamepad()
+
+    if gamepad:
+        controls["MOVE_LEFT"] = gamepad.held("L")
+        controls["MOVE_RIGHT"] = gamepad.held("R")
+        controls["MOVE_UP"] = gamepad.held("U")
+        controls["MOVE_DOWN"] = gamepad.held("D")
+        controls["START_BOOST"] = gamepad.pressed("A") or gamepad.pressed("B") or gamepad.pressed("X") or gamepad.pressed("Y")
+        controls["STOP_BOOST"] = gamepad.released("A") or gamepad.released("B") or gamepad.released("X") or gamepad.released("Y")
+        controls["ANY_KEY"] = gamepad.pressed()
+    else:
+        controls["MOVE_LEFT"] = badge.held(BUTTON_A)
+        controls["MOVE_RIGHT"] = badge.held(BUTTON_C)
+        controls["MOVE_UP"] = badge.held(BUTTON_UP)
+        controls["MOVE_DOWN"] = badge.held(BUTTON_DOWN)
+        controls["START_BOOST"] = badge.pressed(BUTTON_B)
+        controls["STOP_BOOST"] = badge.released(BUTTON_B)
+        controls["ANY_KEY"] = badge.pressed()
+
+
+gamepad = None
+controls = {}
 player = Player()
 segments = create_centre_points()
 init_game()
+init_gamepad()
 
 
 def update():
     global game_state, z_offset, z_increment, include_obstacle, level_start_time, level_segments_passed, final_time, start_screen, fade_counter, frame_scale, z_step
+
+    parse_controls()
 
     # If we're in the intro, just cycle through the intro cutscene with any button press until
     # there's no more pages of it left, then switch the game mode to gameplay.
@@ -473,7 +518,7 @@ def update():
 
         intro_cutscene.draw()
 
-        if badge.pressed():
+        if controls["ANY_KEY"]:
             if not intro_cutscene.advance():
                 game_state = GameState.PLAYING
                 level_start_time = time.ticks_ms()
@@ -489,18 +534,18 @@ def update():
         # This check disables controls while fading in.
         if check_start():
 
-            if badge.held(BUTTON_A) and player.x > 20:
+            if controls["MOVE_LEFT"] and player.x > 20:
                 player.x_accel -= 2 * frame_scale
-            elif badge.held(BUTTON_C) and player.x < screen.width - 20:
+            elif controls["MOVE_RIGHT"] and player.x < screen.width - 20:
                 player.x_accel += 2 * frame_scale
-            if badge.held(BUTTON_DOWN) and player.y < screen.height - 20:
+            if controls["MOVE_DOWN"] and player.y < screen.height - 20:
                 player.y_accel += 2 * frame_scale
-            if badge.held(BUTTON_UP) and player.y > 20:
+            if controls["MOVE_UP"] and player.y > 20:
                 player.y_accel -= 2 * frame_scale
-            if badge.pressed(BUTTON_B):
+            if controls["START_BOOST"]:
                 z_increment *= 2
                 player.boost = True
-            if badge.released(BUTTON_B):
+            if controls["STOP_BOOST"]:
                 z_increment /= 2
                 player.boost = False
 
@@ -579,7 +624,7 @@ def update():
         static = random.randint(0, 4)
         screen.blit(game_over.sprite(static, 0), vec2(0, 0))
 
-        if badge.pressed():
+        if controls["ANY_KEY"]:
             init_game()
             game_state = GameState.INTRO
 
@@ -616,7 +661,7 @@ def update():
         w, _ = screen.measure_text(time_text)
         screen.text(time_text, vec2((screen.width - w) / 2, 90))
 
-        if badge.pressed():
+        if controls["ANY_KEY"]:
             init_game()
             game_state = GameState.INTRO
 
