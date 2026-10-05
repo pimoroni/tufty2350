@@ -1,9 +1,4 @@
-import sys
-import os
 import math
-
-sys.path.insert(0, "/apps/badge")
-os.chdir("/apps/badge")
 
 
 CX = screen.width / 2

@@ -1,16 +1,3 @@
-
-# Your apps directory
-APP_DIR = "/apps/tomato"
-
-import os
-import sys
-
-# Standalone bootstrap for finding app assets
-os.chdir(APP_DIR)
-
-# Standalone bootstrap for module imports
-sys.path.insert(0, APP_DIR)
-
 from badgeware import display
 import time
 

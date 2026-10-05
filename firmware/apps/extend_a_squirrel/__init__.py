@@ -1,11 +1,6 @@
-import sys
-import os
 import math
 import random
 from draw_tufty import Renderer
-
-sys.path.insert(0, "/apps/extend_a_squirrel")
-os.chdir("/apps/extend_a_squirrel")
 
 
 class Platform:

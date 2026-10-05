@@ -1,18 +1,11 @@
 import json
 import math
-import os
 import secrets
-import sys
 from datetime import datetime, timezone
 
 import requests
 import wifi
 
-# Standalone bootstrap for finding app assets
-os.chdir("/apps/iss_tracker")
-
-# Standalone bootstrap for module imports
-sys.path.insert(0, "/apps/iss_tracker")
 
 badge.mode(HIRES)
 screen.antialias = image.X4
