@@ -1,9 +1,5 @@
-import sys
-import os
 import math
 
-sys.path.insert(0, "/apps/hydrate")
-os.chdir("/apps/hydrate")
 
 from badgeware import State
 

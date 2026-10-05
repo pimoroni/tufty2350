@@ -1,14 +1,3 @@
-APP_DIR = "/apps/snarky_sciuridae"
-
-import sys
-import os
-
-# Standalone bootstrap for finding app assets
-os.chdir(APP_DIR)
-
-# Standalone bootstrap for module imports
-sys.path.insert(0, APP_DIR)
-
 import ui
 from vpet import Pet
 from badgeware import State

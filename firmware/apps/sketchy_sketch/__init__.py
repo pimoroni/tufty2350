@@ -1,14 +1,3 @@
-APP_DIR = "/apps/sketchy_sketch"
-
-import sys
-import os
-
-# Standalone bootstrap for finding app assets
-os.chdir(APP_DIR)
-
-# Standalone bootstrap for module imports
-sys.path.insert(0, APP_DIR)
-
 badge.mode(HIRES)
 
 import ui

@@ -10,11 +10,6 @@ Controls:
 * B = Continue (once the current level is complete)
 """
 
-import os
-import sys
-
-sys.path.insert(0, "/apps/bee_amazed")
-os.chdir("/apps/bee_amazed")
 
 import gc
 import random

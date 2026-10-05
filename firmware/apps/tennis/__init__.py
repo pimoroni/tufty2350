@@ -1,15 +1,3 @@
-# Your apps directory
-APP_DIR = "/apps/tennis"
-
-import os
-import sys
-
-# Standalone bootstrap for finding app assets
-os.chdir(APP_DIR)
-
-# Standalone bootstrap for module imports
-sys.path.insert(0, APP_DIR)
-
 import math
 import random
 
