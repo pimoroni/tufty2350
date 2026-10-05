@@ -1,8 +1,8 @@
 import math
 
-skull = image.load("/system/assets/skull.png")
+skull = image.load("/assets/skull.png")
 add_sprite("skull", skull)
-mona_sans = font.load("/system/assets/fonts/DynaPuff-Medium.af")
+mona_sans = font.load("/fonts/DynaPuff-Medium.af")
 size = 24
 
 def update():

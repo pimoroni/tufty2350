@@ -1,4 +1,4 @@
-APP_DIR = "/system/apps/snarky_sciuridae"
+APP_DIR = "/apps/snarky_sciuridae"
 
 import sys
 import os

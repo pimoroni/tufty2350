@@ -1,8 +1,8 @@
 import sys
 import os
 
-sys.path.insert(0, "/system/apps/plucky_cluck")
-os.chdir("/system/apps/plucky_cluck")
+sys.path.insert(0, "/apps/plucky_cluck")
+os.chdir("/apps/plucky_cluck")
 
 from badgeware import State
 from chicken import Chicken

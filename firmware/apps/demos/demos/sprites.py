@@ -1,7 +1,7 @@
 import random
 import math
 
-skull = image.load("/system/assets/skull.png")
+skull = image.load("/assets/skull.png")
 
 def update():
   random.seed(0)

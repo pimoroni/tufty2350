@@ -1,6 +1,6 @@
 
 # Your apps directory
-APP_DIR = "/system/apps/tomato"
+APP_DIR = "/apps/tomato"
 
 import os
 import sys

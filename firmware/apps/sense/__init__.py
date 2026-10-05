@@ -1,6 +1,6 @@
 
 # Your apps directory
-APP_DIR = "/system/apps/sense"
+APP_DIR = "/apps/sense"
 
 import os
 import sys
