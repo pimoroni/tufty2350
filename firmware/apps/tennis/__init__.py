@@ -1,5 +1,5 @@
 # Your apps directory
-APP_DIR = "/system/apps/tennis"
+APP_DIR = "/apps/tennis"
 
 import os
 import sys

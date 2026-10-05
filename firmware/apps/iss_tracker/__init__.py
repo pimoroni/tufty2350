@@ -9,10 +9,10 @@ import requests
 import wifi
 
 # Standalone bootstrap for finding app assets
-os.chdir("/system/apps/iss_tracker")
+os.chdir("/apps/iss_tracker")
 
 # Standalone bootstrap for module imports
-sys.path.insert(0, "/system/apps/iss_tracker")
+sys.path.insert(0, "/apps/iss_tracker")
 
 badge.mode(HIRES)
 screen.antialias = image.X4
@@ -60,7 +60,7 @@ def load_coastlines():
 
     global path_count, point_count
 
-    with open("/system/assets/world.geo.json", "r") as f:
+    with open("/assets/world.geo.json", "r") as f:
         data = json.loads(f.read())
         for country in data:
             for polygon in country["polygons"]:

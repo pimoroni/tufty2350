@@ -1,8 +1,8 @@
 import sys
 import os
 
-sys.path.insert(0, "/system/apps/30_minutes_to_alpha_centauri")
-os.chdir("/system/apps/30_minutes_to_alpha_centauri")
+sys.path.insert(0, "/apps/30_minutes_to_alpha_centauri")
+os.chdir("/apps/30_minutes_to_alpha_centauri")
 
 import math
 import random

@@ -1,5 +1,5 @@
 # Your app's directory
-APP_DIR = "/system/apps/clock"
+APP_DIR = "/apps/clock"
 
 import sys
 import os

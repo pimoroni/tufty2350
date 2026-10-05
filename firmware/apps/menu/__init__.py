@@ -1,9 +1,9 @@
 import os
 import sys
 
-sys.path.insert(0, "/system/apps/menu")
+sys.path.insert(0, "/apps/menu")
 sys.path.insert(0, "/")
-os.chdir("/system/apps/menu")
+os.chdir("/apps/menu")
 
 import ui
 
@@ -14,7 +14,7 @@ label_font = font.sins
 
 
 # find installed apps and create apps
-apps = Apps("/system/apps")
+apps = Apps("/apps")
 
 active = 0
 

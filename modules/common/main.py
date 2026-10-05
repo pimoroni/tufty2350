@@ -20,7 +20,15 @@ else:
     except OSError:
         pass
 
-    try:
-        __import__("/system/main")
-    except ImportError:
-        fatal_error("System Error!", "Could not find /system/main.py. Connect to the Badgeware IDE to reinstall it!")
+    if not file_exists("/apps/menu/__init__.py"):
+        fatal_error("System Error!", "Could not find the launcher in /apps/menu. Connect to the Badgeware IDE to reinstall it!")
+
+    badge.poll()
+    app_to_launch = launch("/apps/menu")
+
+    if app_to_launch is not None:
+        while badge.pressed() or badge.held() or badge.released():
+            badge.poll()
+        launch(app_to_launch)
+
+    reset()

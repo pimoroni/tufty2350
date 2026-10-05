@@ -1,4 +1,4 @@
-APP_DIR = "/system/apps/sketchy_sketch"
+APP_DIR = "/apps/sketchy_sketch"
 
 import sys
 import os
