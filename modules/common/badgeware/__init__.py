@@ -5,6 +5,7 @@ import time
 import os
 
 import machine
+import micropython
 import st7789
 import builtins
 
@@ -60,7 +61,7 @@ class _run:
                     return
 
         except Exception as e:  # noqa: BLE001
-            fatal_error("Error!", get_exception(e))
+            fatal_error("Error!", e)
 
         finally:
             badge.clear()
@@ -79,8 +80,11 @@ def launch(path):
         do_exit()
         reset()
 
+    def quit_to_ide(_pin):
+        micropython.schedule(_ide_stop, None)
+
     machine.Pin.board.BUTTON_HOME.irq(
-        trigger=machine.Pin.IRQ_FALLING, handler=quit_to_launcher
+        trigger=machine.Pin.IRQ_FALLING, handler=quit_to_ide if ide_mode else quit_to_launcher
     )
 
     # Grab a list of modules from before launching app
@@ -94,7 +98,7 @@ def launch(path):
         return do_exit()
 
     except Exception as e:  # noqa: BLE001
-        fatal_error("Error!", get_exception(e))
+        fatal_error("Error!", e)
 
     finally:
         # Clean up path
@@ -159,10 +163,21 @@ def message(title, msg, window=None):
     error_window.text(msg, bounds)
 
 
+class IDEStop(BaseException):
+    pass
+
+
+def _ide_stop(_):
+    raise IDEStop
+
+
 def fatal_error(title, error):
-    if not isinstance(error, str):
+    if isinstance(error, str):
+        print(f"- ERROR: {error}")
+    else:
+        print(f"- ERROR: {title}")
+        sys.print_exception(error)
         error = get_exception(error)
-    print(f"- ERROR: {error}")
 
     if (badge.mode() & HIRES) == 0:
         contents = image(160, 120)
@@ -174,6 +189,10 @@ def fatal_error(title, error):
     message(title, error)
 
     display.update()
+
+    if ide_mode:
+        raise IDEStop
+
     while True:
         badge.poll()
         if badge.pressed():
@@ -215,6 +234,7 @@ builtins.launch = launch
 builtins.loop = None
 builtins.reset = reset
 builtins.fatal_error = fatal_error
+builtins.ide_mode = False
 
 # Import badgeware modules
 __import__(".frozen/badgeware/badge")

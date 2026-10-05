@@ -59,3 +59,7 @@ include(cppmem/micropython)
 # Must call `enable_ulab()` to enable
 include(micropython-common-ulab)
 enable_ulab()
+
+# IDE debug channel (second USB CDC interface)
+include(modules/c/cdcaux/micropython)
+target_compile_definitions(usermod_cdcaux INTERFACE BADGEWARE_MODEL="tufty2350")
