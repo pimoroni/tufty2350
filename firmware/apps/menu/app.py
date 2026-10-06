@@ -1,9 +1,7 @@
 import os
 import math
 
-import ui
-
-DEFAULT_ICON = image.load("default_icon.png")
+DEFAULT_ICON = image.load("/system/apps/menu/default_icon.png")
 
 # bright icon colours
 COLORS = [color.orange, color.blue, color.red, color.green, color.yellow, color.grape]
@@ -37,7 +35,7 @@ class App:
             self.spin_start = badge.ticks
         self.active = active
 
-    def draw(self):
+    def draw(self, colors=COLORS):
         width = 1
         sprite_width = self.icon.width
         sprite_offset = sprite_width / 2
@@ -69,7 +67,7 @@ class App:
         screen.shape(squircle)
 
         # draw the icon body
-        screen.pen = COLORS[self.index % 6]
+        screen.pen = colors[self.index % len(colors)]
         screen.alpha = 255 if self.active else 128
 
         squircle.transform = squircle.transform.translate(-1, -1)
@@ -123,20 +121,20 @@ class Apps:
         for app in self.apps:
             app.activate(app.index == index)
 
-    def draw_icons(self):
+    def draw_icons(self, colors=COLORS):
         offset = (self.active_index // 6) * 6
         for app in self.apps[offset:offset + 6]:
-            app.draw()
+            app.draw(colors)
 
-    def draw_label(self):
+    def draw_label(self, background, text=color.rgb(20, 40, 60)):
         label = self.active.name
         w, _ = screen.measure_text(label)
-        screen.pen = ui.phosphor
+        screen.pen = background
         screen.shape(shape.rounded_rectangle(80 - (w / 2) - 4, 100, w + 8, 15, 4))
-        screen.pen = color.rgb(20, 40, 60)
+        screen.pen = text
         screen.text(label, 80 - (w / 2), 101)
 
-    def draw_pagination(self, x=150, y=65):
+    def draw_pagination(self, x=150, y=65, rgb=(255, 255, 255)):
         pages = math.ceil(len(self.apps) / 6)
         selected_page = self.active_index // 6
         y -= (pages * 7) / 2
@@ -146,9 +144,9 @@ class Apps:
             pips = len(self.apps[offset:offset + 6])
             for pip in range(pips):
                 if self.active_index - (page * 6) == pip:
-                    screen.pen = color.rgb(255, 255, 255, 200)
+                    screen.pen = color.rgb(*rgb, 200)
                 else:
-                    screen.pen = color.rgb(255, 255, 255, 100) if page == selected_page else color.rgb(255, 255, 255, 50)
+                    screen.pen = color.rgb(*rgb, 100) if page == selected_page else color.rgb(*rgb, 50)
                 screen.put(x + (pip % 3) * 2, y + (page * 7) + (pip // 3) * 2)
 
     def __len__(self):

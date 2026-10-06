@@ -1,16 +1,25 @@
 import os
 import sys
 
+sys.path.insert(0, "/system/apps/menu/themes")
 sys.path.insert(0, "/system/apps/menu")
 sys.path.insert(0, "/")
 os.chdir("/system/apps/menu")
 
-import ui
-
 from app import Apps
 
-title_font = font.ark
-label_font = font.sins
+
+def load_theme(name):
+    try:
+        return __import__(name)
+    except Exception as e:  # noqa: BLE001
+        print(f"- theme '{name}' failed: {e}")
+        return __import__("default")
+
+
+settings = {"theme": "default"}
+State.load("theme", settings)
+theme = load_theme(settings["theme"])
 
 
 # find installed apps and create apps
@@ -22,12 +31,10 @@ MAX_ALPHA = 255
 alpha = 30
 
 
-def update():
-    global active, apps, alpha
-
-    # process button inputs to switch between apps
+# default 3x2 grid navigation, used when a theme has no navigate()
+def grid_navigate(active, count):
     if badge.pressed(BUTTON_C):
-        if (active % 3) < 2 and active < len(apps) - 1:
+        if (active % 3) < 2 and active < count - 1:
             active += 1
     if badge.pressed(BUTTON_A):
         if (active % 3) > 0 and active > 0:
@@ -36,28 +43,28 @@ def update():
         active -= 3
     if badge.pressed(BUTTON_DOWN):
         active += 3
-        if active >= len(apps):
-            active = len(apps) - 1
+        if active >= count:
+            active = count - 1
+    return active
 
-    apps.activate(active)
 
-    if badge.pressed(BUTTON_B):
-        return apps.active.path
+def update():
+    global active, apps, alpha, theme
 
-    ui.draw_background()
+    # a broken theme must never lock the user out of the launcher
+    try:
+        active = getattr(theme, "navigate", grid_navigate)(active, len(apps))
+        active = max(0, min(active, len(apps) - 1))
+        apps.activate(active)
 
-    screen.font = title_font
-    ui.draw_header()
+        if badge.pressed(BUTTON_B):
+            return apps.active.path
 
-    # draw menu apps
-    apps.draw_icons()
-
-    # draw label for active menu icon
-    screen.font = label_font
-    apps.draw_label()
-
-    # draw hints for the active page
-    apps.draw_pagination()
+        theme.render(apps)
+    except Exception as e:  # noqa: BLE001
+        print(f"- theme error: {e}")
+        theme = __import__("default")
+        return None
 
     if alpha <= MAX_ALPHA:
         screen.pen = color.rgb(0, 0, 0, 255 - alpha)
