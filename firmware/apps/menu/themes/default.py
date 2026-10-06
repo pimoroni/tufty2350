@@ -2,11 +2,30 @@ import math
 import random
 
 
+title_font = font.ark
+label_font = font.sins
+
 black = color.rgb(0, 0, 0)
 background = color.rgb(60, 15, 10)
 phosphor = color.rgb(246, 135, 4)
 terminal_text = color.rgb(123, 72, 2)
 terminal_fade = color.rgb(60, 15, 10, 150)
+icon_colors = [color.orange, color.blue, color.red, color.green, color.yellow, color.grape]
+label_text = color.rgb(20, 40, 60)
+
+
+def render(apps):
+    draw_background()
+
+    screen.font = title_font
+    draw_header()
+
+    apps.draw_icons(icon_colors)
+
+    screen.font = label_font
+    apps.draw_label(phosphor, label_text)
+
+    apps.draw_pagination()
 
 
 def draw_background():
