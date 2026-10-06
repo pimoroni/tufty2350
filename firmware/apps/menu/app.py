@@ -6,6 +6,7 @@ DEFAULT_ICON = image.load("/system/apps/menu/default_icon.png")
 # bright icon colours
 COLORS = [color.orange, color.blue, color.red, color.green, color.yellow, color.grape]
 HIGHLIGHT = ((0.0, color.rgb(255, 255, 255, 64)), (1.0, color.rgb(255, 255, 255, 0)))
+LABEL_TEXT = color.rgb(20, 40, 60)
 
 # icon shape
 squircle = shape.squircle(0, 0, 20, 4)
@@ -126,7 +127,7 @@ class Apps:
         for app in self.apps[offset:offset + 6]:
             app.draw(colors)
 
-    def draw_label(self, background, text=color.rgb(20, 40, 60)):
+    def draw_label(self, background, text=LABEL_TEXT):
         label = self.active.name
         w, _ = screen.measure_text(label)
         screen.pen = background

@@ -157,7 +157,5 @@ def update():
     draw_list()
     draw_preview()
 
-    return None
-
 
 run(update)

@@ -25,7 +25,7 @@ pos = 0.0
 last = None
 
 
-def navigate(active, count):
+def navigate(_active, count):
     global target
     if badge.pressed(BUTTON_C):
         target += 1
