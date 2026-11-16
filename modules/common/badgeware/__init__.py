@@ -4,6 +4,7 @@ import sys
 import time
 import os
 
+import cdcaux
 import machine
 import micropython
 import st7789
@@ -69,6 +70,8 @@ class _run:
 
 
 def launch(path):
+    cdcaux.app(path)
+
     def do_exit():
         if path in sys.modules:
             app = sys.modules[path]
