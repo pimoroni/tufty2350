@@ -1,20 +1,10 @@
 import ide
 import powman
-from badgeware import message
-
-
-def safe_mode():
-    badge.mode(HIRES)
-    screen.pen = color.black
-    screen.clear()
-    message("Safe Mode", "Connect to the Badgeware IDE to repair your badge.\n\nPress RESET to restart.")
-    display.update()
-
 
 ide.serve()
 
 if powman.get_wake_reason() == powman.WAKE_DOUBLETAP:
-    safe_mode()
+    ide.safe_mode()
 
 else:
     try:

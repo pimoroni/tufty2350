@@ -84,7 +84,8 @@ def launch(path):
         reset()
 
     def quit_to_ide(_pin):
-        micropython.schedule(_ide_stop, None)
+        import ide_session
+        micropython.schedule(ide_session.stop, None)
 
     machine.Pin.board.BUTTON_HOME.irq(
         trigger=machine.Pin.IRQ_FALLING, handler=quit_to_ide if ide_mode else quit_to_launcher
@@ -166,14 +167,6 @@ def message(title, msg, window=None):
     error_window.text(msg, bounds)
 
 
-class IDEStop(BaseException):
-    pass
-
-
-def _ide_stop(_):
-    raise IDEStop
-
-
 def fatal_error(title, error):
     if isinstance(error, str):
         print(f"- ERROR: {error}")
@@ -194,7 +187,8 @@ def fatal_error(title, error):
     display.update()
 
     if ide_mode:
-        raise IDEStop
+        import ide_session
+        ide_session.error(title, error)
 
     while True:
         badge.poll()
