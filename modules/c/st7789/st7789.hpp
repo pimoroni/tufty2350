@@ -6,6 +6,7 @@
 
 #include "hardware/spi.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
 #include "hardware/pwm.h"
@@ -52,6 +53,15 @@ namespace pimoroni {
     uint parallel_sm;
     int parallel_offset;
     uint st_dma;
+
+    bool async_enabled = false;
+    volatile bool streaming = false;
+    volatile int stream_col = 0;
+    volatile bool clear_pending = false;
+    uint16_t clear_rgb565 = 0;
+    bool stream_fullres = true;
+    uint16_t *stream_a = nullptr;
+    uint16_t *stream_b = nullptr;
 
     // Whether to vsync
     bool use_vsync = true;
@@ -101,6 +111,8 @@ namespace pimoroni {
     }
 
     ~ST7789() {
+      release_async();
+
       if(dma_channel_is_claimed(st_dma)) {
         dma_channel_abort(st_dma);
         dma_channel_unclaim(st_dma);
@@ -115,6 +127,11 @@ namespace pimoroni {
     }
 
     void update();
+    void set_async(bool enabled);
+    void wait_for_stream();
+    void deferred_clear(uint8_t r, uint8_t g, uint8_t b);
+    void apply_pending_clear();
+    void stream_isr();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
     bool get_mode();
@@ -130,6 +147,9 @@ namespace pimoroni {
     inline void wait_for_dma(void);
     void write_blocking(const uint8_t *src, size_t len);
     void start_dma(const uint8_t *src, size_t len);
+    void write_window();
+    void convert_column(uint16_t *dst, int x, bool fullres);
+    void release_async();
   };
 
 }

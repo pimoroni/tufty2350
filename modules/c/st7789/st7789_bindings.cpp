@@ -93,6 +93,20 @@ mp_obj_t st7789_set_vsync(mp_obj_t self_in, mp_obj_t sync_in) {
     return mp_const_none;
 }
 
+mp_obj_t st7789_set_async(mp_obj_t self_in, mp_obj_t enable_in) {
+    (void)self_in;
+    display->set_async(mp_obj_is_true(enable_in));
+    return mp_const_none;
+}
+
+mp_obj_t st7789_deferred_clear(size_t n_args, const mp_obj_t *args) {
+    (void)n_args;
+    display->deferred_clear((uint8_t)mp_obj_get_int(args[1]),
+                            (uint8_t)mp_obj_get_int(args[2]),
+                            (uint8_t)mp_obj_get_int(args[3]));
+    return mp_const_none;
+}
+
 mp_obj_t st7789_set_framerate(mp_obj_t self_in, mp_obj_t fps_in) {
     (void)self_in;
     // Returns the actual frame rate selected, which is the closest the panel

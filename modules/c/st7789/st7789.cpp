@@ -6,6 +6,8 @@
 // needs nothing else from MicroPython.
 extern "C" void mp_event_handle_nowait(void);
 
+namespace picovector { extern void (*pv_fb_fence)(void); }
+
 namespace pimoroni {
 
   uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) framebuffer[320 * 240];
@@ -110,19 +112,7 @@ namespace pimoroni {
 
     sleep_ms(100);
 
-    uint8_t madctl = MADCTL::ROW_ORDER | MADCTL::SCAN_ORDER; //MADCTL::ROW_ORDER | MADCTL::SWAP_XY | MADCTL::SCAN_ORDER;
-    uint16_t caset[2] = {0, 239};
-    uint16_t raset[2] = {0, 319};
-
-    // Byte swap the 16bit rows/cols values
-    caset[0] = __builtin_bswap16(caset[0]);
-    caset[1] = __builtin_bswap16(caset[1]);
-    raset[0] = __builtin_bswap16(raset[0]);
-    raset[1] = __builtin_bswap16(raset[1]);
-
-    command(reg::CASET,  4, (char *)caset);
-    command(reg::RASET,  4, (char *)raset);
-    command(reg::MADCTL, 1, (char *)&madctl);
+    write_window();
 
     // Set up the screen for a display update
     uint8_t cmd = reg::RAMWR;
@@ -175,6 +165,9 @@ namespace pimoroni {
   }
 
   void ST7789::command(uint8_t command, size_t len, const char *data) {
+    if (async_enabled) {
+      wait_for_stream();
+    }
     wait_for_dma();
 
     gpio_put(dc, 0); // command mode
@@ -190,6 +183,111 @@ namespace pimoroni {
     gpio_put(cs, 1);
   }
 
+  void ST7789::write_window() {
+    uint8_t madctl = MADCTL::ROW_ORDER | MADCTL::SCAN_ORDER;
+    uint16_t caset[2] = {__builtin_bswap16(0), __builtin_bswap16(239)};
+    uint16_t raset[2] = {__builtin_bswap16(0), __builtin_bswap16(319)};
+
+    command(reg::CASET,  4, (char *)caset);
+    command(reg::RASET,  4, (char *)raset);
+    command(reg::MADCTL, 1, (char *)&madctl);
+  }
+
+  static ST7789 *display_for_isr = nullptr;
+
+  static void __not_in_flash_func(st7789_dma_isr)() {
+    if (display_for_isr) {
+      display_for_isr->stream_isr();
+    }
+  }
+
+  static void st7789_fb_fence() {
+    if (display_for_isr) {
+      display_for_isr->wait_for_stream();
+      display_for_isr->apply_pending_clear();
+    }
+  }
+
+  void __not_in_flash_func(ST7789::convert_column)(uint16_t *dst, int x, bool fullres) {
+    if (fullres) {
+      for (int y = 0; y < fullres_height; y++) {
+        dst[y] = __builtin_bswap16(framebuffer[y * fullres_width + x]);
+      }
+    } else {
+      for (int y = 0; y < height; y++) {
+        uint16_t pixel = __builtin_bswap16(framebuffer[y * width + x]);
+        uint32_t doubled = pixel | ((uint32_t)pixel << 16);
+        ((uint32_t *)dst)[y] = doubled;
+        ((uint32_t *)dst)[height + y] = doubled;
+      }
+    }
+  }
+
+  void __not_in_flash_func(ST7789::stream_isr)() {
+    dma_irqn_acknowledge_channel(1, st_dma);
+    const int batch = stream_fullres ? 2 : 1;
+    const int cols = stream_fullres ? fullres_width : width;
+    if (stream_col >= cols) {
+      dma_irqn_set_channel_enabled(1, st_dma, false);
+      streaming = false;
+      return;
+    }
+    const int sending = cols - stream_col < batch ? cols - stream_col : batch;
+    dma_channel_set_trans_count(st_dma, stream_fullres ? fullres_height * 2 * sending : fullres_height * 4, false);
+    dma_channel_set_read_addr(st_dma, stream_a, true);
+    std::swap(stream_a, stream_b);
+    stream_col = stream_col + sending;
+    for (int k = 0; k < batch && stream_col + k < cols; k++) {
+      convert_column(stream_a + (stream_fullres ? fullres_height * k : 0), stream_col + k, stream_fullres);
+    }
+  }
+
+  void ST7789::apply_pending_clear() {
+    if (!clear_pending) return;
+    clear_pending = false;
+    const uint32_t doubled = (uint32_t)clear_rgb565 | ((uint32_t)clear_rgb565 << 16);
+    uint32_t *p = (uint32_t *)framebuffer;
+    size_t words = (size_t)(fullres_mode ? fullres_width * fullres_height : width * height) / 2;
+    while (words--) *p++ = doubled;
+  }
+
+  void ST7789::deferred_clear(uint8_t r, uint8_t g, uint8_t b) {
+    clear_rgb565 = (uint16_t)(((r & 0xf8) << 8) | ((g & 0xfc) << 3) | (b >> 3));
+    clear_pending = true;
+    if (!async_enabled || !streaming) apply_pending_clear();
+  }
+
+  void ST7789::wait_for_stream() {
+    while (streaming) {
+      mp_event_handle_nowait();
+    }
+  }
+
+  void ST7789::set_async(bool enabled) {
+    wait_for_stream();
+    apply_pending_clear();
+    async_enabled = enabled;
+    display_for_isr = this;
+    if (enabled) {
+      irq_set_exclusive_handler(DMA_IRQ_1, st7789_dma_isr);
+      irq_set_enabled(DMA_IRQ_1, true);
+      picovector::pv_fb_fence = st7789_fb_fence;
+    } else {
+      dma_irqn_set_channel_enabled(1, st_dma, false);
+      picovector::pv_fb_fence = nullptr;
+    }
+  }
+
+  void ST7789::release_async() {
+    if (display_for_isr != this) return;
+    dma_irqn_set_channel_enabled(1, st_dma, false);
+    picovector::pv_fb_fence = nullptr;
+    display_for_isr = nullptr;
+    async_enabled = false;
+    streaming = false;
+    clear_pending = false;
+  }
+
   void ST7789::update() {
     // Determine clock divider
     const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
@@ -199,7 +297,10 @@ namespace pimoroni {
       pio_sm_set_clkdiv(parallel_pio, parallel_sm, fmax(1.0f, float(sys_clk_hz) / max_pio_clk));
     }
 
+    wait_for_stream();
+    apply_pending_clear();
     wait_for_dma();
+    write_window();
 
     // Wait for vsync
     if (use_vsync) {
@@ -221,6 +322,20 @@ namespace pimoroni {
     // these, converting pixels into one while the other is DMA'd to the screen.
     uint16_t *buf_a = linebuffer;
     uint16_t *buf_b = linebuffer + 240 * 2;
+
+    if (async_enabled) {
+      stream_fullres = fullres_mode;
+      stream_a = buf_a;
+      stream_b = buf_b;
+      stream_col = 0;
+      streaming = true;
+      convert_column(stream_a, 0, fullres_mode);
+      if (fullres_mode) convert_column(stream_a + fullres_height, 1, true);
+      dma_irqn_acknowledge_channel(1, st_dma);
+      dma_irqn_set_channel_enabled(1, st_dma, true);
+      stream_isr();
+      return;
+    }
 
     // The copy from framebuffer to linebuffer also serves to rotate the image
     // 90 degrees to match the scan orientation and prevent diagonal tearing.

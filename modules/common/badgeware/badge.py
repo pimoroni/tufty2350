@@ -109,7 +109,13 @@ class Badge():
 
     def update(self):
         display.update()
-        badge.clear()
+        clear = self.default_clear
+        if getattr(clear, "a", None) == 255 and hasattr(display, "deferred_clear"):
+            display.deferred_clear(clear.r, clear.g, clear.b)
+            screen.pen = self.default_pen
+            screen.cursor = TEXT_START
+        else:
+            badge.clear()
         badge.poll()
         return True
 
