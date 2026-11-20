@@ -105,7 +105,7 @@ mp_int_t st7789_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
     (void)self_in;
     (void)flags;
     bufinfo->buf = display->get_framebuffer();
-    bufinfo->len = 320 * 240 * 4;
+    bufinfo->len = 320 * 240 * 2;
     bufinfo->typecode = 'B';
     return 0;
 }
@@ -118,6 +118,11 @@ void st7789_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 
     if(attr == MP_QSTR_HEIGHT && dest[0] == MP_OBJ_NULL) {
         dest[0] = mp_obj_new_int(display->get_mode() ? 240 : 120);
+        return;
+    }
+
+    if(attr == MP_QSTR_FORMAT && dest[0] == MP_OBJ_NULL) {
+        dest[0] = MP_OBJ_NEW_QSTR(MP_QSTR_RGB565);
         return;
     }
 

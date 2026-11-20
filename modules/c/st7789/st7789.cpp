@@ -8,7 +8,7 @@ extern "C" void mp_event_handle_nowait(void);
 
 namespace pimoroni {
 
-  uint32_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) framebuffer[320 * 240];
+  uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) framebuffer[320 * 240];
   uint16_t __attribute__((section(".uninitialized_data"))) __attribute__ ((aligned (4))) linebuffer[240 * 4];
 
   // If we configure MicroPython's main.c to skip the first 320 * 240 * sizeof(uint32_t)
@@ -144,7 +144,7 @@ namespace pimoroni {
     set_backlight(230); // Turn backlight on now surprises have passed, 180 = about half perceptual brightness
   }
 
-  uint32_t *ST7789::get_framebuffer() {
+  uint16_t *ST7789::get_framebuffer() {
     return framebuffer;
   }
 
@@ -227,8 +227,7 @@ namespace pimoroni {
     if(fullres_mode) {
       for(int x = 0; x < fullres_width; x++) {
         for(int y = 0; y < fullres_height; y++) {
-          uint32_t src = framebuffer[y * fullres_width + x];
-          buf_a[y] = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+          buf_a[y] = __builtin_bswap16(framebuffer[y * fullres_width + x]);
         }
         // Transfer a single full res (full 240 pixel height) column
         // In full-res we can "chase the beam" as it were, replacing pixels
@@ -240,8 +239,7 @@ namespace pimoroni {
     } else {
       for(int x = 0; x < width; x++) {
         for(int y = 0; y < height; y++) {
-          uint32_t src = framebuffer[y * width + x];
-          uint16_t pixel = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+          uint16_t pixel = __builtin_bswap16(framebuffer[y * width + x]);
           // Each source pixel is doubled across two columns (the 240px-tall
           // a/b halves of the linebuffer). Pack the horizontal pixel-doubling
           // into a single 32-bit store per column rather than two 16-bit stores.

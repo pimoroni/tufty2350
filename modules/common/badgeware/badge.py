@@ -133,11 +133,16 @@ class Badge():
         if MODEL == "tufty" or getattr(builtins, "screen", None) is None:
             prev_font = getattr(getattr(builtins, "screen", None), "font", None)
             brush = getattr(getattr(builtins, "screen", None), "pen", None)
-            builtins.screen = image(display.WIDTH, display.HEIGHT, memoryview(display))
+            builtins.screen = self._screen_image()
             screen.font = prev_font if prev_font is not None else font.sins
             screen.pen = brush if brush is not None else self.default_pen
 
         return None
+
+    def _screen_image(self):
+        if getattr(display, "FORMAT", "RGBA8888") == "RGB565":
+            return image(display.WIDTH, display.HEIGHT, memoryview(display), image.RGB565)
+        return image(display.WIDTH, display.HEIGHT, memoryview(display))
 
     def battery_voltage(self):
         # Get the average reading over 20 samples from our VBAT and VREF

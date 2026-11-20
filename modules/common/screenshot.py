@@ -1,9 +1,10 @@
 """Capture the display to a PNG or BMP file.
 
-The source is any picovector image, defaulting to the global `screen`. Its buffer
-is RGBA8888 (bytes R, G, B, A per pixel) and opaque, so a PNG RGBA scanline is the
-raw row with a filter byte in front, no per-pixel reordering. BMP needs a per-pixel
-BGR reorder, so it is the slower path.
+The source is any picovector image, defaulting to the global `screen`. An RGB565
+source (the Tufty framebuffer) is first blitted into an RGBA8888 copy. RGBA8888 is
+bytes R, G, B, A per pixel and opaque, so a PNG RGBA scanline is the raw row with a
+filter byte in front, no per-pixel reordering. BMP needs a per-pixel BGR reorder,
+so it is the slower path.
 """
 
 import io
@@ -110,6 +111,14 @@ def _write_bmp(file, raw, width, height, stride):
             file.write(pad)
 
 
+def _rgba(source):
+    if len(source.raw) - (source.height - 1) * source.stride == source.width * 4:
+        return source
+    converted = image(source.width, source.height)
+    converted.blit(source, vec2(0, 0))
+    return converted
+
+
 def _next_auto_path():
     try:
         os.mkdir("/screenshots")
@@ -141,6 +150,7 @@ def save(path=None, source=None):
     else:
         raise ValueError("path must end in .png or .bmp")
 
+    source = _rgba(source)
     raw = source.raw
     width = source.width
     height = source.height
