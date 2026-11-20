@@ -194,10 +194,17 @@ namespace pimoroni {
   }
 
   static ST7789 *display_for_isr = nullptr;
+  static bool dma_irq_handler_added = false;
 
   static void __not_in_flash_func(st7789_dma_isr)() {
     if (display_for_isr) {
-      display_for_isr->stream_isr();
+      display_for_isr->dma_irq();
+    }
+  }
+
+  void __not_in_flash_func(ST7789::dma_irq)() {
+    if (dma_irqn_get_channel_status(1, st_dma)) {
+      stream_isr();
     }
   }
 
@@ -269,7 +276,10 @@ namespace pimoroni {
     async_enabled = enabled;
     display_for_isr = this;
     if (enabled) {
-      irq_set_exclusive_handler(DMA_IRQ_1, st7789_dma_isr);
+      if (!dma_irq_handler_added) {
+        irq_add_shared_handler(DMA_IRQ_1, st7789_dma_isr, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
+        dma_irq_handler_added = true;
+      }
       irq_set_enabled(DMA_IRQ_1, true);
       picovector::pv_fb_fence = st7789_fb_fence;
     } else {
@@ -282,6 +292,10 @@ namespace pimoroni {
     if (display_for_isr != this) return;
     dma_irqn_set_channel_enabled(1, st_dma, false);
     picovector::pv_fb_fence = nullptr;
+    if (dma_irq_handler_added) {
+      irq_remove_handler(DMA_IRQ_1, st7789_dma_isr);
+      dma_irq_handler_added = false;
+    }
     display_for_isr = nullptr;
     async_enabled = false;
     streaming = false;

@@ -132,6 +132,7 @@ namespace pimoroni {
     void deferred_clear(uint8_t r, uint8_t g, uint8_t b);
     void apply_pending_clear();
     void stream_isr();
+    void dma_irq();
     void set_backlight(uint8_t brightness);
     void set_mode(bool mode);
     bool get_mode();
