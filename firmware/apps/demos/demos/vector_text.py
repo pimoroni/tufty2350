@@ -2,7 +2,7 @@ import math
 
 skull = image.load("/assets/skull.png")
 add_sprite("skull", skull)
-mona_sans = font.load("/fonts/DynaPuff-Medium.af")
+mona_sans = font.dynapuff
 size = 24
 
 def update():
